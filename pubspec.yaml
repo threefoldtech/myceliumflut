@@ -39,6 +39,11 @@ dependencies:
     path: rust_builder
   flutter_rust_bridge: 2.0.0-dev.32
 
+  tun_flutter:
+    git:
+      url: https://github.com/iwanbk/tun_flutter
+      ref: main
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
