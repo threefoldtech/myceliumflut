@@ -290,8 +290,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: main
-      resolved-ref: "2ef5da8e4863edcc79923e1a5a833b368ac93268"
+      ref: dev
+      resolved-ref: bebc7fbeb47bdb22183d10fbae9772c665bde741
       url: "https://github.com/iwanbk/tun_flutter"
     source: git
     version: "0.0.1"
