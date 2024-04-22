@@ -49,7 +49,7 @@ class _MyAppState extends State<MyApp> {
 
     try {
       vpnStarted = await tf.startVpn({
-            'nodeAddr': '5b4:86cf:d8db:87ee:3c:ab49:ef82:8f81',
+            'nodeAddr': await loadNodeAddr(),
           }) ??
           false;
     } on PlatformException {
@@ -87,7 +87,11 @@ class _MyAppState extends State<MyApp> {
       _tunFd = tunFd;
       _greeting = greeting;
     });
-    startMycelium(peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651', tunFd: tunFd);
+    var privKey = await loadPrivKey();
+    startMycelium(
+        peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651',
+        tunFd: tunFd,
+        privKey: privKey.buffer.asUint8List());
   }
 
   @override
@@ -104,4 +108,12 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+Future<ByteData> loadPrivKey() async {
+  return await rootBundle.load('assets/priv_key.bin');
+}
+
+Future<String> loadNodeAddr() async {
+  return await rootBundle.loadString('assets/node_addr.txt');
 }

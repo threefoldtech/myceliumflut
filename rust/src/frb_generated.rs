@@ -123,12 +123,14 @@ fn wire_start_mycelium_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_peer = <String>::sse_decode(&mut deserializer);
             let api_tun_fd = <i32>::sse_decode(&mut deserializer);
+            let api_priv_key = <Vec<u8>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse(
                     (move || async move {
                         Result::<_, ()>::Ok(
-                            crate::api::simple::start_mycelium(api_peer, api_tun_fd).await,
+                            crate::api::simple::start_mycelium(api_peer, api_tun_fd, api_priv_key)
+                                .await,
                         )
                     })()
                     .await,

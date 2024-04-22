@@ -10,5 +10,9 @@ String greet({required String name, dynamic hint}) =>
     RustLib.instance.api.greet(name: name, hint: hint);
 
 Future<void> startMycelium(
-        {required String peer, required int tunFd, dynamic hint}) =>
-    RustLib.instance.api.startMycelium(peer: peer, tunFd: tunFd, hint: hint);
+        {required String peer,
+        required int tunFd,
+        required List<int> privKey,
+        dynamic hint}) =>
+    RustLib.instance.api
+        .startMycelium(peer: peer, tunFd: tunFd, privKey: privKey, hint: hint);
