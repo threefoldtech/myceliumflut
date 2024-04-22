@@ -42,7 +42,7 @@ dependencies:
   tun_flutter:
     git:
       url: https://github.com/iwanbk/tun_flutter
-      ref: main
+      ref: dev
 
 dev_dependencies:
   flutter_test:

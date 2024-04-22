@@ -87,7 +87,7 @@ class _MyAppState extends State<MyApp> {
       _tunFd = tunFd;
       _greeting = greeting;
     });
-    startMycelium(peer: 'tcp://188.40.132.242:9651', tunFd: tunFd);
+    startMycelium(peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651', tunFd: tunFd);
   }
 
   @override
