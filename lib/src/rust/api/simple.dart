@@ -8,3 +8,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 String greet({required String name, dynamic hint}) =>
     RustLib.instance.api.greet(name: name, hint: hint);
+
+Future<void> startMycelium(
+        {required String peer, required int tunFd, dynamic hint}) =>
+    RustLib.instance.api.startMycelium(peer: peer, tunFd: tunFd, hint: hint);
