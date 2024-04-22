@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -24,9 +22,9 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   bool _vpnStarted = false;
-  int _tun_fd = 0;
+  int _tunFd = 0;
   String _greeting = '';
-  final _tunFlutterPlugin = TunFlutter();
+  var tf = TunFlutter();
 
   @override
   void initState() {
@@ -36,11 +34,9 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    var tf = new TunFlutter();
-
     String platformVersion;
     bool vpnStarted;
-    int tun_fd;
+    int tunFd = -1;
 
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
@@ -53,7 +49,7 @@ class _MyAppState extends State<MyApp> {
 
     try {
       vpnStarted = await tf.startVpn({
-            'nodeAddr': '192.168.2.2',
+            'nodeAddr': '5b4:86cf:d8db:87ee:3c:ab49:ef82:8f81',
           }) ??
           false;
     } on PlatformException {
@@ -66,12 +62,16 @@ class _MyAppState extends State<MyApp> {
     // So, we need to poll the Tun FD existance.
     // We also currently don't have good simple solution to poll the data,
     // so we do sleep for now.
-    await Future.delayed(Duration(seconds: 3));
-
-    try {
-      tun_fd = await tf.getTunFD() ?? 0;
-    } on PlatformException {
-      tun_fd = 0;
+    for (var i = 0; i < 30; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      try {
+        tunFd = await tf.getTunFD() ?? -1;
+      } on PlatformException {
+        tunFd = -1;
+      }
+      if (tunFd > 0) {
+        break;
+      }
     }
 
     var greeting = greet(name: "Paijo");
@@ -84,9 +84,10 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _platformVersion = platformVersion;
       _vpnStarted = vpnStarted;
-      _tun_fd = tun_fd;
+      _tunFd = tunFd;
       _greeting = greeting;
     });
+    startMycelium(peer: 'tcp://188.40.132.242:9651', tunFd: tunFd);
   }
 
   @override
@@ -98,7 +99,7 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Text(
-              'greeting: $_greeting\nRunning on: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tun_fd \n'),
+              'greeting: $_greeting\nRunning on: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\n'),
         ),
       ),
     );
