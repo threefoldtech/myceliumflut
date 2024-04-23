@@ -8,10 +8,20 @@ pub fn greet(name: String) -> String {
     format!("Hello, {name}!")
 }
 
-pub async fn start_mycelium(peer: String, tun_fd: i32)  {
+#[flutter_rust_bridge::frb(sync)]
+pub fn generate_secret_key() -> Vec<u8> {
+    mycelium::generate_secret_key()
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn address_from_secret_key(data: Vec<u8>) -> String {
+    mycelium::address_from_secret_key(data)
+}
+
+pub async fn start_mycelium(peer: String, tun_fd: i32, priv_key: Vec<u8>)  {
     // ref demo in https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
     let handle = flutter_rust_bridge::spawn_blocking_with(
-        move || mycelium::build_android(peer, tun_fd),
+        move || mycelium::start_mycelium(peer, tun_fd, priv_key),
         FLUTTER_RUST_BRIDGE_HANDLER.thread_pool(),
     );
     handle.await.unwrap()

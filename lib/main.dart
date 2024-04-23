@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   bool _vpnStarted = false;
   int _tunFd = 0;
-  String _greeting = '';
+  String _nodeAddr = '';
   var tf = TunFlutter();
 
   @override
@@ -47,9 +47,12 @@ class _MyAppState extends State<MyApp> {
       platformVersion = 'Failed to get platform version.';
     }
 
+    var privKey = await loadPrivKey();
+    var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
+
     try {
       vpnStarted = await tf.startVpn({
-            'nodeAddr': '5b4:86cf:d8db:87ee:3c:ab49:ef82:8f81',
+            'nodeAddr': nodeAddr,
           }) ??
           false;
     } on PlatformException {
@@ -74,8 +77,6 @@ class _MyAppState extends State<MyApp> {
       }
     }
 
-    var greeting = greet(name: "Paijo");
-
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
@@ -85,9 +86,13 @@ class _MyAppState extends State<MyApp> {
       _platformVersion = platformVersion;
       _vpnStarted = vpnStarted;
       _tunFd = tunFd;
-      _greeting = greeting;
+      _nodeAddr = nodeAddr;
     });
-    startMycelium(peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651', tunFd: tunFd);
+
+    startMycelium(
+        peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651',
+        tunFd: tunFd,
+        privKey: privKey.buffer.asUint8List());
   }
 
   @override
@@ -99,9 +104,13 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Text(
-              'greeting: $_greeting\nRunning on: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\n'),
+              'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr'),
         ),
       ),
     );
   }
+}
+
+Future<ByteData> loadPrivKey() async {
+  return await rootBundle.load('assets/priv_key.bin');
 }

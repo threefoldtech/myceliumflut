@@ -9,6 +9,16 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 String greet({required String name, dynamic hint}) =>
     RustLib.instance.api.greet(name: name, hint: hint);
 
+Uint8List generateSecretKey({dynamic hint}) =>
+    RustLib.instance.api.generateSecretKey(hint: hint);
+
+String addressFromSecretKey({required List<int> data, dynamic hint}) =>
+    RustLib.instance.api.addressFromSecretKey(data: data, hint: hint);
+
 Future<void> startMycelium(
-        {required String peer, required int tunFd, dynamic hint}) =>
-    RustLib.instance.api.startMycelium(peer: peer, tunFd: tunFd, hint: hint);
+        {required String peer,
+        required int tunFd,
+        required List<int> privKey,
+        dynamic hint}) =>
+    RustLib.instance.api
+        .startMycelium(peer: peer, tunFd: tunFd, privKey: privKey, hint: hint);

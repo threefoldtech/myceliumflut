@@ -33,13 +33,20 @@ dev_directory/
     myceliumflut/
 ```
 It is because we currently put `mycelium` dependency as local files (not github project) to ease the development.
-
 Checkout to `tun_android` branch of `mycelium` 
 
 ### run
+go to `myceliumflut` dir
 - `code .`
-- open `lib/main.dart`
-- modify this line `'nodeAddr': '5b4:86cf:d8db:87ee:3c:ab49:ef82:8f81'`
+- `mkdir assets`
+- `cp your_mycelium_priv_key.bin assets/priv_key.bin` // you can get priv_key.bin from your mycelium app in linux/mac.
 - `Run` -> `Start Debugging`
 
+see your node address:
 
+- displayed at the app UI on Android
+- in the `logcat`(android studio ) or `debug console`(vscode).
+The log will be something like this
+```
+node_addr = 464:de5d:4945:dc4d:a0a9:3dc9:c9be:35b7
+```
