@@ -39,8 +39,14 @@ Checkout to `tun_android` branch of `mycelium`
 go to `myceliumflut` dir
 - `code .`
 - `mkdir assets`
-- `cp your_mycelium_priv_key.bin assets/priv_key.bin`
-- `echo your_mycelium_ip_v6 > assets/node_addr.txt` 
+- `cp your_mycelium_priv_key.bin assets/priv_key.bin` // you can get priv_key.bin from your mycelium app in linux/mac.
 - `Run` -> `Start Debugging`
 
+see your node address:
 
+- displayed at the app UI on Android
+- in the `logcat`(android studio ) or `debug console`(vscode).
+The log will be something like this
+```
+node_addr = 464:de5d:4945:dc4d:a0a9:3dc9:c9be:35b7
+```

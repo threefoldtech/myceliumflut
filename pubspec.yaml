@@ -42,7 +42,7 @@ dependencies:
   tun_flutter:
     git:
       url: https://github.com/iwanbk/tun_flutter
-      ref: dev
+      ref: main
 
 dev_dependencies:
   flutter_test:
@@ -100,4 +100,3 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
     - assets/priv_key.bin
-    - assets/node_addr.txt
