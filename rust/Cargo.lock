@@ -886,6 +886,8 @@ dependencies = [
  "rtnetlink",
  "rustls",
  "serde",
+ "system-configuration",
+ "system-configuration-sys",
  "tokio",
  "tokio-openssl",
  "tokio-stream",

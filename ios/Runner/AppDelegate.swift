@@ -13,11 +13,16 @@ import Flutter
     tunChannel.setMethodCallHandler({
         [weak self] (call: FlutterMethodCall, result: FlutterResult) -> Void in
           // This method is invoked on the UI thread.
-          guard call.method == "getBatteryLevel" else {
+        switch call.method {
+        case "getBatteryLevel":
+            result(90)
+        case "startVpn":
+            result(true)
+        case "getTunFD":
+            result(1)
+        default:
             result(FlutterMethodNotImplemented)
-            return
-          }
-          result(90)
+        }
     })
 
     GeneratedPluginRegistrant.register(with: self)
