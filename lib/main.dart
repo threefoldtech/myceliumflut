@@ -20,9 +20,11 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _platformVersion = 'Unknown';
   bool _vpnStarted = false;
   int _tunFd = 0;
+  String _dummyBattLevel = ''; // dummy battery level
   String _nodeAddr = '';
   var tf = TunFlutter();
 
@@ -35,8 +37,9 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
-    bool vpnStarted;
+    bool vpnStarted = false;
     int tunFd = -1;
+    String dummyBattLevel = '';
 
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
@@ -46,6 +49,8 @@ class _MyAppState extends State<MyApp> {
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
+
+    dummyBattLevel = await getBatteryLevel(platform);
 
     var privKey = await loadPrivKey();
     var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
@@ -65,6 +70,12 @@ class _MyAppState extends State<MyApp> {
     // So, we need to poll the Tun FD existance.
     // We also currently don't have good simple solution to poll the data,
     // so we do sleep for now.
+    //
+    // looks like android/ios can call Dart code
+    // see https://docs.flutter.dev/platform-integration/platform-channels on this part
+    // ```
+    // If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
+    // ```
     for (var i = 0; i < 30; i++) {
       await Future.delayed(const Duration(milliseconds: 100));
       try {
@@ -87,6 +98,7 @@ class _MyAppState extends State<MyApp> {
       _vpnStarted = vpnStarted;
       _tunFd = tunFd;
       _nodeAddr = nodeAddr;
+      _dummyBattLevel = dummyBattLevel;
     });
 
     startMycelium(
@@ -104,7 +116,7 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Text(
-              'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr'),
+              'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\nbatt:$_dummyBattLevel'),
         ),
       ),
     );
@@ -113,4 +125,15 @@ class _MyAppState extends State<MyApp> {
 
 Future<ByteData> loadPrivKey() async {
   return await rootBundle.load('assets/priv_key.bin');
+}
+
+Future<String> getBatteryLevel(MethodChannel platform) async {
+  String batteryLevel;
+  try {
+    final result = await platform.invokeMethod<int>('getBatteryLevel');
+    batteryLevel = 'Battery level at $result % .';
+  } on PlatformException catch (e) {
+    batteryLevel = "Failed to get battery level: '${e.message}'.";
+  }
+  return batteryLevel;
 }
