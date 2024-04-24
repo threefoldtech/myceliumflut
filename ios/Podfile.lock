@@ -1,0 +1,34 @@
+PODS:
+  - Flutter (1.0.0)
+  - integration_test (0.0.1):
+    - Flutter
+  - rust_lib_myceliumflut (0.0.1):
+    - Flutter
+  - tun_flutter (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - rust_lib_myceliumflut (from `.symlinks/plugins/rust_lib_myceliumflut/ios`)
+  - tun_flutter (from `.symlinks/plugins/tun_flutter/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
+  rust_lib_myceliumflut:
+    :path: ".symlinks/plugins/rust_lib_myceliumflut/ios"
+  tun_flutter:
+    :path: ".symlinks/plugins/tun_flutter/ios"
+
+SPEC CHECKSUMS:
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  integration_test: 13825b8a9334a850581300559b8839134b124670
+  rust_lib_myceliumflut: 4411327ae79f513321a4170826dbe5924b408fb3
+  tun_flutter: 85de6ba980d954a1e249184a4c4d4abee1ce3ff4
+
+PODFILE CHECKSUM: 1959d098c91d8a792531a723c4a9d7e9f6a01e38
+
+COCOAPODS: 1.15.2
