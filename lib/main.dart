@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
     var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
 
     try {
-      vpnStarted = await tf.startVpn({
+      vpnStarted = await startVpn(platformVersion, tf, platform, {
             'nodeAddr': nodeAddr,
           }) ??
           false;
@@ -79,7 +79,7 @@ class _MyAppState extends State<MyApp> {
     for (var i = 0; i < 30; i++) {
       await Future.delayed(const Duration(milliseconds: 100));
       try {
-        tunFd = await tf.getTunFD() ?? -1;
+        tunFd = await getTunFD(platformVersion, tf, platform) ?? -1;
       } on PlatformException {
         tunFd = -1;
       }
@@ -136,4 +136,22 @@ Future<String> getBatteryLevel(MethodChannel platform) async {
     batteryLevel = "Failed to get battery level: '${e.message}'.";
   }
   return batteryLevel;
+}
+
+Future<bool?> startVpn(String platformVersion, TunFlutter tf,
+    MethodChannel platform, Map<String, String> configs) {
+  if (platformVersion.toLowerCase().contains("android")) {
+    return tf.startVpn(configs);
+  } else {
+    return platform.invokeMethod<bool>('startVpn', configs);
+  }
+}
+
+Future<int?> getTunFD(
+    String platformVersion, TunFlutter tf, MethodChannel platform) {
+  if (platformVersion.toLowerCase().contains("android")) {
+    return tf.getTunFD();
+  } else {
+    return platform.invokeMethod<int>('getTunFD');
+  }
 }
