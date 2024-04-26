@@ -3,7 +3,7 @@
 use crate::frb_generated::{FLUTTER_RUST_BRIDGE_HANDLER};
 
 #[cfg(target_os = "android")]
-use mycelium;
+use mobile;
 
 #[flutter_rust_bridge::frb(sync)] // Synchronous mode for simplicity of the demo
 pub fn greet(name: String) -> String {
@@ -13,7 +13,7 @@ pub fn greet(name: String) -> String {
 #[flutter_rust_bridge::frb(sync)]
 pub fn generate_secret_key() -> Vec<u8> {
     #[cfg(target_os = "android")]
-    return mycelium::generate_secret_key();
+    return mobile::generate_secret_key();
 
     #[cfg(target_os = "ios")]
     return Vec::new().into();
@@ -22,7 +22,7 @@ pub fn generate_secret_key() -> Vec<u8> {
 #[flutter_rust_bridge::frb(sync)]
 pub fn address_from_secret_key(data: Vec<u8>) -> String {
     #[cfg(target_os = "android")]
-    return mycelium::address_from_secret_key(data);
+    return mobile::address_from_secret_key(data);
 
     #[cfg(target_os = "ios")]
     return "".into();
@@ -38,7 +38,7 @@ pub async fn start_mycelium(peer: String, tun_fd: i32, priv_key: Vec<u8>)  {
     {
         // ref demo in https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
         let handle = flutter_rust_bridge::spawn_blocking_with(
-            move || mycelium::start_mycelium(peer, tun_fd, priv_key),
+            move || mobile::start_mycelium(peer, tun_fd, priv_key),
             FLUTTER_RUST_BRIDGE_HANDLER.thread_pool(),
         );
         handle.await.unwrap()

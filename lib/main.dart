@@ -102,7 +102,8 @@ class _MyAppState extends State<MyApp> {
     });
 
     startMycelium(
-        peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651',
+        //peer: 'tcp://[2a01:4f8:221:1e0b::2]:9651',
+        peer: 'tcp://185.69.166.7:9651',
         tunFd: tunFd,
         privKey: privKey.buffer.asUint8List());
   }
