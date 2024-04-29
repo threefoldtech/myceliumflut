@@ -19,21 +19,9 @@ samples, guidance on mobile development, and a full API reference.
 
 ### prequisites
 
-- install Android Studio
-- install flutter SDK
+- install flutter SDK https://docs.flutter.dev/get-started/install
+- install Android Studio / XCode, the flutter related configuration can be found in the above flutter SDK  installation guide
 
-
-### dependencies
-
-Put `mycelium` code into the same parent directory as this `myceliumflut`.
-Something like this
-```bash
-dev_directory/
-    mycelium/
-    myceliumflut/
-```
-It is because we currently put `mycelium` dependency as local files (not github project) to ease the development.
-Checkout to `tun_android` branch of `mycelium` 
 
 ### run
 go to `myceliumflut` dir
