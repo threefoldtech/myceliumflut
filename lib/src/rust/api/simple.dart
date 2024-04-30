@@ -16,9 +16,9 @@ String addressFromSecretKey({required List<int> data, dynamic hint}) =>
     RustLib.instance.api.addressFromSecretKey(data: data, hint: hint);
 
 Future<void> startMycelium(
-        {required String peer,
+        {required List<String> peers,
         required int tunFd,
         required List<int> privKey,
         dynamic hint}) =>
-    RustLib.instance.api
-        .startMycelium(peer: peer, tunFd: tunFd, privKey: privKey, hint: hint);
+    RustLib.instance.api.startMycelium(
+        peers: peers, tunFd: tunFd, privKey: privKey, hint: hint);

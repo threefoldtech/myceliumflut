@@ -8,7 +8,8 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.0.0-dev.32"
-mobile = {git = "http://github.com/threefoldtech/mycelium", package = "mobile", rev = "38727b31bd0b1d49f782564db64582d8545f65e4"}
+mobile = {git = "http://github.com/threefoldtech/mycelium", package = "mobile", rev = "9492b736049f62a9466eb9c4473cf96019d661db"}
+#mobile = {path = "../../mycelium/mobile"}
 log = {version = "0.4.21"}
 
 [target.'cfg(target_os = "android")'.dependencies]

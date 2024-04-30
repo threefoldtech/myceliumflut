@@ -76,7 +76,7 @@ abstract class RustLibApi extends BaseApi {
   Future<void> initApp({dynamic hint});
 
   Future<void> startMycelium(
-      {required String peer,
+      {required List<String> peers,
       required int tunFd,
       required List<int> privKey,
       dynamic hint});
@@ -187,14 +187,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<void> startMycelium(
-      {required String peer,
+      {required List<String> peers,
       required int tunFd,
       required List<int> privKey,
       dynamic hint}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
         final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_String(peer, serializer);
+        sse_encode_list_String(peers, serializer);
         sse_encode_i_32(tunFd, serializer);
         sse_encode_list_prim_u_8_loose(privKey, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
@@ -205,7 +205,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         decodeErrorData: null,
       ),
       constMeta: kStartMyceliumConstMeta,
-      argValues: [peer, tunFd, privKey],
+      argValues: [peers, tunFd, privKey],
       apiImpl: this,
       hint: hint,
     ));
@@ -213,7 +213,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kStartMyceliumConstMeta => const TaskConstMeta(
         debugName: "start_mycelium",
-        argNames: ["peer", "tunFd", "privKey"],
+        argNames: ["peers", "tunFd", "privKey"],
       );
 
   @protected
@@ -226,6 +226,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  List<String> dco_decode_list_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_String).toList();
   }
 
   @protected
@@ -263,6 +269,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
+  }
+
+  @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_String(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -306,6 +324,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
+  }
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_String(item, serializer);
+    }
   }
 
   @protected

@@ -178,7 +178,7 @@ fn wire_start_mycelium_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_peer = <String>::sse_decode(&mut deserializer);
+            let api_peers = <Vec<String>>::sse_decode(&mut deserializer);
             let api_tun_fd = <i32>::sse_decode(&mut deserializer);
             let api_priv_key = <Vec<u8>>::sse_decode(&mut deserializer);
             deserializer.end();
@@ -186,7 +186,7 @@ fn wire_start_mycelium_impl(
                 transform_result_sse(
                     (move || async move {
                         Result::<_, ()>::Ok(
-                            crate::api::simple::start_mycelium(api_peer, api_tun_fd, api_priv_key)
+                            crate::api::simple::start_mycelium(api_peers, api_tun_fd, api_priv_key)
                                 .await,
                         )
                     })()
@@ -211,6 +211,18 @@ impl SseDecode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_i32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for Vec<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<String>::sse_decode(deserializer));
+        }
+        return ans_;
     }
 }
 
@@ -288,6 +300,16 @@ impl SseEncode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for Vec<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <String>::sse_encode(item, serializer);
+        }
     }
 }
 

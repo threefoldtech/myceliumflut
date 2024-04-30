@@ -29,7 +29,7 @@ pub fn address_from_secret_key(data: Vec<u8>) -> String {
 }
 
 
-pub async fn start_mycelium(peer: String, tun_fd: i32, priv_key: Vec<u8>)  {
+pub async fn start_mycelium(peers: Vec<String>, tun_fd: i32, priv_key: Vec<u8>)  {
     #[cfg(target_os = "ios")]
     {
     }
@@ -38,7 +38,7 @@ pub async fn start_mycelium(peer: String, tun_fd: i32, priv_key: Vec<u8>)  {
     {
         // ref demo in https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
         let handle = flutter_rust_bridge::spawn_blocking_with(
-            move || mobile::start_mycelium(peer, tun_fd, priv_key),
+            move || mobile::start_mycelium(peers, tun_fd, priv_key),
             FLUTTER_RUST_BRIDGE_HANDLER.thread_pool(),
         );
         handle.await.unwrap()
