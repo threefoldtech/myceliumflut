@@ -15,7 +15,7 @@ import Flutter
           // This method is invoked on the UI thread.
         switch call.method {
         case "getBatteryLevel":
-            result(90)
+            result(helloInt())
         case "startVpn":
             result(true)
         case "getTunFD":
