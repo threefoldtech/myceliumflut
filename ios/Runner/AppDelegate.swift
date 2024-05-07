@@ -6,7 +6,7 @@ import Foundation
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
     var vpnManager: NETunnelProviderManager = NETunnelProviderManager()
-    let componentName = "tech.threefold.mycelium.extension"
+    let componentName = "tech.threefold.mycelium.MyceliumTunnel"
 
     override func application(
         _ application: UIApplication,
@@ -33,6 +33,7 @@ import Foundation
             GeneratedPluginRegistrant.register(with: self)
             //self.vpnTunnelProviderManagerInit()
             self.initTunnel()
+            //self.vpnTunnelProviderManagerInit()
 
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
@@ -88,7 +89,8 @@ import Foundation
             if let error = error {
                 NSLog("iwanbk1 loadAllFromPref failed:" + error.localizedDescription)
             } else {
-                NSLog("iwanbk1 looking for savedManager")
+                let count = savedManagers?.count ?? 0
+                NSLog("iwanbk1 number of savedManagers : %d", count)
 
                 if let savedManagers = savedManagers {
                     for manager in savedManagers {
@@ -105,8 +107,7 @@ import Foundation
                 do {
                     try self.vpnManager.connection.startVPNTunnel()
                 } catch {
-                    print(error)
-                    NSLog("start vpn tunnel failed")
+                    NSLog("start vpn tunnel failed: " + error.localizedDescription)
                 }
             }
         }
