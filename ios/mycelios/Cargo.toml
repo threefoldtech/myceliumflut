@@ -11,6 +11,7 @@ name = "mycelios"
 
 [dependencies]
 uniffi = { version = "0.27.1", features = [ "cli" ] }
+mobile = {path = "../../../mycelium/mobile"}
 
 [build-dependencies]
 uniffi = { version = "0.27.1", features = [ "build" ] }

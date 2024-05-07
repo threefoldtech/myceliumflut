@@ -45,6 +45,20 @@ pub async fn start_mycelium(peers: Vec<String>, tun_fd: i32, priv_key: Vec<u8>) 
     }
 }
 
+pub async fn stop_mycelium()  {
+    #[cfg(target_os = "ios")]
+    {
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        let handle = flutter_rust_bridge::spawn_blocking_with(
+            move || mobile::stop_mycelium(),
+            FLUTTER_RUST_BRIDGE_HANDLER.thread_pool(),
+        );
+        handle.await.unwrap()
+    }
+}
 
 
 

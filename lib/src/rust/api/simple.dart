@@ -22,3 +22,6 @@ Future<void> startMycelium(
         dynamic hint}) =>
     RustLib.instance.api.startMycelium(
         peers: peers, tunFd: tunFd, privKey: privKey, hint: hint);
+
+Future<void> stopMycelium({dynamic hint}) =>
+    RustLib.instance.api.stopMycelium(hint: hint);
