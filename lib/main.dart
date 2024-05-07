@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:tun_flutter/tun_flutter.dart';
 
 import 'package:myceliumflut/src/rust/api/simple.dart';
 import 'package:myceliumflut/src/rust/frb_generated.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
   await RustLib.init();
@@ -53,7 +55,7 @@ class _MyAppState extends State<MyApp> {
 
     dummyBattLevel = await getBatteryLevel(platform);
 
-    privKey = await loadPrivKey();
+    privKey = await loadOrGeneratePrivKey();
     var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -149,6 +151,20 @@ class _MyAppState extends State<MyApp> {
 
 Future<ByteData> loadPrivKey() async {
   return await rootBundle.load('assets/priv_key.bin');
+}
+
+Future<ByteData> loadOrGeneratePrivKey() async {
+  // get dir
+  final dir = await getApplicationDocumentsDirectory();
+
+  final file = File('${dir.path}/priv_key.bin');
+  if (file.existsSync()) {
+    return ByteData.view((await file.readAsBytes()).buffer);
+  }
+  // create new secret key if not exists
+  final privKey = generateSecretKey();
+  await file.writeAsBytes(privKey.buffer.asUint8List());
+  return ByteData.view(privKey.buffer);
 }
 
 Future<String> getBatteryLevel(MethodChannel platform) async {

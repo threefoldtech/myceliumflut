@@ -26,8 +26,6 @@ samples, guidance on mobile development, and a full API reference.
 ### run
 go to `myceliumflut` dir
 - `code .`
-- `mkdir assets`
-- `cp your_mycelium_priv_key.bin assets/priv_key.bin` // you can get priv_key.bin from your mycelium app in linux/mac.
 - `Run` -> `Start Debugging`
 
 see your node address:
