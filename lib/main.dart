@@ -26,6 +26,7 @@ class _MyAppState extends State<MyApp> {
   int _tunFd = 0;
   String _dummyBattLevel = ''; // dummy battery level
   String _nodeAddr = '';
+  ByteData privKey = ByteData(0);
   var tf = TunFlutter();
 
   @override
@@ -52,41 +53,8 @@ class _MyAppState extends State<MyApp> {
 
     dummyBattLevel = await getBatteryLevel(platform);
 
-    var privKey = await loadPrivKey();
+    privKey = await loadPrivKey();
     var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
-
-    try {
-      vpnStarted = await startVpn(platformVersion, tf, platform, {
-            'nodeAddr': nodeAddr,
-          }) ??
-          false;
-    } on PlatformException {
-      vpnStarted = false;
-    }
-
-    // TODO FIXME
-    // The TUN device creation happened in the Kotlin code in async way,
-    // and we currently don't have mechanism to send data initiated from Kotlin.
-    // So, we need to poll the Tun FD existance.
-    // We also currently don't have good simple solution to poll the data,
-    // so we do sleep for now.
-    //
-    // looks like android/ios can call Dart code
-    // see https://docs.flutter.dev/platform-integration/platform-channels on this part
-    // ```
-    // If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
-    // ```
-    for (var i = 0; i < 30; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      try {
-        tunFd = await getTunFD(platformVersion, tf, platform) ?? -1;
-      } on PlatformException {
-        tunFd = -1;
-      }
-      if (tunFd > 0) {
-        break;
-      }
-    }
 
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
@@ -101,22 +69,78 @@ class _MyAppState extends State<MyApp> {
       _dummyBattLevel = dummyBattLevel;
     });
 
-    startMycelium(
-        peers: ['tcp://65.21.231.58:9651'],
-        tunFd: tunFd,
-        privKey: privKey.buffer.asUint8List());
+    //startMycelium(
+    //    peers: ['tcp://65.21.231.58:9651'],
+    //    tunFd: tunFd,
+    //    privKey: privKey.buffer.asUint8List());
+    //print("exited start mycelium");
   }
+
+  bool _isStarted = false;
+  String _textButton = "Start Mycelium";
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Myceliym Flutter App'),
         ),
         body: Center(
-          child: Text(
-              'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\nbatt:$_dummyBattLevel'),
+          child: Column(
+            children: [
+              Text(
+                  'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\nbatt:$_dummyBattLevel'),
+              ElevatedButton(
+                onPressed: () {
+                  if (!_isStarted) {
+                    try {
+                      startVpn(tf, platform, _nodeAddr, _tunFd,
+                          privKey.buffer.asUint8List());
+                      setState(() {
+                        _isStarted = true;
+                        _textButton = "Stop Mycelium";
+                      });
+                    } on PlatformException {
+                      print("Start VPN failed");
+                    }
+                  } else {
+                    try {
+                      stopVpn(tf, platform);
+                      setState(() {
+                        _isStarted = false;
+                        _textButton = "Start Mycelium";
+                      });
+                    } on PlatformException {
+                      print("stopping VPN failed");
+                    }
+                  }
+                },
+                child: Text(_textButton),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  try {
+                    startVpn(tf, platform, _nodeAddr, _tunFd,
+                        privKey.buffer.asUint8List());
+                  } on PlatformException {
+                    print("Start VPN finished");
+                  }
+                },
+                child: Text('Start Mycelium'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  try {
+                    stopVpn(tf, platform);
+                  } on PlatformException {
+                    print("stopping VPN failed");
+                  }
+                },
+                child: Text('Stop Mycelium'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -138,12 +162,57 @@ Future<String> getBatteryLevel(MethodChannel platform) async {
   return batteryLevel;
 }
 
-Future<bool?> startVpn(String platformVersion, TunFlutter tf,
-    MethodChannel platform, Map<String, String> configs) {
+Future<bool?> startVpn(TunFlutter tf, MethodChannel platform, String nodeAddr,
+    int tunFd, Uint8List privKey) async {
+  var platformVersion = await tf.getPlatformVersion() ?? "unknown";
   if (platformVersion.toLowerCase().contains("android")) {
-    return tf.startVpn(configs);
+    await tf.startVpn({
+      'nodeAddr': nodeAddr,
+    });
+
+    // TODO FIXME
+    // The TUN device creation happened in the Kotlin code in async way,
+    // and we currently don't have mechanism to send data initiated from Kotlin.
+    // So, we need to poll the Tun FD existance.
+    // We also currently don't have good simple solution to poll the data,
+    // so we do sleep for now.
+    //
+    // looks like android/ios can call Dart code
+    // see https://docs.flutter.dev/platform-integration/platform-channels on this part
+    // ```
+    // If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
+    // ```
+    int tunFd = 0;
+    for (var i = 0; i < 30; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      try {
+        tunFd = await getTunFD(platformVersion, tf, platform) ?? -1;
+      } on PlatformException {
+        tunFd = -1;
+      }
+      if (tunFd > 0) {
+        break;
+      }
+    }
+    startMycelium(
+        peers: ['tcp://65.21.231.58:9651'], tunFd: tunFd, privKey: privKey);
   } else {
-    return platform.invokeMethod<bool>('startVpn', configs);
+    return platform.invokeMethod<bool>('startVpn', {
+      'nodeAddr': nodeAddr,
+    });
+  }
+}
+
+Future<bool?> stopVpn(TunFlutter tf, MethodChannel platform) async {
+  var platformVersion = await tf.getPlatformVersion() ?? "unknown";
+  if (platformVersion.toLowerCase().contains("android")) {
+    await stopMycelium();
+    print("will stop vpn");
+    var val = await tf.stopVpn();
+    print("stopped vpn");
+    return val;
+  } else {
+    return platform.invokeMethod<bool>('stopVpn');
   }
 }
 
