@@ -24,7 +24,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _platformVersion = 'Unknown';
-  int _tunFd = 0;
   String _nodeAddr = '';
   ByteData privKey = ByteData(0);
   var tf = TunFlutter();
@@ -38,7 +37,6 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
-    int tunFd = -1;
 
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
@@ -59,13 +57,15 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {
       _platformVersion = platformVersion;
-      _tunFd = tunFd;
       _nodeAddr = nodeAddr;
     });
   }
 
+  // start/stop mycelium button variables
   bool _isStarted = false;
   String _textButton = "Start Mycelium";
+
+  // peers text field
   final textEditController =
       TextEditingController(text: 'tcp://65.21.231.58:9651');
 
@@ -81,13 +81,12 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Myceliym Flutter App'),
+          title: const Text('Mycelium App'),
         ),
         body: Center(
           child: Column(
             children: [
-              Text(
-                  'Platform: $_platformVersion\ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\n'),
+              Text('Platform: $_platformVersion\nnode_addr:$_nodeAddr\n'),
               TextField(
                 controller: textEditController,
                 minLines: 2,
@@ -103,7 +102,7 @@ class _MyAppState extends State<MyApp> {
                   final peers = getPeers(textEditController.text);
                   if (!_isStarted) {
                     try {
-                      startVpn(tf, platform, peers, _nodeAddr, _tunFd,
+                      startVpn(tf, platform, peers, _nodeAddr,
                           privKey.buffer.asUint8List());
                       setState(() {
                         _isStarted = true;
@@ -153,7 +152,7 @@ Future<ByteData> loadOrGeneratePrivKey() async {
 }
 
 Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
-    List<String> peers, String nodeAddr, int tunFd, Uint8List privKey) async {
+    List<String> peers, String nodeAddr, Uint8List privKey) async {
   var platformVersion = await tf.getPlatformVersion() ?? "unknown";
   if (platformVersion.toLowerCase().contains("android")) {
     await tf.startVpn({
