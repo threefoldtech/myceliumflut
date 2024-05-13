@@ -24,9 +24,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _platformVersion = 'Unknown';
-  bool _vpnStarted = false;
   int _tunFd = 0;
-  String _dummyBattLevel = ''; // dummy battery level
   String _nodeAddr = '';
   ByteData privKey = ByteData(0);
   var tf = TunFlutter();
@@ -40,9 +38,7 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
-    bool vpnStarted = false;
     int tunFd = -1;
-    String dummyBattLevel = '';
 
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
@@ -52,8 +48,6 @@ class _MyAppState extends State<MyApp> {
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
-
-    dummyBattLevel = await getBatteryLevel(platform);
 
     privKey = await loadOrGeneratePrivKey();
     var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
@@ -65,10 +59,8 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {
       _platformVersion = platformVersion;
-      _vpnStarted = vpnStarted;
       _tunFd = tunFd;
       _nodeAddr = nodeAddr;
-      _dummyBattLevel = dummyBattLevel;
     });
   }
 
@@ -95,7 +87,7 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: [
               Text(
-                  'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\nbatt:$_dummyBattLevel'),
+                  'Platform: $_platformVersion\ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\n'),
               TextField(
                 controller: textEditController,
                 minLines: 2,
@@ -134,37 +126,12 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: Text(_textButton),
               ),
-              /*ElevatedButton(
-                onPressed: () {
-                  try {
-                    startVpn(tf, platform, _nodeAddr, _tunFd,
-                        privKey.buffer.asUint8List());
-                  } on PlatformException {
-                    print("Start VPN finished");
-                  }
-                },
-                child: Text('Start Mycelium'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  try {
-                    stopVpn(tf, platform);
-                  } on PlatformException {
-                    print("stopping VPN failed");
-                  }
-                },
-                child: Text('Stop Mycelium'),
-              ),*/
             ],
           ),
         ),
       ),
     );
   }
-}
-
-Future<ByteData> loadPrivKey() async {
-  return await rootBundle.load('assets/priv_key.bin');
 }
 
 List<String> getPeers(String texts) {
@@ -183,17 +150,6 @@ Future<ByteData> loadOrGeneratePrivKey() async {
   final privKey = generateSecretKey();
   await file.writeAsBytes(privKey.buffer.asUint8List());
   return ByteData.view(privKey.buffer);
-}
-
-Future<String> getBatteryLevel(MethodChannel platform) async {
-  String batteryLevel;
-  try {
-    final result = await platform.invokeMethod<int>('getBatteryLevel');
-    batteryLevel = 'Battery level at $result % .';
-  } on PlatformException catch (e) {
-    batteryLevel = "Failed to get battery level: '${e.message}'.";
-  }
-  return batteryLevel;
 }
 
 Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
