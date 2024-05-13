@@ -159,31 +159,8 @@ Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
     await tf.startVpn({
       'nodeAddr': nodeAddr,
     });
-
-    // TODO FIXME
-    // The TUN device creation happened in the Kotlin code in async way,
-    // and we currently don't have mechanism to send data initiated from Kotlin.
-    // So, we need to poll the Tun FD existance.
-    // We also currently don't have good simple solution to poll the data,
-    // so we do sleep for now.
-    //
-    // looks like android/ios can call Dart code
-    // see https://docs.flutter.dev/platform-integration/platform-channels on this part
-    // ```
-    // If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
-    // ```
-    int tunFd = 0;
-    for (var i = 0; i < 30; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      try {
-        tunFd = await getTunFD(platformVersion, tf, platform) ?? -1;
-      } on PlatformException {
-        tunFd = -1;
-      }
-      if (tunFd > 0) {
-        break;
-      }
-    }
+    int tunFd = await getTunFDAndroid(tf);
+    print("tunFd: $tunFd");
     startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
   } else {
     return platform.invokeMethod<bool>('startVpn', {
@@ -212,4 +189,32 @@ Future<int?> getTunFD(
   } else {
     return platform.invokeMethod<int>('getTunFD');
   }
+}
+
+// TODO FIXME
+// The TUN device creation happened in the Kotlin code in async way,
+// and we currently don't have mechanism to send data initiated from Kotlin.
+// So, we need to poll the Tun FD existance.
+// We also currently don't have good simple solution to poll the data,
+// so we do sleep for now.
+//
+// looks like android/ios can call Dart code
+// see https://docs.flutter.dev/platform-integration/platform-channels on this part
+// ```
+// If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
+// ```
+Future<int> getTunFDAndroid(TunFlutter tf) async {
+  int tunFd = 0;
+  for (var i = 0; i < 30; i++) {
+    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      tunFd = await tf.getTunFD() ?? -1;
+    } on PlatformException {
+      tunFd = -1;
+    }
+    if (tunFd > 0) {
+      break;
+    }
+  }
+  return tunFd;
 }
