@@ -70,16 +70,19 @@ class _MyAppState extends State<MyApp> {
       _nodeAddr = nodeAddr;
       _dummyBattLevel = dummyBattLevel;
     });
-
-    //startMycelium(
-    //    peers: ['tcp://65.21.231.58:9651'],
-    //    tunFd: tunFd,
-    //    privKey: privKey.buffer.asUint8List());
-    //print("exited start mycelium");
   }
 
   bool _isStarted = false;
   String _textButton = "Start Mycelium";
+  final textEditController =
+      TextEditingController(text: 'tcp://65.21.231.58:9651');
+
+  @override
+  void dispose() {
+    // Clean up the controller when the widget is disposed.
+    textEditController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,11 +96,22 @@ class _MyAppState extends State<MyApp> {
             children: [
               Text(
                   'Platform: $_platformVersion\nvpnStarted: $_vpnStarted \ntun_fd: $_tunFd\nnode_addr:$_nodeAddr\nbatt:$_dummyBattLevel'),
+              TextField(
+                controller: textEditController,
+                minLines: 2,
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Peers',
+                ),
+              ),
               ElevatedButton(
                 onPressed: () {
+                  final peers = getPeers(textEditController.text);
                   if (!_isStarted) {
                     try {
-                      startVpn(tf, platform, _nodeAddr, _tunFd,
+                      startVpn(tf, platform, peers, _nodeAddr, _tunFd,
                           privKey.buffer.asUint8List());
                       setState(() {
                         _isStarted = true;
@@ -120,7 +134,7 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: Text(_textButton),
               ),
-              ElevatedButton(
+              /*ElevatedButton(
                 onPressed: () {
                   try {
                     startVpn(tf, platform, _nodeAddr, _tunFd,
@@ -140,7 +154,7 @@ class _MyAppState extends State<MyApp> {
                   }
                 },
                 child: Text('Stop Mycelium'),
-              ),
+              ),*/
             ],
           ),
         ),
@@ -151,6 +165,10 @@ class _MyAppState extends State<MyApp> {
 
 Future<ByteData> loadPrivKey() async {
   return await rootBundle.load('assets/priv_key.bin');
+}
+
+List<String> getPeers(String texts) {
+  return texts.split('\n').map((e) => e.trim()).toList();
 }
 
 Future<ByteData> loadOrGeneratePrivKey() async {
@@ -178,8 +196,8 @@ Future<String> getBatteryLevel(MethodChannel platform) async {
   return batteryLevel;
 }
 
-Future<bool?> startVpn(TunFlutter tf, MethodChannel platform, String nodeAddr,
-    int tunFd, Uint8List privKey) async {
+Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
+    List<String> peers, String nodeAddr, int tunFd, Uint8List privKey) async {
   var platformVersion = await tf.getPlatformVersion() ?? "unknown";
   if (platformVersion.toLowerCase().contains("android")) {
     await tf.startVpn({
@@ -210,8 +228,7 @@ Future<bool?> startVpn(TunFlutter tf, MethodChannel platform, String nodeAddr,
         break;
       }
     }
-    startMycelium(
-        peers: ['tcp://65.21.231.58:9651'], tunFd: tunFd, privKey: privKey);
+    startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
   } else {
     return platform.invokeMethod<bool>('startVpn', {
       'nodeAddr': nodeAddr,
