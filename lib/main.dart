@@ -49,6 +49,7 @@ class _MyAppState extends State<MyApp> {
 
     privKey = await loadOrGeneratePrivKey();
     var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
+    print("nodeAddr: $nodeAddr");
 
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling

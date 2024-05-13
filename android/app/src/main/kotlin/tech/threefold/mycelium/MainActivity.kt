@@ -1,4 +1,4 @@
-package com.example.myceliumflut
+package tech.threefold.mycelium
 
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
