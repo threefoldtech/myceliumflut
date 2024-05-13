@@ -6,7 +6,7 @@ import Foundation
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
     var vpnManager: NETunnelProviderManager = NETunnelProviderManager()
-    let componentName = "tech.threefold.mycelium.MyceliumTunnel"
+    let bundleIdentifier = "tech.threefold.mycelium.MyceliumTunnel"
 
     override func application(
         _ application: UIApplication,
@@ -15,12 +15,17 @@ import Foundation
             let tunChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
                                                   binaryMessenger: controller.binaryMessenger)
             tunChannel.setMethodCallHandler({
-                [weak self] (call: FlutterMethodCall, result: FlutterResult) -> Void in
+                (call: FlutterMethodCall, result: FlutterResult) -> Void in
                 // This method is invoked on the UI thread.
                 switch call.method {
                 case "getBatteryLevel":
                     result(90)
                 case "startVpn":
+                    self.createTunnel()
+                    result(true)
+                case "stopVpn":
+                    print("stopVpn:")
+                    self.stopMycelium()
                     result(true)
                 case "getTunFD":
                     result(1)
@@ -31,16 +36,12 @@ import Foundation
             NSLog("iwanbk1 flutter app")
 
             GeneratedPluginRegistrant.register(with: self)
-            //self.vpnTunnelProviderManagerInit()
-            self.initTunnel()
-            //self.vpnTunnelProviderManagerInit()
-
+            //self.createTunnel()
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
-
-    func initTunnel() {
+    
+    func createTunnel() {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
-
             if let error = error {
                 NSLog("iwanbk1 loadAllFromPref failed:" + error.localizedDescription)
                 return
@@ -50,66 +51,158 @@ import Foundation
                 NSLog("iwanbk1 caught by the guard")
                 return
             } // Handle error if nil
-
-            NSLog("iwanbk1 passed the guard")
-
-            NSLog("iwanbk1 number of providers : %d", providers.count)
-
-            let myProvider = providers.first(where: { $0.protocolConfiguration?.username == "" }) // Replace with your identifier
-
-            NSLog("iwanbk1 enabling provider")
-            myProvider?.isEnabled = true
-            NSLog("iwanbk1 passed myprovider isEnabled")
-            do {
-                NSLog("iwanbk1 connection.startVPNTUnnel")
-                try myProvider?.connection.startVPNTunnel()
-            } catch {
-                print(error)
-                NSLog("iwanbk1 start vpn tunnel failed" )
-            }
-
-            /*myProvider?.saveToPreferences { error in
-             if let error = error {
-             NSLog("iwanbk1 failed to save preference %s", error.localizedDescription)
-             } else {
-             NSLog("iwanbk1 saveToPreference ga error")
-             do {
-             NSLog("iwanbk1 connection.startVPNTUnnel")
-             try myProvider?.connection.startVPNTunnel()
-             } catch {
-             print(error)
-             NSLog("iwanbk1 start vpn tunnel failed" )
-             }
-             }
-             }*/
-        }
-    }
-    func vpnTunnelProviderManagerInit() {
-        NETunnelProviderManager.loadAllFromPreferences { (savedManagers: [NETunnelProviderManager]?, error: Error?) in
-            if let error = error {
-                NSLog("iwanbk1 loadAllFromPref failed:" + error.localizedDescription)
-            } else {
-                let count = savedManagers?.count ?? 0
-                NSLog("iwanbk1 number of savedManagers : %d", count)
-
-                if let savedManagers = savedManagers {
-                    for manager in savedManagers {
-                        NSLog("found some saved manager")
-                        if (manager.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.componentName {
-                            NSLog("iwanbk found saved vpn manager")
-                            self.vpnManager = manager
+            if providers.count > 0 {
+                NSLog("iwanbk1 number of providers : %d", providers.count)
+                
+                // TODO : search by bundle identifier
+                let myProvider = providers.first(where: { $0.protocolConfiguration?.username=="aiueo" }) // Replace with your identifier
+                
+                if let unwrappedProvider = myProvider { // cek nil
+                    self.vpnManager = unwrappedProvider
+                    NSLog("use existing provider")
+                    self.vpnManager.isEnabled = true
+                    //unwrappedProvider.isEnabled = true
+                    //self.vpnManager = unwrappedProvider
+                    
+                    self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
+                        if let error = error {
+                            NSLog("failed to save self.vpnManager: "+error.localizedDescription)
+                            //return
+                        } else {
+                            NSLog("unwrappedProvider saved successfully")
+                            //NotificationCenter.default.post(name: NSNotification.Name.YggdrasilSettingsUpdated, object: self)
                         }
-                    }
-                }
+                    })
+                    self.VPNStatusDidChange(nil)
+                    NSLog("out from VPN Status Did Change")
 
-                // start here
-                self.vpnManager.isEnabled = true
-                do {
-                    try self.vpnManager.connection.startVPNTunnel()
-                } catch {
-                    NSLog("start vpn tunnel failed: " + error.localizedDescription)
+                    do {
+                        NSLog("iwanbk1 [unwrappedProvider] connection.startVPNTUnnel")
+                        try self.vpnManager.connection.startVPNTunnel()
+                        NSLog("iwanbk1 [unwrappedProvider] looks like connection.startVPNTUnnel works?")
+                    } catch {
+                        NSLog("ibk1 [unwrappedProvider] startVPNTunnel() failed: " + error.localizedDescription)
+                    }
+                    return
                 }
+                NSLog("myProvider is Nil, creating a new one")
+            }   
+            NSLog("no provider exists, creating a new one")
+            // create protocol configuration
+            let providerProtocol = NETunnelProviderProtocol()
+            providerProtocol.providerBundleIdentifier = self.bundleIdentifier
+            providerProtocol.providerConfiguration = [:]
+            providerProtocol.serverAddress = "mycelium"
+            providerProtocol.username = "aiueo"
+            
+            //providerProtocol.passwordReference = "uuuuuuu"
+            providerProtocol.disconnectOnSleep = true
+            
+            // initialize the manager
+            self.vpnManager = NETunnelProviderManager()
+            self.vpnManager.protocolConfiguration = providerProtocol
+            self.vpnManager.localizedDescription = "mycelium tunnel"
+            
+            // rules
+            let disconnectrule = NEOnDemandRuleDisconnect()
+            var rules: [NEOnDemandRule] = [disconnectrule]
+            
+            let wifirule = NEOnDemandRuleConnect()
+            wifirule.interfaceTypeMatch = .wiFi
+            rules.insert(wifirule, at: 0)
+            
+
+            self.vpnManager.onDemandRules = rules
+            self.vpnManager.isOnDemandEnabled = rules.count > 1
+            
+            self.vpnManager.isEnabled = true
+            
+            
+            self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
+                if let error = error {
+                    NSLog("failed to save new provider: "+error.localizedDescription)
+                    //return
+                } else {
+                    NSLog("new provider saved successfully")
+                    //NotificationCenter.default.post(name: NSNotification.Name.YggdrasilSettingsUpdated, object: self)
+                }
+            })
+            //self.VPNStatusDidChange(nil)
+            do {
+                NSLog("iwanbk1 [new provider] connection.startVPNTUnnel")
+                try  self.vpnManager.connection.startVPNTunnel()
+            } catch {
+                NSLog("ibk1 [new provider] startVPNTunne() failed: " + error.localizedDescription)
             }
         }
+        
     }
+    
+    /*func startMycelium() {
+        NSLog("startMycelium")
+        
+        self.vpnManager.loadFromPreferences { (error:Error?) in
+            if let error = error {
+                NSLog("loadFromPref failed:"+error.localizedDescription)
+            }
+            
+            do {
+                NSLog("iwanbk1 startMycelium startVPNTunel")
+                try self.vpnManager.connection.startVPNTunnel()
+                NSLog("iwanbk1 startMycelium startVPNTunel looks fine?")
+            } catch {
+                NSLog("self.vpnManager.connection.startVPNTunnel() failed:"+error.localizedDescription)
+            }
+            
+        }
+    }*/
+    
+    func stopMycelium() {
+        NSLog("startMycelium")
+        
+        self.vpnManager.loadFromPreferences { (error:Error?) in
+            if let error = error {
+                NSLog("loadFromPref failed:"+error.localizedDescription)
+            }
+            
+            do {
+                NSLog("iwanbk1 startMycelium stopVPNTunnel")
+                try self.vpnManager.connection.stopVPNTunnel()
+                NSLog("iwanbk1 startMycelium stopVPNTunel looks fine?")
+            } catch {
+                NSLog("self.vpnManager.connection.stopVPNTunnel() failed:"+error.localizedDescription)
+            }
+            
+        }
+    }
+     
+    
+    func VPNStatusDidChange(_ notification: Notification?) {
+            print("VPN Status changed:")
+            let status = self.vpnManager.connection.status
+            switch status {
+            case .connecting:
+                print("Connecting...")
+                //connectButton.setTitle("Disconnect", for: .normal)
+                break
+            case .connected:
+                print("Connected...")
+                //connectButton.setTitle("Disconnect", for: .normal)
+                break
+            case .disconnecting:
+                print("Disconnecting...")
+                break
+            case .disconnected:
+                print("Disconnected...")
+                //connectButton.setTitle("Connect", for: .normal)
+                break
+            case .invalid:
+                print("Invliad")
+                break
+            case .reasserting:
+                print("Reasserting...")
+                break
+            }
+        }
+    
 }
