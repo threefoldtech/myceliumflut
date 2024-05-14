@@ -24,6 +24,7 @@ import Foundation
                 case "addressFromSecretKey":
                     if let key = call.arguments as? FlutterStandardTypedData {
                         let nodeAddr = addressFromSecretKey(data: key.data)
+                        NSLog("[appDeleteGate] xnode addr = %s", nodeAddr)
                         result(nodeAddr)
                     } else {
                         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
