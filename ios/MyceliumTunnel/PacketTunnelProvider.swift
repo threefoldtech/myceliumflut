@@ -26,9 +26,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         let log = Self.log
         os_log("myceliumflut Starting VPN connection...", log: log, type: .error)
         NSLog("myceliumflut startTunnel() called")
-        //let secretKey = generateSecretKey()
-        //let nodeAddr = addressFromSecretKey(data: secretKey)
-        //NSLog("iwanbk myceliumflut-PacketTunnelProvider node addr=%s", nodeAddr)
+        let secretKey = generateSecretKey()
+        let nodeAddr = addressFromSecretKey(data: secretKey)
+        NSLog("iwanbk myceliumflut node addr=%s", nodeAddr)
         
         let address = "4d4:215d:546e:df2f:6f8f:72b5:6acc:9ae0"
         
@@ -47,7 +47,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             let tunFd = self?.packetFlow.value(forKeyPath: "socket.fileDescriptor") as! Int32
             DispatchQueue.global(qos: .default).async {
-                NSLog("myceliumflut startMycelium() should be called")
+                NSLog("myceliumflut startMycelium() should be called with tun fd:%d", tunFd)
                 //startMycelium(tunFd: tunFd, secretKey: secretKey)
             }
             completionHandler(nil)
@@ -58,7 +58,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         // Add code here to start the process of stopping the tunnel.
         //os_log("iwanbk1 stopTunnel...", log: log, type: .info)
-        NSLog("myceliumflut-PacketTunnelProvider- stopTunnel() called")
+        NSLog("myceliumflut stopTunnel() called")
         completionHandler()
     }
 
