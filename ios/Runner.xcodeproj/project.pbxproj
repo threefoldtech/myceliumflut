@@ -10,9 +10,10 @@
 		005902212BEA092D00D56854 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005902202BEA092D00D56854 /* NetworkExtension.framework */; };
 		005902242BEA092D00D56854 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 005902232BEA092D00D56854 /* PacketTunnelProvider.swift */; };
 		0059022C2BEA095900D56854 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005902202BEA092D00D56854 /* NetworkExtension.framework */; };
+		0090B5DC2BF327D200724A65 /* MyceliumTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0059021F2BEA092D00D56854 /* MyceliumTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0090B5E72BF33C5A00724A65 /* mycelios.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0090B5E62BF33C5A00724A65 /* mycelios.swift */; };
 		00A43E682BF2059E00435390 /* mycelios.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E672BF2059E00435390 /* mycelios.xcframework */; };
-		00A43E692BF2059E00435390 /* mycelios.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E672BF2059E00435390 /* mycelios.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		00A43E6B2BF205B700435390 /* mycelios.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A43E6A2BF205B700435390 /* mycelios.swift */; };
+		00A43E692BF2059E00435390 /* mycelios.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E672BF2059E00435390 /* mycelios.xcframework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		00A43E6F2BF2089C00435390 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -26,7 +27,21 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		005F07952BEB89860058BCD0 /* PBXContainerItemProxy */ = {
+		0090B5D52BF324BC00724A65 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0059021E2BEA092D00D56854;
+			remoteInfo = MyceliumTunnel;
+		};
+		0090B5D92BF3272300724A65 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0059021E2BEA092D00D56854;
+			remoteInfo = MyceliumTunnel;
+		};
+		0090B5DD2BF327D200724A65 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
@@ -43,6 +58,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		0090B5DB2BF3272300724A65 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				0090B5DC2BF327D200724A65 /* MyceliumTunnel.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -63,8 +89,8 @@
 		005902252BEA092D00D56854 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		005902262BEA092D00D56854 /* MyceliumTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyceliumTunnel.entitlements; sourceTree = "<group>"; };
 		0059022B2BEA094000D56854 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		0090B5E62BF33C5A00724A65 /* mycelios.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = mycelios.swift; path = mycelios/out/mycelios.swift; sourceTree = SOURCE_ROOT; };
 		00A43E672BF2059E00435390 /* mycelios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mycelios.xcframework; path = myceliosframework/mycelios.xcframework; sourceTree = "<group>"; };
-		00A43E6A2BF205B700435390 /* mycelios.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = mycelios.swift; path = mycelios/out/mycelios.swift; sourceTree = SOURCE_ROOT; };
 		00A43E6C2BF207E600435390 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		0EDD5E93460D5DA2349BBD18 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
@@ -191,7 +217,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				00A43E6A2BF205B700435390 /* mycelios.swift */,
+				0090B5E62BF33C5A00724A65 /* mycelios.swift */,
 				0059022B2BEA094000D56854 /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
@@ -265,6 +291,7 @@
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
+				0090B5DB2BF3272300724A65 /* Embed Foundation Extensions */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
@@ -273,7 +300,9 @@
 			buildRules = (
 			);
 			dependencies = (
-				005F07962BEB89860058BCD0 /* PBXTargetDependency */,
+				0090B5D62BF324BC00724A65 /* PBXTargetDependency */,
+				0090B5DA2BF3272300724A65 /* PBXTargetDependency */,
+				0090B5DE2BF327D200724A65 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -367,7 +396,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin\n";
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -469,7 +498,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
-				00A43E6B2BF205B700435390 /* mycelios.swift in Sources */,
+				0090B5E72BF33C5A00724A65 /* mycelios.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -477,10 +506,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		005F07962BEB89860058BCD0 /* PBXTargetDependency */ = {
+		0090B5D62BF324BC00724A65 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0059021E2BEA092D00D56854 /* MyceliumTunnel */;
-			targetProxy = 005F07952BEB89860058BCD0 /* PBXContainerItemProxy */;
+			targetProxy = 0090B5D52BF324BC00724A65 /* PBXContainerItemProxy */;
+		};
+		0090B5DA2BF3272300724A65 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0059021E2BEA092D00D56854 /* MyceliumTunnel */;
+			targetProxy = 0090B5D92BF3272300724A65 /* PBXContainerItemProxy */;
+		};
+		0090B5DE2BF327D200724A65 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0059021E2BEA092D00D56854 /* MyceliumTunnel */;
+			targetProxy = 0090B5DD2BF327D200724A65 /* PBXContainerItemProxy */;
 		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

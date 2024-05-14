@@ -24,29 +24,41 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         // Add code here to start the process of connecting the tunnel.
        
         let log = Self.log
-        os_log("iwanbk1 Starting VPN connection...", log: log, type: .info)
-        print("iwanbk1 PacketTunnelProvider.startTunnel")
+        os_log("myceliumflut Starting VPN connection...", log: log, type: .error)
+        NSLog("myceliumflut startTunnel() called")
+        //let secretKey = generateSecretKey()
+        //let nodeAddr = addressFromSecretKey(data: secretKey)
+        //NSLog("iwanbk myceliumflut-PacketTunnelProvider node addr=%s", nodeAddr)
         
         let address = "4d4:215d:546e:df2f:6f8f:72b5:6acc:9ae0"
-        NSLog("HORE iwanbk1 startTunnel called")
+        
+       
 
         let tunnelNetworkSettings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: address)
         tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [address], networkPrefixLengths: [64])
         tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route(destinationAddress: "400::", networkPrefixLength: 7)]
         tunnelNetworkSettings.mtu = NSNumber(integerLiteral: 1400)
-        self.setTunnelNetworkSettings(tunnelNetworkSettings) { (error: Error?) -> Void in
-            NSLog("iwanbk1 setTunnelNetworkSettings completed successfully")
+        
+        setTunnelNetworkSettings(tunnelNetworkSettings) { [weak self] error in
             if let error = error {
-                NSLog("Failed to set mycelium tunnel network settings: " + error.localizedDescription)
+                NSLog("myceliumflut to set mycelium tunnel network settings: " + error.localizedDescription)
             } else {
-                NSLog("iwanbk1 tunnel settings set successfully")
+                NSLog("myceliumflut tunnel settings set successfully")
             }
+            let tunFd = self?.packetFlow.value(forKeyPath: "socket.fileDescriptor") as! Int32
+            DispatchQueue.global(qos: .default).async {
+                NSLog("myceliumflut startMycelium() should be called")
+                //startMycelium(tunFd: tunFd, secretKey: secretKey)
+            }
+            completionHandler(nil)
         }
+        
     }
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         // Add code here to start the process of stopping the tunnel.
         //os_log("iwanbk1 stopTunnel...", log: log, type: .info)
+        NSLog("myceliumflut-PacketTunnelProvider- stopTunnel() called")
         completionHandler()
     }
 
