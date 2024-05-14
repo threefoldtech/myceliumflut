@@ -8,6 +8,9 @@ import 'package:tun_flutter/tun_flutter.dart';
 import 'package:myceliumflut/src/rust/api/simple.dart';
 import 'package:myceliumflut/src/rust/frb_generated.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:logging/logging.dart';
+
+final _logger = Logger('Mycelium');
 
 Future<void> main() async {
   await RustLib.init();
@@ -23,7 +26,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
-  String _platformVersion = 'Unknown';
   String _nodeAddr = '';
   var tf = TunFlutter();
   var privKey = Uint8List(0);
@@ -36,17 +38,6 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
-
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await tf.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
     privKey = await loadOrGeneratePrivKey(platform);
     String nodeAddr = "";
     if (Platform.isAndroid) {
@@ -55,7 +46,7 @@ class _MyAppState extends State<MyApp> {
       nodeAddr = (await platform.invokeMethod<String>(
           'addressFromSecretKey', privKey)) as String;
     }
-    print("nodeAddr: $nodeAddr");
+    _logger.info("nodeAddr: $nodeAddr");
 
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
@@ -63,7 +54,6 @@ class _MyAppState extends State<MyApp> {
     if (!mounted) return;
 
     setState(() {
-      _platformVersion = platformVersion;
       _nodeAddr = nodeAddr;
     });
   }
@@ -93,13 +83,13 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Column(
             children: [
-              Text('Platform: $_platformVersion\nnode_addr:$_nodeAddr\n'),
+              Text('node_addr:$_nodeAddr\n'),
               TextField(
                 controller: textEditController,
                 minLines: 2,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'Peers',
                 ),
@@ -115,7 +105,7 @@ class _MyAppState extends State<MyApp> {
                         _textButton = "Stop Mycelium";
                       });
                     } on PlatformException {
-                      print("Start VPN failed");
+                      _logger.warning("Start VPN failed");
                     }
                   } else {
                     try {
@@ -125,7 +115,7 @@ class _MyAppState extends State<MyApp> {
                         _textButton = "Start Mycelium";
                       });
                     } on PlatformException {
-                      print("stopping VPN failed");
+                      _logger.warning("stopping VPN failed");
                     }
                   }
                 },
@@ -159,20 +149,20 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
     privKey = (await platform.invokeMethod<Uint8List>('generateSecretKey'))
         as Uint8List;
   }
-  await file.writeAsBytes(privKey); //.buffer.asUint8List());
+  await file.writeAsBytes(privKey);
   return privKey;
 }
 
 Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
     List<String> peers, String nodeAddr, Uint8List privKey) async {
-  var platformVersion = await tf.getPlatformVersion() ?? "unknown";
-  if (platformVersion.toLowerCase().contains("android")) {
+  if (Platform.isAndroid) {
     await tf.startVpn({
       'nodeAddr': nodeAddr,
     });
     int tunFd = await getTunFDAndroid(tf);
-    print("tunFd: $tunFd");
+    _logger.info("tunFd: $tunFd");
     startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
+    return true;
   } else {
     return platform.invokeMethod<bool>('startVpn', {
       'nodeAddr': nodeAddr,
@@ -180,26 +170,17 @@ Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
   }
 }
 
-Future<bool?> stopVpn(TunFlutter tf, MethodChannel platform) async {
-  var platformVersion = await tf.getPlatformVersion() ?? "unknown";
-  if (platformVersion.toLowerCase().contains("android")) {
+Future<bool> stopVpn(TunFlutter tf, MethodChannel platform) async {
+  // TODO: check if VPN is started
+  var stopped = false;
+  if (Platform.isAndroid) {
     await stopMycelium();
-    print("will stop vpn");
-    var val = await tf.stopVpn();
-    print("stopped vpn");
-    return val;
+    stopped = await tf.stopVpn() ?? false;
   } else {
-    return platform.invokeMethod<bool>('stopVpn');
+    stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
   }
-}
-
-Future<int?> getTunFD(
-    String platformVersion, TunFlutter tf, MethodChannel platform) {
-  if (platformVersion.toLowerCase().contains("android")) {
-    return tf.getTunFD();
-  } else {
-    return platform.invokeMethod<int>('getTunFD');
-  }
+  _logger.info("stopped vpn");
+  return stopped;
 }
 
 // TODO FIXME
