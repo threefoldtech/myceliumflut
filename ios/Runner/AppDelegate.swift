@@ -18,8 +18,16 @@ import Foundation
                 (call: FlutterMethodCall, result: FlutterResult) -> Void in
                 // This method is invoked on the UI thread.
                 switch call.method {
-                case "getBatteryLevel":
-                    result(90)
+                case "generateSecretKey":
+                    let key = generateSecretKey()
+                    result(key)
+                case "addressFromSecretKey":
+                    if let key = call.arguments as? FlutterStandardTypedData {
+                        let nodeAddr = addressFromSecretKey(data: key.data)
+                        result(nodeAddr)
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
+                    }
                 case "startVpn":
                     self.createTunnel()
                     result(true)
