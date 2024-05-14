@@ -81,6 +81,8 @@
 		005902262BEA092D00D56854 /* MyceliumTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyceliumTunnel.entitlements; sourceTree = "<group>"; };
 		0059022B2BEA094000D56854 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		0090B5FD2BF34E3D00724A65 /* mycelios.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = mycelios.swift; path = mycelios/out/mycelios.swift; sourceTree = SOURCE_ROOT; };
+		0090B6042BF352EB00724A65 /* PacketTunnelProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PacketTunnelProvider.h; sourceTree = "<group>"; };
+		0090B6052BF356D000724A65 /* MyceliumTunnel-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MyceliumTunnel-Bridging-Header.h"; sourceTree = "<group>"; };
 		00A43E672BF2059E00435390 /* mycelios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mycelios.xcframework; path = myceliosframework/mycelios.xcframework; sourceTree = "<group>"; };
 		00A43E6C2BF207E600435390 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -148,6 +150,8 @@
 				005902232BEA092D00D56854 /* PacketTunnelProvider.swift */,
 				005902252BEA092D00D56854 /* Info.plist */,
 				005902262BEA092D00D56854 /* MyceliumTunnel.entitlements */,
+				0090B6042BF352EB00724A65 /* PacketTunnelProvider.h */,
+				0090B6052BF356D000724A65 /* MyceliumTunnel-Bridging-Header.h */,
 			);
 			path = MyceliumTunnel;
 			sourceTree = "<group>";
@@ -575,6 +579,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MyceliumTunnel/MyceliumTunnel-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -613,6 +618,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MyceliumTunnel/MyceliumTunnel-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -650,6 +656,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MyceliumTunnel/MyceliumTunnel-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
