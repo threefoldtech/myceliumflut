@@ -39,6 +39,7 @@ dependencies:
     path: rust_builder
   flutter_rust_bridge: 2.0.0-dev.32
   path_provider: ^2.0.2
+  logging: ^1.0.1
 
   tun_flutter:
     #path: ../tun_flutter
