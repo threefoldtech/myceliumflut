@@ -25,8 +25,8 @@ class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _platformVersion = 'Unknown';
   String _nodeAddr = '';
-  ByteData privKey = ByteData(0);
   var tf = TunFlutter();
+  var privKey = Uint8List(0);
 
   @override
   void initState() {
@@ -47,8 +47,14 @@ class _MyAppState extends State<MyApp> {
       platformVersion = 'Failed to get platform version.';
     }
 
-    privKey = await loadOrGeneratePrivKey();
-    var nodeAddr = addressFromSecretKey(data: privKey.buffer.asUint8List());
+    privKey = await loadOrGeneratePrivKey(platform);
+    String nodeAddr = "";
+    if (Platform.isAndroid) {
+      nodeAddr = addressFromSecretKey(data: privKey); //.buffer.asUint8List());
+    } else {
+      nodeAddr = (await platform.invokeMethod<String>(
+          'addressFromSecretKey', privKey)) as String;
+    }
     print("nodeAddr: $nodeAddr");
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -103,8 +109,7 @@ class _MyAppState extends State<MyApp> {
                   final peers = getPeers(textEditController.text);
                   if (!_isStarted) {
                     try {
-                      startVpn(tf, platform, peers, _nodeAddr,
-                          privKey.buffer.asUint8List());
+                      startVpn(tf, platform, peers, _nodeAddr, privKey);
                       setState(() {
                         _isStarted = true;
                         _textButton = "Stop Mycelium";
@@ -138,18 +143,24 @@ List<String> getPeers(String texts) {
   return texts.split('\n').map((e) => e.trim()).toList();
 }
 
-Future<ByteData> loadOrGeneratePrivKey() async {
+Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
   // get dir
   final dir = await getApplicationDocumentsDirectory();
 
   final file = File('${dir.path}/priv_key.bin');
   if (file.existsSync()) {
-    return ByteData.view((await file.readAsBytes()).buffer);
+    return await file.readAsBytes();
   }
   // create new secret key if not exists
-  final privKey = generateSecretKey();
-  await file.writeAsBytes(privKey.buffer.asUint8List());
-  return ByteData.view(privKey.buffer);
+  Uint8List privKey;
+  if (Platform.isAndroid) {
+    privKey = generateSecretKey();
+  } else {
+    privKey = (await platform.invokeMethod<Uint8List>('generateSecretKey'))
+        as Uint8List;
+  }
+  await file.writeAsBytes(privKey); //.buffer.asUint8List());
+  return privKey;
 }
 
 Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
