@@ -167,7 +167,7 @@ import Foundation
     }*/
     
     func stopMycelium() {
-        NSLog("startMycelium")
+        NSLog("stopMycelium")
         
         self.vpnManager.loadFromPreferences { (error:Error?) in
             if let error = error {
