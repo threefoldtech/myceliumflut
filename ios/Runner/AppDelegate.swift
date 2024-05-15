@@ -11,6 +11,8 @@ import Foundation
     var vpnManager: NETunnelProviderManager = NETunnelProviderManager()
     let bundleIdentifier = "tech.threefold.mycelium.MyceliumTunnel"
     let localizedDescription = "mycelium tunnel"
+    let vpnUsername = "aiueo"
+    let vpnServerAddress = "mycelium"
 
     override func application(
         _ application: UIApplication,
@@ -28,6 +30,7 @@ import Foundation
                 case "addressFromSecretKey":
                     if let key = call.arguments as? FlutterStandardTypedData {
                         let nodeAddr = addressFromSecretKey(data: key.data)
+                        NSLog("nodeAddr = \(nodeAddr)")
                         result(nodeAddr)
                     } else {
                         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
@@ -36,9 +39,8 @@ import Foundation
                     if let arguments = call.arguments as? Dictionary<String, Any> {
                         let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
                         let peers = arguments["peers"] as! [String]
-                        NSLog("PEERS = \(peers)")
                         self.createTunnel(secretKey: secretKey.data, peers: peers)
-                        result(true)
+                        result(true) // TODO: check return value of the self.createTunnel
                     } else {
                         result(false)
                     }
@@ -69,84 +71,69 @@ import Foundation
             } // Handle error if nil
             if providers.count > 0 {
                 NSLog("myceliumflut MyceliumTunnel number of providers : %d", providers.count)
-                
                 // TODO : search by bundle identifier
-                let myProvider = providers.first(where: { $0.protocolConfiguration?.username=="aiueo" }) // Replace with your identifier
+                let myProvider = providers.first(where: { $0.protocolConfiguration?.serverAddress==self.vpnServerAddress }) // Replace with your identifier
                 
                 if let unwrappedProvider = myProvider { // cek nil
                     self.vpnManager = unwrappedProvider
                     NSLog("myceliumflut MyceliumTunnel use existing provider")
-                    self.vpnManager.isEnabled = true
-                    
-                    self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
-                        if let error = error {
-                            NSLog("myceliumflut MyceliumTunnel failed to save self.vpnManager: "+error.localizedDescription)
-                            //return
-                        } else {
-                            NSLog("myceliumflut MyceliumTunnel preferences saved successfully")
-                            //NotificationCenter.default.post(name: NSNotification.Name.YggdrasilSettingsUpdated, object: self)
-                        }
-                    })
-                    
-                    do {
-                        NSLog("myceliumflut MyceliumTunnel connection.startVPNTUnnel")
-                        var options: [String: NSObject] = [
-                            "secretKey": secretKey as NSObject,
-                            "peers": peers as NSObject
-                        ]
-                        try self.vpnManager.connection.startVPNTunnel(options: options)
-                    } catch {
-                        NSLog("myceliumflut MyceliumTunnel startVPNTunnel() failed: " + error.localizedDescription)
-                    }
-                    return
+                } else {
+                    NSLog("myceliumflut MyceliumTunnel provider is Nil, creating a new one")
+                    self.createVPN()
                 }
-                NSLog("myceliumflut MyceliumTunnel provider is Nil, creating a new one")
+            } else {
+                NSLog("myceliumflut MyceliumTunnel no provider exists, creating a new one")
+                self.createVPN()
             }
-            NSLog("myceliumflut MyceliumTunnel no provider exists, creating a new one")
-            // create protocol configuration
-            let providerProtocol = NETunnelProviderProtocol()
-            providerProtocol.providerBundleIdentifier = self.bundleIdentifier
-            providerProtocol.providerConfiguration = [:]
-            providerProtocol.serverAddress = "mycelium"
-            providerProtocol.username = "aiueo"
             
-            providerProtocol.disconnectOnSleep = true
-            
-            // initialize the manager
-            self.vpnManager = NETunnelProviderManager()
-            self.vpnManager.protocolConfiguration = providerProtocol
-            self.vpnManager.localizedDescription = self.localizedDescription
-            
-            // rules
-            /*
-             let disconnectrule = NEOnDemandRuleDisconnect()
-             var rules: [NEOnDemandRule] = [disconnectrule]
-             let wifirule = NEOnDemandRuleConnect()
-             wifirule.interfaceTypeMatch = .wiFi
-             rules.insert(wifirule, at: 0)
-             self.vpnManager.onDemandRules = rules
-             self.vpnManager.isOnDemandEnabled = rules.count > 1*/
-            
+           
             self.vpnManager.isEnabled = true
-            
             
             self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
                 if let error = error {
-                    NSLog("failed to save new provider: "+error.localizedDescription)
-                    //return
+                    NSLog("myceliumflut MyceliumTunnel failed to save self.vpnManager: "+error.localizedDescription)
                 } else {
-                    NSLog("new provider saved successfully")
-                    //NotificationCenter.default.post(name: NSNotification.Name.YggdrasilSettingsUpdated, object: self)
+                    NSLog("myceliumflut MyceliumTunnel preferences saved successfully")
                 }
             })
             do {
-                NSLog("iwanbk1 [new provider] connection.startVPNTUnnel")
-                try  self.vpnManager.connection.startVPNTunnel()
+                NSLog("myceliumflut MyceliumTunnel connection.startVPNTUnnel")
+                var options: [String: NSObject] = [
+                    "secretKey": secretKey as NSObject,
+                    "peers": peers as NSObject
+                ]
+                try self.vpnManager.connection.startVPNTunnel(options: options)
             } catch {
-                NSLog("ibk1 [new provider] startVPNTunne() failed: " + error.localizedDescription)
+                NSLog("myceliumflut MyceliumTunnel startVPNTunnel() failed: " + error.localizedDescription)
             }
         }
         
+    }
+    
+    func createVPN() {
+        // create protocol configuration
+        let providerProtocol = NETunnelProviderProtocol()
+        providerProtocol.providerBundleIdentifier = self.bundleIdentifier
+        providerProtocol.providerConfiguration = [:]
+        providerProtocol.serverAddress = self.vpnServerAddress
+        providerProtocol.username = self.vpnUsername
+        
+        providerProtocol.disconnectOnSleep = true // TODO: check this
+        
+        // initialize the manager
+        self.vpnManager = NETunnelProviderManager()
+        self.vpnManager.protocolConfiguration = providerProtocol
+        self.vpnManager.localizedDescription = self.localizedDescription
+        
+        // rules
+        /*
+         let disconnectrule = NEOnDemandRuleDisconnect()
+         var rules: [NEOnDemandRule] = [disconnectrule]
+         let wifirule = NEOnDemandRuleConnect()
+         wifirule.interfaceTypeMatch = .wiFi
+         rules.insert(wifirule, at: 0)
+         self.vpnManager.onDemandRules = rules
+         self.vpnManager.isOnDemandEnabled = rules.count > 1*/
     }
     
     
