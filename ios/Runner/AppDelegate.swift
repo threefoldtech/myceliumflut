@@ -28,14 +28,18 @@ import Foundation
                 case "addressFromSecretKey":
                     if let key = call.arguments as? FlutterStandardTypedData {
                         let nodeAddr = addressFromSecretKey(data: key.data)
-                        NSLog("[appDeleteGate] xnode addr = %s", nodeAddr)
                         result(nodeAddr)
                     } else {
                         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
                     }
                 case "startVpn":
-                    self.createTunnel()
-                    result(true)
+                    if let key = call.arguments as? FlutterStandardTypedData {
+                        let secretKey = key.data
+                        self.createTunnel(secretKey: secretKey)
+                        result(true)
+                    } else {
+                        result(false)
+                    }
                 case "stopVpn":
                     self.stopMycelium()
                     result(true)
@@ -51,13 +55,12 @@ import Foundation
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
     
-    func createTunnel() {
+    func createTunnel(secretKey: Data) {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
                 NSLog("myceliumflut MyceliumTunnel loadAllFromPref failed:" + error.localizedDescription)
                 return
             }
-
             guard let providers = providers else {
                 NSLog("myceliumflut MyceliumTunnel caught by the nil providers guard")
                 return
@@ -85,7 +88,10 @@ import Foundation
                     
                     do {
                         NSLog("myceliumflut MyceliumTunnel connection.startVPNTUnnel")
-                        try self.vpnManager.connection.startVPNTunnel()
+                        var options: [String: NSObject] = [
+                            "secretKey": secretKey as NSObject
+                        ]
+                        try self.vpnManager.connection.startVPNTunnel(options: options)
                     } catch {
                         NSLog("myceliumflut MyceliumTunnel startVPNTunnel() failed: " + error.localizedDescription)
                     }
@@ -110,16 +116,15 @@ import Foundation
             
             // rules
             /*
-            let disconnectrule = NEOnDemandRuleDisconnect()
-            var rules: [NEOnDemandRule] = [disconnectrule]
-            
-            let wifirule = NEOnDemandRuleConnect()
-            wifirule.interfaceTypeMatch = .wiFi
-            rules.insert(wifirule, at: 0)
-            
+             let disconnectrule = NEOnDemandRuleDisconnect()
+             var rules: [NEOnDemandRule] = [disconnectrule]
 
-            self.vpnManager.onDemandRules = rules
-            self.vpnManager.isOnDemandEnabled = rules.count > 1*/
+             let wifirule = NEOnDemandRuleConnect()
+             wifirule.interfaceTypeMatch = .wiFi
+             rules.insert(wifirule, at: 0)
+
+             self.vpnManager.onDemandRules = rules
+             self.vpnManager.isOnDemandEnabled = rules.count > 1*/
             
             self.vpnManager.isEnabled = true
             
@@ -133,7 +138,6 @@ import Foundation
                     //NotificationCenter.default.post(name: NSNotification.Name.YggdrasilSettingsUpdated, object: self)
                 }
             })
-            //self.VPNStatusDidChange(nil)
             do {
                 NSLog("iwanbk1 [new provider] connection.startVPNTUnnel")
                 try  self.vpnManager.connection.startVPNTunnel()
