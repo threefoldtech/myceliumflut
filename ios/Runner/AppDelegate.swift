@@ -33,7 +33,6 @@ import Foundation
                     self.createTunnel()
                     result(true)
                 case "stopVpn":
-                    print("stopVpn:")
                     self.stopMycelium()
                     result(true)
                 case "getTunFD":
@@ -42,61 +41,55 @@ import Foundation
                     result(FlutterMethodNotImplemented)
                 }
             })
-            NSLog("iwanbk1 flutter app")
+            NSLog("initializing myceliumflut")
 
             GeneratedPluginRegistrant.register(with: self)
-            //self.createTunnel()
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
     
     func createTunnel() {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
-                NSLog("iwanbk1 loadAllFromPref failed:" + error.localizedDescription)
+                NSLog("myceliumflut MyceliumTunnel loadAllFromPref failed:" + error.localizedDescription)
                 return
             }
 
             guard let providers = providers else {
-                NSLog("iwanbk1 caught by the guard")
+                NSLog("myceliumflut MyceliumTunnel caught by the nil providers guard")
                 return
             } // Handle error if nil
             if providers.count > 0 {
-                NSLog("iwanbk1 number of providers : %d", providers.count)
+                NSLog("myceliumflut MyceliumTunnel number of providers : %d", providers.count)
                 
                 // TODO : search by bundle identifier
                 let myProvider = providers.first(where: { $0.protocolConfiguration?.username=="aiueo" }) // Replace with your identifier
                 
                 if let unwrappedProvider = myProvider { // cek nil
                     self.vpnManager = unwrappedProvider
-                    NSLog("use existing provider")
+                    NSLog("myceliumflut MyceliumTunnel use existing provider")
                     self.vpnManager.isEnabled = true
-                    //unwrappedProvider.isEnabled = true
-                    //self.vpnManager = unwrappedProvider
                     
                     self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
                         if let error = error {
-                            NSLog("failed to save self.vpnManager: "+error.localizedDescription)
+                            NSLog("myceliumflut MyceliumTunnel failed to save self.vpnManager: "+error.localizedDescription)
                             //return
                         } else {
-                            NSLog("unwrappedProvider saved successfully")
+                            NSLog("myceliumflut MyceliumTunnel preferences saved successfully")
                             //NotificationCenter.default.post(name: NSNotification.Name.YggdrasilSettingsUpdated, object: self)
                         }
                     })
-                    self.VPNStatusDidChange(nil)
-                    NSLog("out from VPN Status Did Change")
-
+                    
                     do {
-                        NSLog("iwanbk1 [unwrappedProvider] connection.startVPNTUnnel")
+                        NSLog("myceliumflut MyceliumTunnel connection.startVPNTUnnel")
                         try self.vpnManager.connection.startVPNTunnel()
-                        NSLog("iwanbk1 [unwrappedProvider] looks like connection.startVPNTUnnel works?")
                     } catch {
-                        NSLog("ibk1 [unwrappedProvider] startVPNTunnel() failed: " + error.localizedDescription)
+                        NSLog("myceliumflut MyceliumTunnel startVPNTunnel() failed: " + error.localizedDescription)
                     }
                     return
                 }
-                NSLog("myProvider is Nil, creating a new one")
-            }   
-            NSLog("no provider exists, creating a new one")
+                NSLog("myceliumflut MyceliumTunnel provider is Nil, creating a new one")
+            }
+            NSLog("myceliumflut MyceliumTunnel no provider exists, creating a new one")
             // create protocol configuration
             let providerProtocol = NETunnelProviderProtocol()
             providerProtocol.providerBundleIdentifier = self.bundleIdentifier
@@ -122,7 +115,7 @@ import Foundation
             
 
             self.vpnManager.onDemandRules = rules
-            self.vpnManager.isOnDemandEnabled = rules.count > 1
+            self.vpnManager.isOnDemandEnabled = false //rules.count > 1
             
             self.vpnManager.isEnabled = true
             
@@ -168,50 +161,6 @@ import Foundation
     
     func stopMycelium() {
         NSLog("stopMycelium")
-        
-        self.vpnManager.loadFromPreferences { (error:Error?) in
-            if let error = error {
-                NSLog("loadFromPref failed:"+error.localizedDescription)
-            }
-            
-            do {
-                NSLog("iwanbk1 startMycelium stopVPNTunnel")
-                try self.vpnManager.connection.stopVPNTunnel()
-                NSLog("iwanbk1 startMycelium stopVPNTunel looks fine?")
-            } catch {
-                NSLog("self.vpnManager.connection.stopVPNTunnel() failed:"+error.localizedDescription)
-            }
-            
-        }
+        self.vpnManager.connection.stopVPNTunnel()
     }
-     
-    
-    func VPNStatusDidChange(_ notification: Notification?) {
-            print("VPN Status changed:")
-            let status = self.vpnManager.connection.status
-            switch status {
-            case .connecting:
-                print("Connecting...")
-                //connectButton.setTitle("Disconnect", for: .normal)
-                break
-            case .connected:
-                print("Connected...")
-                //connectButton.setTitle("Disconnect", for: .normal)
-                break
-            case .disconnecting:
-                print("Disconnecting...")
-                break
-            case .disconnected:
-                print("Disconnected...")
-                //connectButton.setTitle("Connect", for: .normal)
-                break
-            case .invalid:
-                print("Invliad")
-                break
-            case .reasserting:
-                print("Reasserting...")
-                break
-            }
-        }
-    
 }

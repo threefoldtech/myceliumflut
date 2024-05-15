@@ -32,9 +32,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         NSLog("myceliumflut startTunnel() called")
         let secretKey = generateSecretKey()
         let nodeAddr = addressFromSecretKey(data: secretKey)
-        NSLog("iwanbk myceliumflut node addr=%s", nodeAddr)
+        NSLog("iwanbk myceliumflut node_addr = %s", nodeAddr)
         
-        let address = "4d4:215d:546e:df2f:6f8f:72b5:6acc:9ae0"
+        let address = nodeAddr
         
         
         
@@ -67,6 +67,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         // Add code here to start the process of stopping the tunnel.
         //os_log("iwanbk1 stopTunnel...", log: log, type: .info)
         NSLog("myceliumflut stopTunnel() called")
+        stopMycelium()
         completionHandler()
     }
     

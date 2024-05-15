@@ -41,7 +41,7 @@ class _MyAppState extends State<MyApp> {
     privKey = await loadOrGeneratePrivKey(platform);
     String nodeAddr = "";
     if (Platform.isAndroid) {
-      nodeAddr = addressFromSecretKey(data: privKey); //.buffer.asUint8List());
+      nodeAddr = addressFromSecretKey(data: privKey);
     } else {
       nodeAddr = (await platform.invokeMethod<String>(
           'addressFromSecretKey', privKey)) as String;
