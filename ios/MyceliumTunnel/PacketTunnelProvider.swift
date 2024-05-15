@@ -8,6 +8,11 @@
 import NetworkExtension
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
+    let mtuSize = 1400
+    let addrNetworkPrefixLengths : NSNumber = 64
+    let routeDestinationAddress = "400::"
+    let routeNetworkPrefixLength : NSNumber = 7
+
     // TODO:
     // - pass secret key from the options
     // - use completionHandle properly
@@ -15,16 +20,15 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
         NSLog("myceliumflut startTunnel() called")
-        let secretKey = generateSecretKey()
+
+        // TODO: add some guard
+        let secretKey = options!["secretKey"] as! Data
         let nodeAddr = addressFromSecretKey(data: secretKey)
-        NSLog("iwanbk myceliumflut node_addr = %s", nodeAddr)
         
-        let address = nodeAddr
-        
-        let tunnelNetworkSettings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: address)
-        tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [address], networkPrefixLengths: [64])
-        tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route(destinationAddress: "400::", networkPrefixLength: 7)]
-        tunnelNetworkSettings.mtu = NSNumber(integerLiteral: 1400)
+        let tunnelNetworkSettings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: nodeAddr)
+        tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [nodeAddr], networkPrefixLengths: [self.addrNetworkPrefixLengths])
+        tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route(destinationAddress: self.routeDestinationAddress, networkPrefixLength: self.routeNetworkPrefixLength)]
+        tunnelNetworkSettings.mtu = NSNumber(integerLiteral: self.mtuSize)
         
         setTunnelNetworkSettings(tunnelNetworkSettings) { [weak self] error in
             if let error = error {
@@ -38,7 +42,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                     startMycelium(tunFd: tunFd, secretKey: secretKey)
                 }
             } else {
-                NSLog("myceliumflut can't get tunFd: ")
+                NSLog("myceliumflut can't get tunFd")
             }
             
             completionHandler(nil)

@@ -164,9 +164,10 @@ Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
     startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
     return true;
   } else {
-    return platform.invokeMethod<bool>('startVpn', {
-      'nodeAddr': nodeAddr,
-    });
+    //return platform.invokeMethod<bool>('startVpn', {
+    //  'nodeAddr': nodeAddr,
+    //});
+    return platform.invokeMethod<bool>('startVpn', privKey);
   }
 }
 
