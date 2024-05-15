@@ -6,37 +6,20 @@
 //
 
 import NetworkExtension
-import os.log
-
-
-
-
-let log = OSLog(subsystem: "tech.threefold.mycelium.MyceliumTunnel", category: "NetworkExtension")
-//let loger = Logger(subsystem: "tech.threefold.mycelium.MyceliumTunnel", category: "earth")
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
-    
-    //static let log = Logger(subsystem: "com.example.myvpnapp", category: "packet-tunnel")
-    static let log = OSLog(subsystem: "tech.threefold.mycelium.MyceliumTunnel", category: "NetworkExtension")
-    override init() {
-        let log = Self.log
-        os_log("iwanbk1 Starting VPN connection...", log: log, type: .info)
-        super.init()
-    }
-    
+    // TODO:
+    // - pass secret key from the options
+    // - use completionHandle properly
+    // - do logger properly, get rid of NSLog
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
-        
-        let log = Self.log
-        os_log("myceliumflut Starting VPN connection...", log: log, type: .error)
         NSLog("myceliumflut startTunnel() called")
         let secretKey = generateSecretKey()
         let nodeAddr = addressFromSecretKey(data: secretKey)
         NSLog("iwanbk myceliumflut node_addr = %s", nodeAddr)
         
         let address = nodeAddr
-        
-        
         
         let tunnelNetworkSettings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: address)
         tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [address], networkPrefixLengths: [64])
@@ -65,12 +48,12 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         // Add code here to start the process of stopping the tunnel.
-        //os_log("iwanbk1 stopTunnel...", log: log, type: .info)
         NSLog("myceliumflut stopTunnel() called")
         stopMycelium()
         completionHandler()
     }
     
+    // TODO: implement this
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
         // Add code here to handle the message.
         //os_log("iwanbk1 handleAppleMessage...", log: log, type: .info)
@@ -80,12 +63,14 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
     
+    // TODO: implement this
     override func sleep(completionHandler: @escaping () -> Void) {
         // Add code here to get ready to sleep.
         //os_log("iwanbk1 sleep...", log: log, type: .info)
         completionHandler()
     }
     
+    // TODO: implement this
     override func wake() {
         //os_log("iwanbk1 wake...", log: log, type: .info)
         // Add code here to wake up.
