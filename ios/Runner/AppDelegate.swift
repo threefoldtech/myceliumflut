@@ -33,9 +33,11 @@ import Foundation
                         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
                     }
                 case "startVpn":
-                    if let key = call.arguments as? FlutterStandardTypedData {
-                        let secretKey = key.data
-                        self.createTunnel(secretKey: secretKey)
+                    if let arguments = call.arguments as? Dictionary<String, Any> {
+                        let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
+                        let peers = arguments["peers"] as! [String]
+                        NSLog("PEERS = \(peers)")
+                        self.createTunnel(secretKey: secretKey.data, peers: peers)
                         result(true)
                     } else {
                         result(false)
@@ -55,7 +57,7 @@ import Foundation
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
     
-    func createTunnel(secretKey: Data) {
+    func createTunnel(secretKey: Data, peers: [String]) {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
                 NSLog("myceliumflut MyceliumTunnel loadAllFromPref failed:" + error.localizedDescription)
@@ -89,7 +91,8 @@ import Foundation
                     do {
                         NSLog("myceliumflut MyceliumTunnel connection.startVPNTUnnel")
                         var options: [String: NSObject] = [
-                            "secretKey": secretKey as NSObject
+                            "secretKey": secretKey as NSObject,
+                            "peers": peers as NSObject
                         ]
                         try self.vpnManager.connection.startVPNTunnel(options: options)
                     } catch {
@@ -118,11 +121,9 @@ import Foundation
             /*
              let disconnectrule = NEOnDemandRuleDisconnect()
              var rules: [NEOnDemandRule] = [disconnectrule]
-
              let wifirule = NEOnDemandRuleConnect()
              wifirule.interfaceTypeMatch = .wiFi
              rules.insert(wifirule, at: 0)
-
              self.vpnManager.onDemandRules = rules
              self.vpnManager.isOnDemandEnabled = rules.count > 1*/
             

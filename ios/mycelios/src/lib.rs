@@ -12,9 +12,8 @@ pub fn hello_int() -> i32 {
 }
 
 #[uniffi::export]
-pub fn start_mycelium(tun_fd: i32, secret_key: Vec<u8>){
-    let endpoints = vec!["tcp://[2a01:4f9:6a:1dc5::2]:9651".to_string()];
-    mobile::start_mycelium(endpoints, tun_fd, secret_key);
+pub fn start_mycelium(peers: Vec<String>, tun_fd: i32, secret_key: Vec<u8>){
+    mobile::start_mycelium(peers, tun_fd, secret_key);
 }
 
 

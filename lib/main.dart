@@ -100,6 +100,7 @@ class _MyAppState extends State<MyApp> {
                   if (!_isStarted) {
                     try {
                       startVpn(tf, platform, peers, _nodeAddr, privKey);
+                      // TODO: check return value of the startVpn above
                       setState(() {
                         _isStarted = true;
                         _textButton = "Stop Mycelium";
@@ -164,10 +165,10 @@ Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
     startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
     return true;
   } else {
-    //return platform.invokeMethod<bool>('startVpn', {
-    //  'nodeAddr': nodeAddr,
-    //});
-    return platform.invokeMethod<bool>('startVpn', privKey);
+    return platform.invokeMethod<bool>('startVpn', {
+      'peers': peers,
+      'secretKey': privKey,
+    });
   }
 }
 
