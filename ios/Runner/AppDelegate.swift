@@ -3,10 +3,14 @@ import Flutter
 import NetworkExtension
 import Foundation
 
+// TODO:
+// - do logger properly, get rid of NSLog
+
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
     var vpnManager: NETunnelProviderManager = NETunnelProviderManager()
     let bundleIdentifier = "tech.threefold.mycelium.MyceliumTunnel"
+    let localizedDescription = "mycelium tunnel"
 
     override func application(
         _ application: UIApplication,
@@ -97,15 +101,15 @@ import Foundation
             providerProtocol.serverAddress = "mycelium"
             providerProtocol.username = "aiueo"
             
-            //providerProtocol.passwordReference = "uuuuuuu"
             providerProtocol.disconnectOnSleep = true
             
             // initialize the manager
             self.vpnManager = NETunnelProviderManager()
             self.vpnManager.protocolConfiguration = providerProtocol
-            self.vpnManager.localizedDescription = "mycelium tunnel"
+            self.vpnManager.localizedDescription = self.localizedDescription
             
             // rules
+            /*
             let disconnectrule = NEOnDemandRuleDisconnect()
             var rules: [NEOnDemandRule] = [disconnectrule]
             
@@ -115,7 +119,7 @@ import Foundation
             
 
             self.vpnManager.onDemandRules = rules
-            self.vpnManager.isOnDemandEnabled = false //rules.count > 1
+            self.vpnManager.isOnDemandEnabled = rules.count > 1*/
             
             self.vpnManager.isEnabled = true
             
@@ -140,24 +144,6 @@ import Foundation
         
     }
     
-    /*func startMycelium() {
-        NSLog("startMycelium")
-        
-        self.vpnManager.loadFromPreferences { (error:Error?) in
-            if let error = error {
-                NSLog("loadFromPref failed:"+error.localizedDescription)
-            }
-            
-            do {
-                NSLog("iwanbk1 startMycelium startVPNTunel")
-                try self.vpnManager.connection.startVPNTunnel()
-                NSLog("iwanbk1 startMycelium startVPNTunel looks fine?")
-            } catch {
-                NSLog("self.vpnManager.connection.startVPNTunnel() failed:"+error.localizedDescription)
-            }
-            
-        }
-    }*/
     
     func stopMycelium() {
         NSLog("stopMycelium")
