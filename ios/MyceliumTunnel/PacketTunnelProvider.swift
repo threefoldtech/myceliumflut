@@ -14,7 +14,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     let routeNetworkPrefixLength : NSNumber = 7
 
     // TODO:
-    // - pass secret key from the options
     // - use completionHandle properly
     // - do logger properly, get rid of NSLog
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
@@ -22,6 +21,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         NSLog("myceliumflut startTunnel() called")
 
         // TODO: add some guard
+        let peers = options!["peers"] as! [String]
         let secretKey = options!["secretKey"] as! Data
         let nodeAddr = addressFromSecretKey(data: secretKey)
         
@@ -38,8 +38,8 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             if let tunFd = self?.tunnelFileDescriptor {
                 DispatchQueue.global(qos: .default).async {
-                    NSLog("myceliumflut startMycelium() should be called with tun fd:%d", tunFd)
-                    startMycelium(tunFd: tunFd, secretKey: secretKey)
+                    NSLog("myceliumflut calling startMycelium()  with tun fd:%d and peers = \(peers) ", tunFd)
+                    startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
                 }
             } else {
                 NSLog("myceliumflut can't get tunFd")
