@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:tun_flutter/tun_flutter.dart';
 
 import 'package:myceliumflut/src/rust/api/simple.dart';
 import 'package:myceliumflut/src/rust/frb_generated.dart';
@@ -13,6 +12,13 @@ import 'package:logging/logging.dart';
 final _logger = Logger('Mycelium');
 
 Future<void> main() async {
+  // Logger configuration
+  Logger.root.level = Level.ALL; // Log messages emitted at all levels
+  Logger.root.onRecord.listen((record) {
+    // we need this to print to the console
+    // ignore: avoid_print
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
   await RustLib.init();
   runApp(const MyApp());
 }
@@ -27,7 +33,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _nodeAddr = '';
-  var tf = TunFlutter();
   var privKey = Uint8List(0);
 
   @override
@@ -39,6 +44,7 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     privKey = await loadOrGeneratePrivKey(platform);
+
     String nodeAddr = "";
     if (Platform.isAndroid) {
       nodeAddr = addressFromSecretKey(data: privKey);
@@ -99,7 +105,7 @@ class _MyAppState extends State<MyApp> {
                   final peers = getPeers(textEditController.text);
                   if (!_isStarted) {
                     try {
-                      startVpn(tf, platform, peers, _nodeAddr, privKey);
+                      startVpn(platform, peers, _nodeAddr, privKey);
                       // TODO: check return value of the startVpn above
                       setState(() {
                         _isStarted = true;
@@ -110,7 +116,7 @@ class _MyAppState extends State<MyApp> {
                     }
                   } else {
                     try {
-                      stopVpn(tf, platform);
+                      stopVpn(platform);
                       setState(() {
                         _isStarted = false;
                         _textButton = "Start Mycelium";
@@ -154,13 +160,13 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
   return privKey;
 }
 
-Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
-    List<String> peers, String nodeAddr, Uint8List privKey) async {
+Future<bool?> startVpn(MethodChannel platform, List<String> peers,
+    String nodeAddr, Uint8List privKey) async {
   if (Platform.isAndroid) {
-    await tf.startVpn({
+    await platform.invokeMethod<bool>('startVpn', {
       'nodeAddr': nodeAddr,
     });
-    int tunFd = await getTunFDAndroid(tf);
+    int tunFd = await getTunFDAndroid(platform);
     _logger.info("tunFd: $tunFd");
     startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
     return true;
@@ -172,16 +178,16 @@ Future<bool?> startVpn(TunFlutter tf, MethodChannel platform,
   }
 }
 
-Future<bool> stopVpn(TunFlutter tf, MethodChannel platform) async {
+Future<bool> stopVpn(MethodChannel platform) async {
   // TODO: check if VPN is started
   var stopped = false;
   if (Platform.isAndroid) {
+    _logger.info("stopping mycelium");
     await stopMycelium();
-    stopped = await tf.stopVpn() ?? false;
-  } else {
-    stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
   }
-  _logger.info("stopped vpn");
+  stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
+
+  _logger.info("stop vpn : $stopped");
   return stopped;
 }
 
@@ -197,12 +203,12 @@ Future<bool> stopVpn(TunFlutter tf, MethodChannel platform) async {
 // ```
 // If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
 // ```
-Future<int> getTunFDAndroid(TunFlutter tf) async {
+Future<int> getTunFDAndroid(MethodChannel platform) async {
   int tunFd = 0;
   for (var i = 0; i < 30; i++) {
     await Future.delayed(const Duration(milliseconds: 100));
     try {
-      tunFd = await tf.getTunFD() ?? -1;
+      tunFd = await platform.invokeMethod<int>('getTunFD') as int;
     } on PlatformException {
       tunFd = -1;
     }

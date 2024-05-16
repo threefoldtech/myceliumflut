@@ -358,15 +358,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.1"
-  tun_flutter:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "6bbfc8d1f9705534976c76b4629f4c1fad16e89f"
-      resolved-ref: "6bbfc8d1f9705534976c76b4629f4c1fad16e89f"
-      url: "https://github.com/iwanbk/tun_flutter"
-    source: git
-    version: "0.0.1"
   vector_math:
     dependency: transitive
     description:

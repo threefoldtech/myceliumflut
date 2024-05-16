@@ -41,12 +41,6 @@ dependencies:
   path_provider: ^2.0.2
   logging: ^1.0.1
 
-  tun_flutter:
-    #path: ../tun_flutter
-    git:
-      url: https://github.com/iwanbk/tun_flutter
-      ref: 6bbfc8d1f9705534976c76b4629f4c1fad16e89f
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
