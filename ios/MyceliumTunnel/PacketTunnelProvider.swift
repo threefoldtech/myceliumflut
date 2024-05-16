@@ -14,8 +14,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     let routeDestinationAddress = "400::"
     let routeNetworkPrefixLength : NSNumber = 7
 
-    // TODO:
+    // TODO FIXME
     // - use completionHandle properly
+    // - how to prevent double start / stop
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
         infolog("startTunnel() called")

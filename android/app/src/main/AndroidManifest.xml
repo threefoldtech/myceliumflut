@@ -29,7 +29,7 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-         <service android:name="tech.threefold.tun_flutter.TunService" android:enabled="true" android:exported="true" android:permission="android.permission.BIND_VPN_SERVICE">
+         <service android:name=".TunService" android:enabled="true" android:exported="true" android:permission="android.permission.BIND_VPN_SERVICE">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
@@ -46,4 +46,5 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+    <uses-permission android:name="android.permission.INTERNET"/>
 </manifest>
