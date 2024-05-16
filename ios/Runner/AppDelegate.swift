@@ -2,9 +2,7 @@ import UIKit
 import Flutter
 import NetworkExtension
 import Foundation
-
-// TODO:
-// - do logger properly, get rid of NSLog
+import OSLog
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -30,7 +28,7 @@ import Foundation
                 case "addressFromSecretKey":
                     if let key = call.arguments as? FlutterStandardTypedData {
                         let nodeAddr = addressFromSecretKey(data: key.data)
-                        NSLog("nodeAddr = \(nodeAddr)")
+                        debuglog("nodeAddr = \(nodeAddr)")
                         result(nodeAddr)
                     } else {
                         result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
@@ -53,7 +51,7 @@ import Foundation
                     result(FlutterMethodNotImplemented)
                 }
             })
-            NSLog("initializing myceliumflut")
+            infolog("initializing app")
 
             GeneratedPluginRegistrant.register(with: self)
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -62,27 +60,26 @@ import Foundation
     func createTunnel(secretKey: Data, peers: [String]) {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
-                NSLog("myceliumflut MyceliumTunnel loadAllFromPref failed:" + error.localizedDescription)
+                errlog("loadAllFromPref failed:" + error.localizedDescription)
                 return
             }
             guard let providers = providers else {
-                NSLog("myceliumflut MyceliumTunnel caught by the nil providers guard")
+                errlog("caught by the nil providers guard")
                 return
             } // Handle error if nil
             if providers.count > 0 {
-                NSLog("myceliumflut MyceliumTunnel number of providers : %d", providers.count)
+                infolog("number of providers :\(providers.count)")
                 // TODO : search by bundle identifier
                 let myProvider = providers.first(where: { $0.protocolConfiguration?.serverAddress==self.vpnServerAddress }) // Replace with your identifier
-                
                 if let unwrappedProvider = myProvider { // cek nil
                     self.vpnManager = unwrappedProvider
-                    NSLog("myceliumflut MyceliumTunnel use existing provider")
+                    debuglog("use existing provider")
                 } else {
-                    NSLog("myceliumflut MyceliumTunnel provider is Nil, creating a new one")
+                    debuglog("provider is Nil, creating a new one")
                     self.createVPN()
                 }
             } else {
-                NSLog("myceliumflut MyceliumTunnel no provider exists, creating a new one")
+                infolog("no provider exists, creating a new one")
                 self.createVPN()
             }
             
@@ -91,20 +88,20 @@ import Foundation
             
             self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
                 if let error = error {
-                    NSLog("myceliumflut MyceliumTunnel failed to save self.vpnManager: "+error.localizedDescription)
+                    errlog("failed to save self.vpnManager: "+error.localizedDescription)
                 } else {
-                    NSLog("myceliumflut MyceliumTunnel preferences saved successfully")
+                    infolog("preferences saved successfully")
                 }
             })
             do {
-                NSLog("myceliumflut MyceliumTunnel connection.startVPNTUnnel")
+                debuglog("connection.startVPNTUnnel")
                 var options: [String: NSObject] = [
                     "secretKey": secretKey as NSObject,
                     "peers": peers as NSObject
                 ]
                 try self.vpnManager.connection.startVPNTunnel(options: options)
             } catch {
-                NSLog("myceliumflut MyceliumTunnel startVPNTunnel() failed: " + error.localizedDescription)
+                errlog("startVPNTunnel() failed: " + error.localizedDescription)
             }
         }
         
@@ -138,7 +135,23 @@ import Foundation
     
     
     func stopMycelium() {
-        NSLog("stopMycelium")
+        infolog("stopMycelium")
         self.vpnManager.connection.stopVPNTunnel()
     }
+}
+
+func debuglog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .debug, args)
+}
+
+func infolog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .info, args)
+}
+
+func errlog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .error, args)
+}
+
+func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
+    os_log("%{public}@ %{public}@", log: .default, type: type, "myceliumflut:AppDelegate:", String(describing: msg), args)
 }

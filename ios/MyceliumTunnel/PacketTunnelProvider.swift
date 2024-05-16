@@ -6,6 +6,7 @@
 //
 
 import NetworkExtension
+import OSLog
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
     let mtuSize = 1400
@@ -15,10 +16,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
     // TODO:
     // - use completionHandle properly
-    // - do logger properly, get rid of NSLog
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
-        NSLog("myceliumflut startTunnel() called")
+        infolog("startTunnel() called")
 
         // TODO: add some guard
         let peers = options!["peers"] as! [String]
@@ -32,17 +32,17 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         
         setTunnelNetworkSettings(tunnelNetworkSettings) { [weak self] error in
             if let error = error {
-                NSLog("myceliumflut to set mycelium tunnel network settings: " + error.localizedDescription)
+                errlog("failed to set tunnel network settings: " + error.localizedDescription)
             } else {
-                NSLog("myceliumflut tunnel settings set successfully")
+                infolog("tunnel settings set successfully")
             }
             if let tunFd = self?.tunnelFileDescriptor {
                 DispatchQueue.global(qos: .default).async {
-                    NSLog("myceliumflut calling startMycelium()  with tun fd:%d and peers = \(peers) ", tunFd)
+                    infolog("calling startMycelium()  with tun fd:\(tunFd) and peers = \(peers) ")
                     startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
                 }
             } else {
-                NSLog("myceliumflut can't get tunFd")
+                errlog("myceliumflut can't get tunFd")
             }
             
             completionHandler(nil)
@@ -52,7 +52,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         // Add code here to start the process of stopping the tunnel.
-        NSLog("myceliumflut stopTunnel() called")
+        errlog("myceliumflut stopTunnel() called")
         stopMycelium()
         completionHandler()
     }
@@ -60,7 +60,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     // TODO: implement this
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
         // Add code here to handle the message.
-        //os_log("iwanbk1 handleAppleMessage...", log: log, type: .info)
+        errlog("handleAppMessage handler")
         
         if let handler = completionHandler {
             handler(messageData)
@@ -70,16 +70,17 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     // TODO: implement this
     override func sleep(completionHandler: @escaping () -> Void) {
         // Add code here to get ready to sleep.
-        //os_log("iwanbk1 sleep...", log: log, type: .info)
+        errlog("sleep handler")
         completionHandler()
     }
     
     // TODO: implement this
     override func wake() {
-        //os_log("iwanbk1 wake...", log: log, type: .info)
         // Add code here to wake up.
+        errlog("wake handler should be implemented here")
     }
     
+    // taken from wireguard code
     private var tunnelFileDescriptor: Int32? {
         var ctlInfo = ctl_info()
         withUnsafeMutablePointer(to: &ctlInfo.ctl_name) {
@@ -114,4 +115,19 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     
 }
 
+func debuglog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .debug, args)
+}
 
+func infolog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .info, args)
+}
+
+func errlog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .error, args)
+}
+
+// TODO: make it in one func with the one in AppDelegate
+func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
+    os_log("%{public}@ %{public}@", log: .default, type: type, "myceliumflut:MyceliumTunnel:", String(describing: msg), args)
+}
