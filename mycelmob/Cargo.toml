@@ -11,8 +11,8 @@ name = "mycelmob"
 
 [dependencies]
 uniffi = { version = "0.27.1", features = [ "cli" ] }
-#mobile = {git = "http://github.com/threefoldtech/mycelium", package = "mobile", rev = "9710577ea48432becbea34d8bb0b2b373d78e282"}
-mobile = {path = "../../mycelium/mobile"}
+mobile = {git = "http://github.com/threefoldtech/mycelium", package = "mobile", rev = "51402254b79ccfe5dc6581b8935620440511b115"}
+#mobile = {path = "../../mycelium/mobile"}
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.13"

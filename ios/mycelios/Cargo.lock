@@ -919,7 +919,7 @@ dependencies = [
 [[package]]
 name = "mobile"
 version = "0.1.0"
-source = "git+http://github.com/threefoldtech/mycelium?rev=9710577ea48432becbea34d8bb0b2b373d78e282#9710577ea48432becbea34d8bb0b2b373d78e282"
+source = "git+http://github.com/threefoldtech/mycelium?rev=51402254b79ccfe5dc6581b8935620440511b115#51402254b79ccfe5dc6581b8935620440511b115"
 dependencies = [
  "android_logger",
  "log",
@@ -940,7 +940,7 @@ dependencies = [
 [[package]]
 name = "mycelium"
 version = "0.5.2"
-source = "git+http://github.com/threefoldtech/mycelium?rev=9710577ea48432becbea34d8bb0b2b373d78e282#9710577ea48432becbea34d8bb0b2b373d78e282"
+source = "git+http://github.com/threefoldtech/mycelium?rev=51402254b79ccfe5dc6581b8935620440511b115#51402254b79ccfe5dc6581b8935620440511b115"
 dependencies = [
  "aes-gcm",
  "blake3",
