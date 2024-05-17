@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
-import 'package:myceliumflut/src/rust/frb_generated.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 
@@ -18,7 +17,6 @@ Future<void> main() async {
     // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
-  await RustLib.init();
   runApp(const MyApp());
 }
 
