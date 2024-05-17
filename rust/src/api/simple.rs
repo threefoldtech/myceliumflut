@@ -10,25 +10,6 @@ pub fn greet(name: String) -> String {
     format!("Hello, {name}!")
 }
 
-#[flutter_rust_bridge::frb(sync)]
-pub fn generate_secret_key() -> Vec<u8> {
-    #[cfg(target_os = "android")]
-    return mobile::generate_secret_key();
-
-    #[cfg(target_os = "ios")]
-    return Vec::new().into();
-}
-
-#[flutter_rust_bridge::frb(sync)]
-pub fn address_from_secret_key(data: Vec<u8>) -> String {
-    #[cfg(target_os = "android")]
-    return mobile::address_from_secret_key(data);
-
-    #[cfg(target_os = "ios")]
-    return "".into();
-}
-
-
 pub async fn start_mycelium(peers: Vec<String>, tun_fd: i32, priv_key: Vec<u8>)  {
     #[cfg(target_os = "ios")]
     {

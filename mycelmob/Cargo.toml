@@ -1,0 +1,22 @@
+[package]
+name = "mycelmob"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate_type = ["cdylib", "staticlib"]
+name = "mycelmob"
+
+[dependencies]
+uniffi = { version = "0.27.1", features = [ "cli" ] }
+#mobile = {git = "http://github.com/threefoldtech/mycelium", package = "mobile", rev = "9710577ea48432becbea34d8bb0b2b373d78e282"}
+mobile = {path = "../../mycelium/mobile"}
+
+[build-dependencies]
+uniffi = { version = "0.27.1", features = [ "build" ] }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"

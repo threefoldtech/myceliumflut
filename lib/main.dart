@@ -45,13 +45,9 @@ class _MyAppState extends State<MyApp> {
   Future<void> initPlatformState() async {
     privKey = await loadOrGeneratePrivKey(platform);
 
-    String nodeAddr = "";
-    if (Platform.isAndroid) {
-      nodeAddr = addressFromSecretKey(data: privKey);
-    } else {
-      nodeAddr = (await platform.invokeMethod<String>(
-          'addressFromSecretKey', privKey)) as String;
-    }
+    String nodeAddr = (await platform.invokeMethod<String>(
+        'addressFromSecretKey', privKey)) as String;
+
     _logger.info("nodeAddr: $nodeAddr");
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -149,13 +145,9 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
     return await file.readAsBytes();
   }
   // create new secret key if not exists
-  Uint8List privKey;
-  if (Platform.isAndroid) {
-    privKey = generateSecretKey();
-  } else {
-    privKey = (await platform.invokeMethod<Uint8List>('generateSecretKey'))
-        as Uint8List;
-  }
+  Uint8List privKey = (await platform
+      .invokeMethod<Uint8List>('generateSecretKey')) as Uint8List;
+  //}
   await file.writeAsBytes(privKey);
   return privKey;
 }
@@ -163,9 +155,8 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
 Future<bool?> startVpn(MethodChannel platform, List<String> peers,
     String nodeAddr, Uint8List privKey) async {
   if (Platform.isAndroid) {
-    await platform.invokeMethod<bool>('startVpn', {
-      'nodeAddr': nodeAddr,
-    });
+    await platform
+        .invokeMethod<bool>('startVpn', {'nodeAddr': nodeAddr, 'peers': peers});
     int tunFd = await getTunFDAndroid(platform);
     _logger.info("tunFd: $tunFd");
     startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);

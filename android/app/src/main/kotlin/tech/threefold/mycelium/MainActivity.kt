@@ -14,6 +14,8 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import tech.threefold.mycelium.TunService
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
+import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
 
 class MainActivity: FlutterActivity() {
     private val channel = "tech.threefold.mycelium/tun"
@@ -32,7 +34,20 @@ class MainActivity: FlutterActivity() {
             // This method is invoked on the main thread.
                 call, result ->
             when (call.method) {
+                "addressFromSecretKey" -> {
+                    val secretKey = call.arguments as ByteArray
+                    val address = addressFromSecretKey(secretKey)
+                    result.success(address)
+                }
+                "generateSecretKey" -> {
+                    val secretKey = generateSecretKey()
+                    result.success(secretKey)
+                }
                 "startVpn" -> {
+                    var nodeAddr = call.argument<String>("nodeAddr")!!
+                    var peers = call.argument<List<String>>("peers")!!
+                    Log.d("tff", "nodeAddr = $nodeAddr")
+                    Log.d("tff", "peers = $peers")
                     val started = startVpn(call.argument<String>("nodeAddr")!!)
                     Log.d("tff", "" + "VPN Started ")
                     result.success(started)
