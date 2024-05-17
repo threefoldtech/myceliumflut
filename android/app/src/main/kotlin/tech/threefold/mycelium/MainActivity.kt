@@ -44,11 +44,10 @@ class MainActivity: FlutterActivity() {
                     result.success(secretKey)
                 }
                 "startVpn" -> {
-                    var nodeAddr = call.argument<String>("nodeAddr")!!
                     var peers = call.argument<List<String>>("peers")!!
-                    Log.d("tff", "nodeAddr = $nodeAddr")
+                    var secretKey = call.argument<ByteArray>("secretKey")!!
                     Log.d("tff", "peers = $peers")
-                    val started = startVpn(call.argument<String>("nodeAddr")!!)
+                    val started = startVpn(peers, secretKey)
                     Log.d("tff", "" + "VPN Started ")
                     result.success(started)
                 }
@@ -63,7 +62,7 @@ class MainActivity: FlutterActivity() {
         }
     }
 
-    private fun startVpn(nodeAddr: String): Boolean {
+    private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
         Log.d("tff", "preparing vpn service")
 
         val intent = VpnService.prepare(context)
@@ -82,7 +81,8 @@ class MainActivity: FlutterActivity() {
         val TASK_CODE = 100
         val pi = activity.createPendingResult(TASK_CODE, intentTff, 0)
         intentTff.action = TunService.ACTION_START
-        intentTff.putExtra("node_addr", nodeAddr)
+        intentTff.putExtra("secret_key", secretKey)
+        intentTff.putStringArrayListExtra("peers", ArrayList(peers))
         val startResult = activity.startService(intentTff)
 
         Log.e("tff", "start service result: " + startResult.toString())

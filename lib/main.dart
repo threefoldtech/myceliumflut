@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
-import 'package:myceliumflut/src/rust/api/simple.dart';
 import 'package:myceliumflut/src/rust/frb_generated.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
@@ -101,7 +100,7 @@ class _MyAppState extends State<MyApp> {
                   final peers = getPeers(textEditController.text);
                   if (!_isStarted) {
                     try {
-                      startVpn(platform, peers, _nodeAddr, privKey);
+                      startVpn(platform, peers, privKey);
                       // TODO: check return value of the startVpn above
                       setState(() {
                         _isStarted = true;
@@ -152,31 +151,18 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
   return privKey;
 }
 
-Future<bool?> startVpn(MethodChannel platform, List<String> peers,
-    String nodeAddr, Uint8List privKey) async {
-  if (Platform.isAndroid) {
-    await platform
-        .invokeMethod<bool>('startVpn', {'nodeAddr': nodeAddr, 'peers': peers});
-    int tunFd = await getTunFDAndroid(platform);
-    _logger.info("tunFd: $tunFd");
-    startMycelium(peers: peers, tunFd: tunFd, privKey: privKey);
-    return true;
-  } else {
-    return platform.invokeMethod<bool>('startVpn', {
-      'peers': peers,
-      'secretKey': privKey,
-    });
-  }
+Future<bool?> startVpn(
+    MethodChannel platform, List<String> peers, Uint8List privKey) async {
+  return platform.invokeMethod<bool>('startVpn', {
+    'peers': peers,
+    'secretKey': privKey,
+  });
+  //}
 }
 
 Future<bool> stopVpn(MethodChannel platform) async {
   // TODO: check if VPN is started
-  var stopped = false;
-  if (Platform.isAndroid) {
-    _logger.info("stopping mycelium");
-    await stopMycelium();
-  }
-  stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
+  var stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
 
   _logger.info("stop vpn : $stopped");
   return stopped;
