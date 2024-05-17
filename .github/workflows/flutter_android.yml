@@ -1,0 +1,53 @@
+name: Android Build
+
+on:
+  pull_request:
+    branches:
+      - main # Or any other branch you want to monitor
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.5' # Replace with your desired Flutter version
+          channel: 'stable' # Or 'beta', 'dev' as needed
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: 17
+
+      - name: Set up Android NDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Accept Android Licenses
+        run: yes | sdkmanager --licenses || true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      #- run: flutter test
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build mycelmob
+        run: bash build-android.sh
+        working-directory: mycelmob
+
+      - run: flutter build apk

@@ -16,10 +16,25 @@ cargo ndk -o ../android/app/src/main/jniLibs \
         -t x86_64 \
         build --release
 
+# Determine OS
+OS=$(uname)
+
+# Use the appropriate library file based on the OS
+if [ "$OS" = "Darwin" ]; then
+    LIB_FILE=./target/debug/libmycelmob.dylib
+else
+    LIB_FILE=./target/debug/libmycelmob.so
+fi
+
 # libmycelmob.dylib was produced by `cargo build` step
-cargo run --bin uniffi-bindgen generate --library ./target/debug/libmycelmob.dylib --language kotlin\
+cargo run --bin uniffi-bindgen generate --library $LIB_FILE --language kotlin\
          --out-dir ../android/app/src/main/kotlin/tech/threefold/mycelium/rust
 
 # the generated kotlin file doesn't have proper package name, we need to fix it
-sed -i '' 's/package uniffi.mycelmob/package tech.threefold.mycelium.rust.uniffi.mycelmob/g' \
+if [ "$(uname)" = "Darwin" ]; then
+    sed -i '' 's/package uniffi.mycelmob/package tech.threefold.mycelium.rust.uniffi.mycelmob/g' \
         ../android/app/src/main/kotlin/tech/threefold/mycelium/rust/uniffi/mycelmob/*.kt
+else
+    sed -i 's/package uniffi.mycelmob/package tech.threefold.mycelium.rust.uniffi.mycelmob/g' \
+        ../android/app/src/main/kotlin/tech/threefold/mycelium/rust/uniffi/mycelmob/*.kt
+fi
