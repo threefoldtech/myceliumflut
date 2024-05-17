@@ -20,8 +20,21 @@ samples, guidance on mobile development, and a full API reference.
 ### prequisites
 
 - install flutter SDK https://docs.flutter.dev/get-started/install
-- install Android Studio / XCode, the flutter related configuration can be found in the above flutter SDK  installation guide
+- install Rust
+- For Android, install Android Studio / XCode, the flutter related configuration can be found in the above flutter SDK  installation guide
+- For iPhone, install Xcode 
 
+### build iOS Swift-Rust Bridge
+```bash
+cd ios
+bash build-mycelios.sh
+```
+
+### build Android Kotlin-Rust Bridge
+```bash
+cd mycelmob
+bash build-android.sh
+```
 
 ### run
 go to `myceliumflut` dir
