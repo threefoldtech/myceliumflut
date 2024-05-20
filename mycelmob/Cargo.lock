@@ -968,7 +968,6 @@ dependencies = [
 name = "mycelmob"
 version = "0.1.0"
 dependencies = [
- "android_logger",
  "mobile",
  "uniffi",
 ]

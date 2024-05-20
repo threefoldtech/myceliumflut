@@ -1,0 +1,51 @@
+name: iOS Build
+
+on:
+  pull_request:
+    branches:
+      - main # Or any other branch you want to monitor
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.5' # Replace with your desired Flutter version
+          channel: 'stable' # Or 'beta', 'dev' as needed
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: 17
+
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build mycelmob
+        run: bash build-ios.sh
+        working-directory: mycelmob
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build Flutter iOS app
+        run: flutter build ios --release --no-codesign

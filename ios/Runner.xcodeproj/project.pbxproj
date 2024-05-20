@@ -7,15 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00024CC52BFB0FF100C03AC5 /* mycelmob.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */; };
+		00024CC82BFB100100C03AC5 /* mycelmob.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */; };
+		00024CCC2BFB102600C03AC5 /* mycelmob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00024CCB2BFB102600C03AC5 /* mycelmob.swift */; };
+		00024CCD2BFB102600C03AC5 /* mycelmob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00024CCB2BFB102600C03AC5 /* mycelmob.swift */; };
 		005902212BEA092D00D56854 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005902202BEA092D00D56854 /* NetworkExtension.framework */; };
 		005902242BEA092D00D56854 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 005902232BEA092D00D56854 /* PacketTunnelProvider.swift */; };
 		0059022C2BEA095900D56854 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005902202BEA092D00D56854 /* NetworkExtension.framework */; };
 		0090B5DC2BF327D200724A65 /* MyceliumTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0059021F2BEA092D00D56854 /* MyceliumTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		0090B5FE2BF34E3D00724A65 /* mycelios.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0090B5FD2BF34E3D00724A65 /* mycelios.swift */; };
-		0090B5FF2BF34E3D00724A65 /* mycelios.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0090B5FD2BF34E3D00724A65 /* mycelios.swift */; };
 		0090B6002BF34ED500724A65 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
-		0090B6012BF34F0F00724A65 /* mycelios.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E672BF2059E00435390 /* mycelios.xcframework */; };
-		00A43E682BF2059E00435390 /* mycelios.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E672BF2059E00435390 /* mycelios.xcframework */; };
 		00A43E6F2BF2089C00435390 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -74,13 +74,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mycelmob.xcframework; path = ../mycelmob/out/iosframework/mycelmob.xcframework; sourceTree = "<group>"; };
+		00024CCB2BFB102600C03AC5 /* mycelmob.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = mycelmob.swift; path = ../../mycelmob/out/mycelmob.swift; sourceTree = "<group>"; };
 		0059021F2BEA092D00D56854 /* MyceliumTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyceliumTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		005902202BEA092D00D56854 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 		005902232BEA092D00D56854 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
 		005902252BEA092D00D56854 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		005902262BEA092D00D56854 /* MyceliumTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyceliumTunnel.entitlements; sourceTree = "<group>"; };
 		0059022B2BEA094000D56854 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
-		0090B5FD2BF34E3D00724A65 /* mycelios.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = mycelios.swift; path = mycelios/out/mycelios.swift; sourceTree = SOURCE_ROOT; };
 		0090B6042BF352EB00724A65 /* PacketTunnelProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PacketTunnelProvider.h; sourceTree = "<group>"; };
 		0090B6052BF356D000724A65 /* MyceliumTunnel-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MyceliumTunnel-Bridging-Header.h"; sourceTree = "<group>"; };
 		00A43E672BF2059E00435390 /* mycelios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mycelios.xcframework; path = myceliosframework/mycelios.xcframework; sourceTree = "<group>"; };
@@ -117,8 +118,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				0090B6002BF34ED500724A65 /* SystemConfiguration.framework in Frameworks */,
-				0090B6012BF34F0F00724A65 /* mycelios.xcframework in Frameworks */,
 				005902212BEA092D00D56854 /* NetworkExtension.framework in Frameworks */,
+				00024CC82BFB100100C03AC5 /* mycelmob.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,8 +127,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				00024CC52BFB0FF100C03AC5 /* mycelmob.xcframework in Frameworks */,
 				E790513EC6CD4964B6CFFF4E /* Pods_Runner.framework in Frameworks */,
-				00A43E682BF2059E00435390 /* mycelios.xcframework in Frameworks */,
 				00A43E6F2BF2089C00435390 /* SystemConfiguration.framework in Frameworks */,
 				0059022C2BEA095900D56854 /* NetworkExtension.framework in Frameworks */,
 			);
@@ -214,7 +215,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
-				0090B5FD2BF34E3D00724A65 /* mycelios.swift */,
+				00024CCB2BFB102600C03AC5 /* mycelmob.swift */,
 				0059022B2BEA094000D56854 /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
@@ -231,6 +232,7 @@
 		D3B472BFF3332B97B6DDEC52 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */,
 				00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */,
 				00A43E6C2BF207E600435390 /* Network.framework */,
 				00A43E672BF2059E00435390 /* mycelios.xcframework */,
@@ -477,8 +479,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0090B5FF2BF34E3D00724A65 /* mycelios.swift in Sources */,
 				005902242BEA092D00D56854 /* PacketTunnelProvider.swift in Sources */,
+				00024CCD2BFB102600C03AC5 /* mycelmob.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,7 +497,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
-				0090B5FE2BF34E3D00724A65 /* mycelios.swift in Sources */,
+				00024CCC2BFB102600C03AC5 /* mycelmob.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
