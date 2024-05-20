@@ -1,19 +1,6 @@
 # myceliumflut
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+A mycelium flutter UI
 
 ## Development
 
@@ -26,8 +13,8 @@ samples, guidance on mobile development, and a full API reference.
 
 ### build iOS Swift-Rust Bridge
 ```bash
-cd ios
-bash build-mycelios.sh
+cd mycelmob
+bash build-ios.sh
 ```
 
 ### build Android Kotlin-Rust Bridge
@@ -38,6 +25,7 @@ bash build-android.sh
 
 ### run
 go to `myceliumflut` dir
+- `flutter pub get`
 - `code .`
 - `Run` -> `Start Debugging`
 
