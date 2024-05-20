@@ -8,16 +8,27 @@ A mycelium flutter UI
 
 - install flutter SDK https://docs.flutter.dev/get-started/install
 - install Rust
-- For Android, install Android Studio / XCode, the flutter related configuration can be found in the above flutter SDK  installation guide
-- For iPhone, install Xcode 
 
-### build iOS Swift-Rust Bridge
+### iOS
+
+**requirements**
+- Xcode for development.
+- Real iPhone is needed for test, we can't use Simulator here because mycelium need iOS `Network Extensions` which can't run on Simulator.
+
+**build iOS Swift-Rust Bridge**
 ```bash
 cd mycelmob
 bash build-ios.sh
 ```
+there is `IPHONEOS_DEPLOYMENT_TARGET` variable in the `build-ios.sh` which need to be the same with the value set in `XCode`.
 
-### build Android Kotlin-Rust Bridge
+### Android
+**requirements**
+- Android Studio the flutter related configuration can be found in the above flutter SDK  installation guide
+- Android NDK 26.1.10909125. Updated version can be found at `android/app/build.gradle` file
+
+
+**build Android Kotlin-Rust Bridge**
 ```bash
 cd mycelmob
 bash build-android.sh
