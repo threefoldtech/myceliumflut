@@ -18,7 +18,6 @@ private const val tag = "[TunService]"
 class TunService : VpnService() {
 
     companion object {
-        const val RECEIVER_INTENT = "tech.threefold.mycelium.TunService.MESSAGE"
         const val ACTION_START = "tech.threefold.mycelium.TunService.START"
         const val ACTION_STOP = "tech.threefold.mycelium.TunService.STOP"
     }
@@ -36,23 +35,18 @@ class TunService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.e(tag, "Got a command " + intent!!.action)
+        Log.i(tag, "Got a command " + intent!!.action)
 
-        if (intent == null) {
-            Log.d(tag, "Intent is null")
-            return START_NOT_STICKY
-        }
         return when (intent.action ?: ACTION_STOP) {
             ACTION_STOP -> {
                 Log.d(tag, "Stopping...")
                 stop(); START_NOT_STICKY
             }
             ACTION_START -> {
-                Log.e(tag, "[TunService]Starting...")
-                val nodeAddr = intent.getStringExtra("node_addr") ?: "192.168.1.1"
+                Log.i(tag, "[TunService]Starting...")
                 val secretKey = intent.getByteArrayExtra("secret_key") ?: ByteArray(0)
                 val peers = intent.getStringArrayListExtra("peers") ?: emptyList()
-                start(peers.toList(), secretKey);
+                start(peers.toList(), secretKey)
                 START_STICKY
             }
             else -> {
@@ -66,11 +60,11 @@ class TunService : VpnService() {
         if (!started.compareAndSet(false, true)) {
             return 0
         }
-        val nodeAddr = addressFromSecretKey(secretKey)
-        Log.e(tag, "start to create the TUN device with node addr:" + nodeAddr)
+        val nodeAddress = addressFromSecretKey(secretKey)
+        Log.e(tag, "start to create the TUN device with node address:  $nodeAddress")
 
         val builder = Builder()
-            .addAddress(nodeAddr, 64)
+            .addAddress(nodeAddress, 64)
             .addRoute("400::", 7)
             .allowBypass()
             .allowFamily(OsConstants.AF_INET)
@@ -79,11 +73,11 @@ class TunService : VpnService() {
             //.setMtu(1400)
             .setSession("mycelium")
 
-        Log.e(tag, "Builder created")
+        Log.i(tag, "Builder created")
 
         parcel = builder.establish()
 
-        Log.e(tag, "Builder established")
+        Log.i(tag, "Builder established")
         val parcel = parcel
         if (parcel == null || !parcel.fileDescriptor.valid()) {
             stop()
@@ -102,16 +96,13 @@ class TunService : VpnService() {
     }
 
     private fun stop() {
-        Log.e(tag, "Stop called")
+        Log.w(tag, "Stop called")
 
         if (!started.compareAndSet(true, false)) {
             return
         }
 
-        val parcel = parcel
-        if (parcel == null) {
-            return
-        }
+        val parcel = parcel ?: return
         stopMycelium()
         parcel.close()
         stopSelf()
