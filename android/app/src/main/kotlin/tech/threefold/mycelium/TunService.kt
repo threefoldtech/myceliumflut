@@ -93,6 +93,7 @@ class TunService : VpnService(), CoroutineScope {
         Log.i(tag, "Builder established")
         val parcel = parcel
         if (parcel == null || !parcel.fileDescriptor.valid()) {
+            Log.e(tag, "Parcel was null or invalid")
             stop()
             return 0
         }
