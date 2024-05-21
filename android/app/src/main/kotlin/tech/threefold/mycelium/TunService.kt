@@ -10,12 +10,12 @@ import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.startMycelium
 import tech.threefold.mycelium.rust.uniffi.mycelmob.stopMycelium
 import kotlinx.coroutines.*
-
+import kotlin.coroutines.CoroutineContext
 
 
 private const val tag = "[TunService]"
 
-class TunService : VpnService() {
+class TunService : VpnService(), CoroutineScope {
 
     companion object {
         const val ACTION_START = "tech.threefold.mycelium.TunService.START"
@@ -24,14 +24,22 @@ class TunService : VpnService() {
 
     private var started = AtomicBoolean()
     private var parcel: ParcelFileDescriptor? = null
+
+    private val job = Job()
+
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + job
+
     override fun onCreate() {
         Log.d(tag, "tun service created")
         super.onCreate()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        Log.e(tag, "onDestroy() tun service destroyed")
         stop()
+        super.onDestroy()
+        job.cancel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -39,8 +47,12 @@ class TunService : VpnService() {
 
         return when (intent.action ?: ACTION_STOP) {
             ACTION_STOP -> {
-                Log.d(tag, "Stopping...")
-                stop(); START_NOT_STICKY
+                // We initially call `stopSelf()` here, and put `stop()` in onDestroy().
+                // But from the test, stopSelf() here won't call onDestroy().
+                // But if we put stopSelf() on stop(), onDestroy() will be called, so we call stop() here
+                // and call stopSelf() inside stop()
+                stop()
+                START_NOT_STICKY
             }
             ACTION_START -> {
                 Log.i(tag, "[TunService]Starting...")
@@ -55,6 +67,7 @@ class TunService : VpnService() {
             }
         }
     }
+
 
     private fun start(peers: List<String>, secretKey: ByteArray): Int {
         if (!started.compareAndSet(false, true)) {
@@ -86,7 +99,7 @@ class TunService : VpnService() {
 
         Log.d(tag, "parcel fd: " + parcel.fd)
         Log.i(tag, "starting mycelium")
-        GlobalScope.launch(Dispatchers.IO) {
+        launch {
             // TODO: detect if startMycelium failed and handle it
             // how?
             startMycelium(peers, parcel.fd, secretKey)
@@ -96,13 +109,17 @@ class TunService : VpnService() {
     }
 
     private fun stop() {
-        Log.w(tag, "Stop called")
+        Log.w(tag, "stop() called")
 
         if (!started.compareAndSet(true, false)) {
+            Log.i(tag, "got stop when not started")
             return
         }
 
-        val parcel = parcel ?: return
+        val parcel = parcel ?: run {
+            Log.e(tag, "Parcel was null, so stop() was not executed")
+            return
+        }
         stopMycelium()
         parcel.close()
         stopSelf()

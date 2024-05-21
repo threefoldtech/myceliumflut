@@ -1,7 +1,5 @@
 package tech.threefold.mycelium
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -11,12 +9,10 @@ import io.flutter.plugin.common.MethodChannel
 import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
 
-private const val tag = "Myceliumflut"
+private const val tag = "[Myceliumflut]"
 
 class MainActivity: FlutterActivity() {
     private val channel = "tech.threefold.mycelium/tun"
-    private lateinit var context: Context
-    private lateinit var activity: Activity
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -53,11 +49,11 @@ class MainActivity: FlutterActivity() {
     private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
         Log.d("tff", "preparing vpn service")
 
-        val intent = Intent(context, TunService::class.java)
+        val intent = Intent(this, TunService::class.java)
         intent.action = TunService.ACTION_START
         intent.putExtra("secret_key", secretKey)
         intent.putStringArrayListExtra("peers", ArrayList(peers))
-        val startResult = activity.startService(intent)
+        val startResult = startService(intent)
 
         Log.e("tff", "TunService start service result: " + startResult.toString())
 
@@ -65,9 +61,9 @@ class MainActivity: FlutterActivity() {
     }
 
     private fun stopVpn(): Boolean {
-        val intent = Intent(context, TunService::class.java)
+        val intent = Intent(this, TunService::class.java)
         intent.action = TunService.ACTION_STOP
-        activity.startService(intent)
+        startService(intent)
 
         return true
     }
@@ -75,8 +71,6 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // ... your initialization code here ...
-        context = this
-        activity = this
         Log.e(tag, "onCreate")
     }
 
@@ -110,8 +104,13 @@ class MainActivity: FlutterActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         Log.e(tag, "onDestroy")
+
+        Log.i(tag, "onDestroy:Stopping VPN service")
+        stopVpn()
+
+        super.onDestroy()
+
         // Activity is about to be destroyed.
         // Clean up resources (e.g., close database connections, release network resources).
     }
