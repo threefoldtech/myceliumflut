@@ -1,6 +1,7 @@
 package tech.threefold.mycelium
 
 import android.content.Intent
+import android.net.VpnService
 import android.os.Bundle
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
@@ -13,6 +14,7 @@ private const val tag = "[Myceliumflut]"
 
 class MainActivity: FlutterActivity() {
     private val channel = "tech.threefold.mycelium/tun"
+    private val vpnRequestCode = 0x0F
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -48,6 +50,13 @@ class MainActivity: FlutterActivity() {
 
     private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
         Log.d("tff", "preparing vpn service")
+
+        val vpnIntent = VpnService.prepare(this)
+        if (vpnIntent != null) {
+            // request vpn permission
+            startActivityForResult(vpnIntent, vpnRequestCode)
+            return false
+        }
 
         val intent = Intent(this, TunService::class.java)
         intent.action = TunService.ACTION_START
