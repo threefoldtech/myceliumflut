@@ -1,34 +1,24 @@
 package tech.threefold.mycelium
 
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.net.VpnService
 import android.os.Bundle
 import android.util.Log
-import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import tech.threefold.mycelium.TunService
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
+
+private const val tag = "Myceliumflut"
 
 class MainActivity: FlutterActivity() {
     private val channel = "tech.threefold.mycelium/tun"
     private lateinit var context: Context
     private lateinit var activity: Activity
 
-
-    private var tun_fd: Int = 0
-
-    var VPN_REQUEST_CODE = 0x0F // const val?
-
-
-    override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel).setMethodCallHandler {
             // This method is invoked on the main thread.
@@ -44,11 +34,10 @@ class MainActivity: FlutterActivity() {
                     result.success(secretKey)
                 }
                 "startVpn" -> {
-                    var peers = call.argument<List<String>>("peers")!!
-                    var secretKey = call.argument<ByteArray>("secretKey")!!
+                    val peers = call.argument<List<String>>("peers")!!
+                    val secretKey = call.argument<ByteArray>("secretKey")!!
                     Log.d("tff", "peers = $peers")
                     val started = startVpn(peers, secretKey)
-                    Log.d("tff", "" + "VPN Started ")
                     result.success(started)
                 }
                 "stopVpn" -> {
@@ -56,7 +45,6 @@ class MainActivity: FlutterActivity() {
                     Log.d("tff",  "stopping VPN")
                     result.success(stopCmdSent)
                 }
-                "getTunFD" -> result.success(tun_fd)
                 else -> result.notImplemented()
             }
         }
@@ -65,27 +53,13 @@ class MainActivity: FlutterActivity() {
     private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
         Log.d("tff", "preparing vpn service")
 
-        val intent = VpnService.prepare(context)
-        if (intent != null) {
-            Log.d("tff", "Start activity for result... ")
-            activity.startActivityForResult(intent, VPN_REQUEST_CODE)
-            return false;
-        }
+        val intent = Intent(context, TunService::class.java)
+        intent.action = TunService.ACTION_START
+        intent.putExtra("secret_key", secretKey)
+        intent.putStringArrayListExtra("peers", ArrayList(peers))
+        val startResult = activity.startService(intent)
 
-        // TODO FIXME
-        // LocalBroadcastManager is deprecated, fix with new API
-        LocalBroadcastManager.getInstance(activity)
-            .registerReceiver(receiver, IntentFilter(TunService.RECEIVER_INTENT))
-
-        val intentTff = Intent(context, TunService::class.java)
-        val TASK_CODE = 100
-        val pi = activity.createPendingResult(TASK_CODE, intentTff, 0)
-        intentTff.action = TunService.ACTION_START
-        intentTff.putExtra("secret_key", secretKey)
-        intentTff.putStringArrayListExtra("peers", ArrayList(peers))
-        val startResult = activity.startService(intentTff)
-
-        Log.e("tff", "start service result: " + startResult.toString())
+        Log.e("tff", "TunService start service result: " + startResult.toString())
 
         return true
     }
@@ -98,36 +72,17 @@ class MainActivity: FlutterActivity() {
         return true
     }
 
-    private val receiver: BroadcastReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent) {
-
-                when (intent.getStringExtra("type")) {
-                    "state" -> {
-                        Log.e(
-                            "tff - broadcast",
-                            "" + intent.getBooleanExtra("started", false).toString()
-                        )
-                        Log.e(
-                            "tff - broadcast",
-                            "" + intent.getIntExtra("parcel_fd", 0).toString()
-                        )
-                        tun_fd = intent.getIntExtra("parcel_fd", 0)
-                    }
-                }
-            }
-        }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // ... your initialization code here ...
         context = this
         activity = this
-        Log.e("MyceliumFlut", "onCreate")
+        Log.e(tag, "onCreate")
     }
 
     override fun onStart() {
         super.onStart()
-        Log.e("MyceliumFlut", "onStart")
+        Log.e(tag, "onStart")
         // Activity is becoming visible to the user.
         // Start animations, resume media playback, register listeners, etc.
     }
@@ -135,41 +90,41 @@ class MainActivity: FlutterActivity() {
 
     override fun onStop() {
         super.onStop()
-        Log.e("MyceliumFlut", "onStop")
+        Log.e(tag, "onStop")
         // Activity is no longer visible to the user.
         // Stop animations, pause media playback, unregister listeners, etc.
     }
 
     override fun onResume() {
         super.onResume()
-        Log.e("MyceliumFlut", "onResume")
+        Log.e(tag, "onResume")
         // Activity is in the foreground and interacting with the user.
         // Resume tasks that were paused in onPause(), refresh UI data, etc.
     }
 
     override fun onPause() {
         super.onPause()
-        Log.e("MyceliumFlut", "onPause")
+        Log.e(tag, "onPause")
         // Activity is partially obscured or losing focus.
         // Pause tasks that shouldn't run in the background, release resources, etc.
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.e("MyceliumFlut", "onDestroy")
+        Log.e(tag, "onDestroy")
         // Activity is about to be destroyed.
         // Clean up resources (e.g., close database connections, release network resources).
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        Log.e("MyceliumFlut", "onSaveInstance")
+        Log.e(tag, "onSaveInstance")
         // Save UI state changes to the outState bundle.
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        Log.e("MyceliumFlut", "onRestoreInstance")
+        Log.e(tag, "onRestoreInstance")
         // Restore UI state from the savedInstanceState bundle.
 
     }
