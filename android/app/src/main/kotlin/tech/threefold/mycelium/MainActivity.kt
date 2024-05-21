@@ -1,5 +1,6 @@
 package tech.threefold.mycelium
 
+import android.app.Activity
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
@@ -15,6 +16,10 @@ private const val tag = "[Myceliumflut]"
 class MainActivity: FlutterActivity() {
     private val channel = "tech.threefold.mycelium/tun"
     private val vpnRequestCode = 0x0F
+
+    // these two variables are only used during VPN permission flow.
+    private var vpnPermissionPeers: List<String>? = null
+    private var vpnPermissionSecretKey: ByteArray? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -48,13 +53,39 @@ class MainActivity: FlutterActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == vpnRequestCode) {
+            if (resultCode == Activity.RESULT_OK) {
+                Log.i(tag, "VPN permission granted by the user")
+                startVpn(this.vpnPermissionPeers ?: emptyList(), this.vpnPermissionSecretKey ?: ByteArray(0))
+            } else {
+                // The user denied the VPN permission,
+                // TODO: handle this case as needed
+                Log.e(tag, "VPN permission was denied by the user")
+            }
+        }
+    }
+    // checkAskVpnPermission will return true if we need to ask for permission,
+    // false otherwise.
+    private fun checkAskVpnPermission(peers: List<String>, secretKey: ByteArray): Boolean{
+        val intent = VpnService.prepare(this)
+        if (intent != null) {
+            this.vpnPermissionPeers = peers
+            this.vpnPermissionSecretKey = secretKey
+            startActivityForResult(intent, vpnRequestCode)
+            return true
+        } else {
+            return false
+        }
+    }
     private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
         Log.d("tff", "preparing vpn service")
 
-        val vpnIntent = VpnService.prepare(this)
-        if (vpnIntent != null) {
-            // request vpn permission
-            startActivityForResult(vpnIntent, vpnRequestCode)
+        if (checkAskVpnPermission(peers, secretKey) == true) {
+            // need to ask for permission, so stop the flow here.
+            // permission handler will be handled by onActivityResult function
             return false
         }
 
