@@ -18,6 +18,7 @@ private const val tag = "[TunService]"
 class TunService : VpnService(), CoroutineScope {
 
     companion object {
+        const val EVENT_INTENT = "tech.threefold.mycelium.TunService.EVENT"
         const val ACTION_START = "tech.threefold.mycelium.TunService.START"
         const val ACTION_STOP = "tech.threefold.mycelium.TunService.STOP"
     }
@@ -103,7 +104,19 @@ class TunService : VpnService(), CoroutineScope {
         launch {
             // TODO: detect if startMycelium failed and handle it
             // how?
-            startMycelium(peers, parcel.fd, secretKey)
+            try {
+                startMycelium(peers, parcel.fd, secretKey)
+                if (started.get() == true) {
+                    Log.e(tag, "mycelium unexpectedly finished")
+                    sendBroadcast(Intent(EVENT_INTENT))
+                } else {
+                    Log.i(tag, "mycelium finished cleanly")
+                }
+
+            } catch (e: Exception) {
+                Log.e(tag, "startMycelium failed with exception", e)
+                // Handle the error here
+            }
         }
 
         return parcel.fd

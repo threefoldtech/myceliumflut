@@ -1,7 +1,10 @@
 package tech.threefold.mycelium
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.VpnService
 import android.os.Bundle
 import android.util.Log
@@ -50,6 +53,15 @@ class MainActivity: FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    // TunService EVENT receiver
+    private val tunServiceEventReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            // This method is called when the broadcast intent is received
+            // Update the UI based on the received data
+            Log.e(tag, "UNHANDLED TunService Event")
         }
     }
 
@@ -111,6 +123,9 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // ... your initialization code here ...
+        // Register the receiver
+        val filter = IntentFilter(TunService.EVENT_INTENT)
+        registerReceiver(tunServiceEventReceiver, filter)
         Log.e(tag, "onCreate")
     }
 
@@ -153,6 +168,8 @@ class MainActivity: FlutterActivity() {
 
         // Activity is about to be destroyed.
         // Clean up resources (e.g., close database connections, release network resources).
+        // Unregister the receiver
+        unregisterReceiver(tunServiceEventReceiver)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
