@@ -57,6 +57,31 @@ import OSLog
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
     
+    override func applicationWillTerminate(_ application: UIApplication) {
+        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        // Insert code here to handle when the app is about to terminate
+        errlog("applicationWillterminate handler empty")
+        self.stopMycelium()
+        super.applicationWillTerminate(application)
+    }
+/*
+    func applicationWillResignActive(_ application: UIApplication) {
+    // Pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. 
+    // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks.
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
+    }
+
+    func applicationWillEnterForeground(_ application: UIApplication) {
+    // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+    // Restart any tasks that were paused (or not yet started) while the application was inactive.
+    }
+*/
     func createTunnel(secretKey: Data, peers: [String]) {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
@@ -83,7 +108,6 @@ import OSLog
                 self.createVPN()
             }
             
-           
             self.vpnManager.isEnabled = true
             
             self.vpnManager.saveToPreferences(completionHandler: { (error:Error?) in
