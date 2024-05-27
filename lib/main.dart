@@ -12,6 +12,13 @@ final _logger = Logger('Mycelium');
 const String startMyceliumText = 'Start Mycelium';
 const String stopMyceliumText = 'Stop Mycelium';
 
+const String myceliumStatusStarted = 'Mycelium Started';
+const String myceliumStatusStopped = 'Mycelium Stopped';
+const String myceliumStatusFailedStart = 'Mycelium failed to start';
+const Color myceliumStatusBackgroundColorStarted = Colors.lightGreenAccent;
+const Color myceliumStatusBackgroundColorStopped = Colors.grey;
+const Color myceliumStatusBackgroundColorFailedStart = Colors.yellowAccent;
+
 Future<void> main() async {
   // Logger configuration
   Logger.root.level = Level.ALL; // Log messages emitted at all levels
@@ -48,6 +55,9 @@ class _MyAppState extends State<MyApp> {
           setState(() {
             _isStarted = false;
             _textButton = startMyceliumText;
+            _myceliumStatus = myceliumStatusFailedStart;
+            _myceliumStatusBackgroundColor =
+                myceliumStatusBackgroundColorFailedStart;
           });
 
           break;
@@ -79,6 +89,8 @@ class _MyAppState extends State<MyApp> {
   // start/stop mycelium button variables
   bool _isStarted = false;
   String _textButton = startMyceliumText;
+  String _myceliumStatus = '';
+  Color _myceliumStatusBackgroundColor = Colors.white;
 
   // peers text field
   final textEditController =
@@ -101,7 +113,7 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Column(
             children: [
-              Text('node_addr:$_nodeAddr\n'),
+              SelectableText(_nodeAddr),
               TextField(
                 controller: textEditController,
                 minLines: 2,
@@ -122,9 +134,13 @@ class _MyAppState extends State<MyApp> {
                       setState(() {
                         _isStarted = true;
                         _textButton = stopMyceliumText;
+                        _myceliumStatus = myceliumStatusStarted;
+                        _myceliumStatusBackgroundColor =
+                            myceliumStatusBackgroundColorStarted;
                       });
                     } on PlatformException {
                       _logger.warning("Start VPN failed");
+                      _myceliumStatus = myceliumStatusFailedStart;
                     }
                   } else {
                     try {
@@ -132,6 +148,9 @@ class _MyAppState extends State<MyApp> {
                       setState(() {
                         _isStarted = false;
                         _textButton = startMyceliumText;
+                        _myceliumStatus = myceliumStatusStopped;
+                        _myceliumStatusBackgroundColor =
+                            myceliumStatusBackgroundColorStopped;
                       });
                     } on PlatformException {
                       _logger.warning("stopping VPN failed");
@@ -140,6 +159,10 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: Text(_textButton),
               ),
+              const SizedBox(height: 5), // Add some space
+              Container(
+                  color: _myceliumStatusBackgroundColor,
+                  child: Text(_myceliumStatus)),
             ],
           ),
         ),
