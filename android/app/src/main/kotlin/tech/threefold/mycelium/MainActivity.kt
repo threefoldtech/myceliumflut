@@ -17,16 +17,19 @@ import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
 private const val tag = "[Myceliumflut]"
 
 class MainActivity: FlutterActivity() {
-    private val channel = "tech.threefold.mycelium/tun"
+    private val channelName = "tech.threefold.mycelium/tun"
     private val vpnRequestCode = 0x0F
 
     // these two variables are only used during VPN permission flow.
     private var vpnPermissionPeers: List<String>? = null
     private var vpnPermissionSecretKey: ByteArray? = null
 
+    private lateinit var channel : MethodChannel
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel).setMethodCallHandler {
+        channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+        channel.setMethodCallHandler {
             // This method is invoked on the main thread.
                 call, result ->
             when (call.method) {
@@ -57,14 +60,15 @@ class MainActivity: FlutterActivity() {
     }
 
     // TunService EVENT receiver
+    // it receives events from TunService and handles them accordingly.
     private val tunServiceEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            // This method is called when the broadcast intent is received
-            // Update the UI based on the received data
-            Log.e(tag, "UNHANDLED TunService Event")
+            channel.invokeMethod("notifyMyceliumFailed","")
+            stopVpn() // to cleanup the state
         }
     }
 
+    // onActivityResult is called when the user grants or denies the VPN permission.
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 

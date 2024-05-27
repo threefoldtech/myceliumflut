@@ -9,6 +9,9 @@ import 'package:logging/logging.dart';
 
 final _logger = Logger('Mycelium');
 
+const String startMyceliumText = 'Start Mycelium';
+const String stopMyceliumText = 'Stop Mycelium';
+
 Future<void> main() async {
   // Logger configuration
   Logger.root.level = Level.ALL; // Log messages emitted at all levels
@@ -36,6 +39,22 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     initPlatformState();
+    platform.setMethodCallHandler((MethodCall call) async {
+      switch (call.method) {
+        case 'notifyMyceliumFailed':
+          _logger.warning("Mycelium failed to start");
+          // Handle the method call and optionally return a result
+          // Update the UI
+          setState(() {
+            _isStarted = false;
+            _textButton = startMyceliumText;
+          });
+
+          break;
+        default:
+          throw MissingPluginException();
+      }
+    });
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -59,7 +78,7 @@ class _MyAppState extends State<MyApp> {
 
   // start/stop mycelium button variables
   bool _isStarted = false;
-  String _textButton = "Start Mycelium";
+  String _textButton = startMyceliumText;
 
   // peers text field
   final textEditController =
@@ -102,7 +121,7 @@ class _MyAppState extends State<MyApp> {
                       // TODO: check return value of the startVpn above
                       setState(() {
                         _isStarted = true;
-                        _textButton = "Stop Mycelium";
+                        _textButton = stopMyceliumText;
                       });
                     } on PlatformException {
                       _logger.warning("Start VPN failed");
@@ -112,7 +131,7 @@ class _MyAppState extends State<MyApp> {
                       stopVpn(platform);
                       setState(() {
                         _isStarted = false;
-                        _textButton = "Start Mycelium";
+                        _textButton = startMyceliumText;
                       });
                     } on PlatformException {
                       _logger.warning("stopping VPN failed");
