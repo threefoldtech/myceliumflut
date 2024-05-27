@@ -64,7 +64,6 @@ class MainActivity: FlutterActivity() {
     private val tunServiceEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             channel.invokeMethod("notifyMyceliumFailed","")
-            stopVpn() // to cleanup the state
         }
     }
 
@@ -97,8 +96,6 @@ class MainActivity: FlutterActivity() {
         }
     }
     private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
-        Log.d("tff", "preparing vpn service")
-
         if (checkAskVpnPermission(peers, secretKey) == true) {
             // need to ask for permission, so stop the flow here.
             // permission handler will be handled by onActivityResult function
@@ -109,9 +106,7 @@ class MainActivity: FlutterActivity() {
         intent.action = TunService.ACTION_START
         intent.putExtra("secret_key", secretKey)
         intent.putStringArrayListExtra("peers", ArrayList(peers))
-        val startResult = startService(intent)
-
-        Log.e("tff", "TunService start service result: " + startResult.toString())
+        startService(intent)
 
         return true
     }

@@ -38,7 +38,7 @@ class TunService : VpnService(), CoroutineScope {
 
     override fun onDestroy() {
         Log.e(tag, "onDestroy() tun service destroyed")
-        stop()
+        stop(true)
         super.onDestroy()
         job.cancel()
     }
@@ -52,11 +52,10 @@ class TunService : VpnService(), CoroutineScope {
                 // But from the test, stopSelf() here won't call onDestroy().
                 // But if we put stopSelf() on stop(), onDestroy() will be called, so we call stop() here
                 // and call stopSelf() inside stop()
-                stop()
+                stop(true)
                 START_NOT_STICKY
             }
             ACTION_START -> {
-                Log.i(tag, "[TunService]Starting...")
                 val secretKey = intent.getByteArrayExtra("secret_key") ?: ByteArray(0)
                 val peers = intent.getStringArrayListExtra("peers") ?: emptyList()
                 start(peers.toList(), secretKey)
@@ -75,7 +74,7 @@ class TunService : VpnService(), CoroutineScope {
             return 0
         }
         val nodeAddress = addressFromSecretKey(secretKey)
-        Log.e(tag, "start to create the TUN device with node address:  $nodeAddress")
+        Log.e(tag, "creating TUN device with node address:  $nodeAddress")
 
         val builder = Builder()
             .addAddress(nodeAddress, 64)
@@ -87,20 +86,17 @@ class TunService : VpnService(), CoroutineScope {
             //.setMtu(1400)
             .setSession("mycelium")
 
-        Log.i(tag, "Builder created")
 
         parcel = builder.establish()
 
-        Log.i(tag, "Builder established")
         val parcel = parcel
         if (parcel == null || !parcel.fileDescriptor.valid()) {
             Log.e(tag, "Parcel was null or invalid")
-            stop()
+            stop(false)
             return 0
         }
 
-        Log.d(tag, "parcel fd: " + parcel.fd)
-        Log.i(tag, "starting mycelium")
+        Log.d(tag, "starting mycelium with parcel fd: " + parcel.fd)
         launch {
             // TODO: detect if startMycelium failed and handle it
             // how?
@@ -108,6 +104,7 @@ class TunService : VpnService(), CoroutineScope {
                 startMycelium(peers, parcel.fd, secretKey)
                 if (started.get() == true) {
                     Log.e(tag, "mycelium unexpectedly finished")
+                    stop(false)
                     sendBroadcast(Intent(EVENT_INTENT))
                 } else {
                     Log.i(tag, "mycelium finished cleanly")
@@ -122,20 +119,17 @@ class TunService : VpnService(), CoroutineScope {
         return parcel.fd
     }
 
-    private fun stop() {
+    private fun stop(stopMycelium: Boolean) {
         Log.w(tag, "stop() called")
 
         if (!started.compareAndSet(true, false)) {
             Log.i(tag, "got stop when not started")
             return
         }
-
-        val parcel = parcel ?: run {
-            Log.e(tag, "Parcel was null, so stop() was not executed")
-            return
+        if (stopMycelium) {
+            stopMycelium()
         }
-        stopMycelium()
-        parcel.close()
+        parcel?.close()
         stopSelf()
     }
 }
