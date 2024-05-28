@@ -45,8 +45,6 @@ import OSLog
                 case "stopVpn":
                     self.stopMycelium()
                     result(true)
-                case "getTunFD":
-                    result(1)
                 default:
                     result(FlutterMethodNotImplemented)
                 }
@@ -64,43 +62,27 @@ import OSLog
         self.stopMycelium()
         super.applicationWillTerminate(application)
     }
-/*
-    func applicationWillResignActive(_ application: UIApplication) {
-    // Pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. 
-    // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks.
-    }
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
-    // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive.
-    }
-*/
-    func createTunnel(secretKey: Data, peers: [String]) {
+    func createTunnel(secretKey: Data, peers: [String], tryNum: Int = 0) {
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
                 errlog("loadAllFromPref failed:" + error.localizedDescription)
                 return
             }
+
             guard let providers = providers else {
                 errlog("caught by the nil providers guard")
                 return
             } // Handle error if nil
+
             if providers.count > 0 {
-                infolog("number of providers :\(providers.count)")
                 // TODO : search by bundle identifier
-                let myProvider = providers.first(where: { $0.protocolConfiguration?.serverAddress==self.vpnServerAddress }) // Replace with your identifier
+                let myProvider = providers.first(where: { $0.protocolConfiguration?.serverAddress==self.vpnServerAddress })
                 if let unwrappedProvider = myProvider { // cek nil
                     self.vpnManager = unwrappedProvider
                     debuglog("use existing provider")
                 } else {
-                    debuglog("provider is Nil, creating a new one")
+                    errlog("provider is null, creating a new one")
                     self.createVPN()
                 }
             } else {
@@ -115,22 +97,30 @@ import OSLog
                     errlog("failed to save self.vpnManager: "+error.localizedDescription)
                 } else {
                     infolog("preferences saved successfully")
+                    do {
+                        // based on some QnA in the apple developer forums,
+                        // very first run (which need to ask for user permission)  will always failed.
+                        // The workaround is to retry the process, which we do here.
+                        if self.vpnManager.connection.status == .invalid && tryNum == 0 {
+                            infolog("it is on very first run, we need to retry the loadAllFromPreferences")
+                            self.createTunnel(secretKey: secretKey, peers: peers, tryNum: 1)
+                        } else {
+                            var options: [String: NSObject] = [
+                                "secretKey": secretKey as NSObject,
+                                "peers": peers as NSObject
+                            ]
+                            try self.vpnManager.connection.startVPNTunnel(options: options)
+                        }
+                    } catch {
+                        errlog("startVPNTunnel() failed: " + error.localizedDescription)
+                    }
                 }
             })
-            do {
-                debuglog("connection.startVPNTUnnel")
-                var options: [String: NSObject] = [
-                    "secretKey": secretKey as NSObject,
-                    "peers": peers as NSObject
-                ]
-                try self.vpnManager.connection.startVPNTunnel(options: options)
-            } catch {
-                errlog("startVPNTunnel() failed: " + error.localizedDescription)
-            }
         }
         
     }
     
+
     func createVPN() {
         // create protocol configuration
         let providerProtocol = NETunnelProviderProtocol()
@@ -139,7 +129,7 @@ import OSLog
         providerProtocol.serverAddress = self.vpnServerAddress
         providerProtocol.username = self.vpnUsername
         
-        providerProtocol.disconnectOnSleep = true // TODO: check this
+        providerProtocol.disconnectOnSleep = false
         
         // initialize the manager
         self.vpnManager = NETunnelProviderManager()
@@ -162,6 +152,26 @@ import OSLog
         infolog("stopMycelium")
         self.vpnManager.connection.stopVPNTunnel()
     }
+
+    /*
+      TODO: add some handlers to below func
+        func applicationWillResignActive(_ application: UIApplication) {
+        // Pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates.
+        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks.
+        }
+
+        func applicationDidEnterBackground(_ application: UIApplication) {
+        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
+        }
+
+        func applicationWillEnterForeground(_ application: UIApplication) {
+        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+        }
+
+        func applicationDidBecomeActive(_ application: UIApplication) {
+        // Restart any tasks that were paused (or not yet started) while the application was inactive.
+        }
+    */
 }
 
 func debuglog(_ msg: String, _ args: CVarArg...) {
