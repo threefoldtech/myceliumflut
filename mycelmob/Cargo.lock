@@ -1036,7 +1036,7 @@ dependencies = [
 [[package]]
 name = "mobile"
 version = "0.1.0"
-source = "git+http://github.com/threefoldtech/mycelium?rev=978891a51f015b045bf645d11bdbdd814e0c4b36#978891a51f015b045bf645d11bdbdd814e0c4b36"
+source = "git+http://github.com/threefoldtech/mycelium?rev=b0bdada330e1ff81165249781c46a9ec29d9f226#b0bdada330e1ff81165249781c46a9ec29d9f226"
 dependencies = [
  "mycelium",
  "once_cell",
@@ -1050,7 +1050,7 @@ dependencies = [
 [[package]]
 name = "mycelium"
 version = "0.5.2"
-source = "git+http://github.com/threefoldtech/mycelium?rev=978891a51f015b045bf645d11bdbdd814e0c4b36#978891a51f015b045bf645d11bdbdd814e0c4b36"
+source = "git+http://github.com/threefoldtech/mycelium?rev=b0bdada330e1ff81165249781c46a9ec29d9f226#b0bdada330e1ff81165249781c46a9ec29d9f226"
 dependencies = [
  "aes-gcm",
  "blake3",
