@@ -41,9 +41,12 @@ class _MyAppState extends State<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _nodeAddr = '';
   var privKey = Uint8List(0);
+  List<String> peers = [];
+  late TextEditingController textEditController;
 
   @override
   void initState() {
+    textEditController = TextEditingController(text: '');
     super.initState();
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
@@ -70,6 +73,11 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     privKey = await loadOrGeneratePrivKey(platform);
+    peers = await loadPeers();
+    if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
+      peers = ['tcp://65.21.231.58:9651'];
+    }
+    textEditController = TextEditingController(text: peers.join('\n'));
 
     String nodeAddr = (await platform.invokeMethod<String>(
         'addressFromSecretKey', privKey)) as String;
@@ -91,10 +99,6 @@ class _MyAppState extends State<MyApp> {
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
   Color _myceliumStatusBackgroundColor = Colors.white;
-
-  // peers text field
-  final textEditController =
-      TextEditingController(text: 'tcp://65.21.231.58:9651');
 
   @override
   void dispose() {
@@ -129,6 +133,7 @@ class _MyAppState extends State<MyApp> {
                   final peers = getPeers(textEditController.text);
 
                   if (!_isStarted) {
+                    // verify the peers
                     String? peerError = isValidPeers(peers);
                     if (peerError != null) {
                       setState(() {
@@ -138,6 +143,8 @@ class _MyAppState extends State<MyApp> {
                       });
                       return;
                     }
+                    // store the peers if verified
+                    storePeers(peers);
                     try {
                       startVpn(platform, peers, privKey);
                       // the startVpn result will be send in async way by Kotlin/Swift
@@ -183,6 +190,23 @@ class _MyAppState extends State<MyApp> {
 
 List<String> getPeers(String texts) {
   return texts.split('\n').map((e) => e.trim()).toList();
+}
+
+Future<void> storePeers(List<String> peers) async {
+  final dir = await getApplicationDocumentsDirectory();
+  final file = File('${dir.path}/peers.txt');
+  await file.writeAsString(peers.join('\n'));
+}
+
+Future<List<String>> loadPeers() async {
+  final dir = await getApplicationDocumentsDirectory();
+  final file = File('${dir.path}/peers.txt');
+  if (await file.exists()) {
+    String contents = await file.readAsString();
+    return contents.split('\n');
+  } else {
+    return [];
+  }
 }
 
 Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
