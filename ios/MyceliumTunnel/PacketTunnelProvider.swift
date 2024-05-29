@@ -9,10 +9,12 @@ import NetworkExtension
 import OSLog
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
-    let mtuSize = 1400
-    let addrNetworkPrefixLengths : NSNumber = 64
-    let routeDestinationAddress = "400::"
-    let routeNetworkPrefixLength : NSNumber = 7
+    private let mtuSize = 1400
+    private let addrNetworkPrefixLengths : NSNumber = 64
+    private let routeDestinationAddress = "400::"
+    private let routeNetworkPrefixLength : NSNumber = 7
+
+    private var started = false
 
     // TODO FIXME
     // - use completionHandle properly
@@ -38,9 +40,15 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 infolog("tunnel settings set successfully")
             }
             if let tunFd = self?.tunnelFileDescriptor {
+                self!.started = true
                 DispatchQueue.global(qos: .default).async {
                     infolog("calling startMycelium()  with tun fd:\(tunFd) and peers = \(peers) ")
                     startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
+                    if self?.started == true {
+                        errlog("mycelium finished unexpectedly")
+                    }
+                    // TODO we currently can't handle failed mycelium properly
+                    // see https://github.com/threefoldtech/myceliumflut/issues/35
                 }
             } else {
                 errlog("myceliumflut can't get tunFd")
@@ -54,7 +62,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         // Add code here to start the process of stopping the tunnel.
         errlog("myceliumflut stopTunnel() called")
-        stopMycelium()
+        if started {
+            stopMycelium()
+            self.started = false
+        }
+
         completionHandler()
     }
     
