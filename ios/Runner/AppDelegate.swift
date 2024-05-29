@@ -54,7 +54,7 @@ import OSLog
             GeneratedPluginRegistrant.register(with: self)
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
-    
+
     override func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         // Insert code here to handle when the app is about to terminate
@@ -105,7 +105,7 @@ import OSLog
                             infolog("it is on very first run, we need to retry the loadAllFromPreferences")
                             self.createTunnel(secretKey: secretKey, peers: peers, tryNum: 1)
                         } else {
-                            var options: [String: NSObject] = [
+                            let options: [String: NSObject] = [
                                 "secretKey": secretKey as NSObject,
                                 "peers": peers as NSObject
                             ]
@@ -154,24 +154,24 @@ import OSLog
     }
 
     /*
-      TODO: add some handlers to below func
-        func applicationWillResignActive(_ application: UIApplication) {
-        // Pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks.
-        }
+     TODO: add some handlers to below func
+     func applicationWillResignActive(_ application: UIApplication) {
+     // Pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates.
+     // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks.
+     }
 
-        func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        }
+     func applicationDidEnterBackground(_ application: UIApplication) {
+     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
+     }
 
-        func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
-        }
+     func applicationWillEnterForeground(_ application: UIApplication) {
+     // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+     }
 
-        func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive.
-        }
-    */
+     func applicationDidBecomeActive(_ application: UIApplication) {
+     // Restart any tasks that were paused (or not yet started) while the application was inactive.
+     }
+     */
 }
 
 func debuglog(_ msg: String, _ args: CVarArg...) {
