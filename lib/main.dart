@@ -116,7 +116,7 @@ class _MyAppState extends State<MyApp> {
               SelectableText(_nodeAddr),
               TextField(
                 controller: textEditController,
-                minLines: 2,
+                minLines: 1,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 decoration: const InputDecoration(
@@ -127,10 +127,20 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                 onPressed: () {
                   final peers = getPeers(textEditController.text);
+
                   if (!_isStarted) {
+                    String? peerError = isValidPeers(peers);
+                    if (peerError != null) {
+                      setState(() {
+                        _myceliumStatus = peerError;
+                        _myceliumStatusBackgroundColor =
+                            myceliumStatusBackgroundColorFailedStart;
+                      });
+                      return;
+                    }
                     try {
                       startVpn(platform, peers, privKey);
-                      // TODO: check return value of the startVpn above
+                      // the startVpn result will be send in async way by Kotlin/Swift
                       setState(() {
                         _isStarted = true;
                         _textButton = stopMyceliumText;
@@ -201,37 +211,47 @@ Future<bool?> startVpn(
 }
 
 Future<bool> stopVpn(MethodChannel platform) async {
-  // TODO: check if VPN is started
+  // check if VPN is started is done on Kotlin / Swift side
   var stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
-
   _logger.info("stop vpn : $stopped");
   return stopped;
 }
 
-// TODO FIXME
-// The TUN device creation happened in the Kotlin code in async way,
-// and we currently don't have mechanism to send data initiated from Kotlin.
-// So, we need to poll the Tun FD existance.
-// We also currently don't have good simple solution to poll the data,
-// so we do sleep for now.
-//
-// looks like android/ios can call Dart code
-// see https://docs.flutter.dev/platform-integration/platform-channels on this part
-// ```
-// If desired, method calls can also be sent in the reverse direction, with the platform acting as client to methods implemented in Dar
-// ```
-Future<int> getTunFDAndroid(MethodChannel platform) async {
-  int tunFd = 0;
-  for (var i = 0; i < 30; i++) {
-    await Future.delayed(const Duration(milliseconds: 100));
-    try {
-      tunFd = await platform.invokeMethod<int>('getTunFD') as int;
-    } on PlatformException {
-      tunFd = -1;
-    }
-    if (tunFd > 0) {
-      break;
+String? isValidPeers(List<String> peers) {
+  if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
+    return "peers can't be empty";
+  }
+
+  for (var peer in peers) {
+    String? error = isValidPeer(peer);
+    if (error != null) {
+      return 'invalid peer:`$peer` $error';
     }
   }
-  return tunFd;
+  return null;
+}
+
+// check if a peer is a valid peer
+String? isValidPeer(String peer) {
+  final prefixRegex = RegExp(r'^(tcp|quic)://');
+  final ipv4Regex = RegExp(
+      r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
+  final ipv6Regex = RegExp(
+      r'\[(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))\]');
+  final portRegex = RegExp(r':9651$');
+
+  if (!prefixRegex.hasMatch(peer)) {
+    return 'peer must start with tcp:// or quic://';
+  }
+
+  String ipPortPart = peer.substring(peer.indexOf('://') + 3);
+  if (!ipv4Regex.hasMatch(ipPortPart) && !ipv6Regex.hasMatch(ipPortPart)) {
+    return 'peer must contain a valid IPv4 or IPv6 address';
+  }
+
+  if (!portRegex.hasMatch(ipPortPart)) {
+    return 'peer must end with :9651';
+  }
+
+  return null;
 }
