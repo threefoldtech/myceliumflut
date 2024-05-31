@@ -15,7 +15,9 @@ const String stopMyceliumText = 'Stop Mycelium';
 const String myceliumStatusStarted = 'Mycelium Started';
 const String myceliumStatusStopped = 'Mycelium Stopped';
 const String myceliumStatusFailedStart = 'Mycelium failed to start';
-const Color darkBlue = Color(0xFF025996);
+
+const Color colorDarkBlue = Color(0xFF025996);
+const Color colorLimeGreen = Color(0xFF0D9C9E);
 
 Future<void> main() async {
   // Logger configuration
@@ -113,6 +115,10 @@ class _MyAppState extends State<MyApp> {
             width: 1200, //physicalPxToLogicalPx(context, 161.9),
             height: 150, //physicalPxToLogicalPx(context, 29.85),
           ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(1.0),
+            child: SizedBox(width: 250, child: Divider(color: colorLimeGreen)),
+          ),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -152,7 +158,7 @@ class _MyAppState extends State<MyApp> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: darkBlue,
+                        backgroundColor: colorDarkBlue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.all(16.0),
                         textStyle: const TextStyle(fontSize: 20)),
@@ -202,7 +208,7 @@ class _MyAppState extends State<MyApp> {
                 Text(
                   _myceliumStatus,
                   style: const TextStyle(
-                      color: darkBlue, fontWeight: FontWeight.bold),
+                      color: colorDarkBlue, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
