@@ -110,77 +110,82 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(fontFamily: 'Roboto'),
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Mycelium App'),
         ),
-        body: Center(
-          child: Column(
-            children: [
-              SelectableText(_nodeAddr),
-              TextField(
-                controller: textEditController,
-                minLines: 1,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Peers',
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: Column(
+              children: [
+                SelectableText(_nodeAddr),
+                const SizedBox(height: 5), // Add some space
+                TextField(
+                  controller: textEditController,
+                  minLines: 1,
+                  maxLines: null,
+                  keyboardType: TextInputType.multiline,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Peers',
+                  ),
                 ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final peers = getPeers(textEditController.text);
+                ElevatedButton(
+                  onPressed: () {
+                    final peers = getPeers(textEditController.text);
 
-                  if (!_isStarted) {
-                    // verify the peers
-                    String? peerError = isValidPeers(peers);
-                    if (peerError != null) {
-                      setState(() {
-                        _myceliumStatus = peerError;
-                        _myceliumStatusBackgroundColor =
-                            myceliumStatusBackgroundColorFailedStart;
-                      });
-                      return;
+                    if (!_isStarted) {
+                      // verify the peers
+                      String? peerError = isValidPeers(peers);
+                      if (peerError != null) {
+                        setState(() {
+                          _myceliumStatus = peerError;
+                          _myceliumStatusBackgroundColor =
+                              myceliumStatusBackgroundColorFailedStart;
+                        });
+                        return;
+                      }
+                      // store the peers if verified
+                      storePeers(peers);
+                      try {
+                        startVpn(platform, peers, privKey);
+                        // the startVpn result will be send in async way by Kotlin/Swift
+                        setState(() {
+                          _isStarted = true;
+                          _textButton = stopMyceliumText;
+                          _myceliumStatus = myceliumStatusStarted;
+                          _myceliumStatusBackgroundColor =
+                              myceliumStatusBackgroundColorStarted;
+                        });
+                      } on PlatformException {
+                        _logger.warning("Start VPN failed");
+                        _myceliumStatus = myceliumStatusFailedStart;
+                      }
+                    } else {
+                      try {
+                        stopVpn(platform);
+                        setState(() {
+                          _isStarted = false;
+                          _textButton = startMyceliumText;
+                          _myceliumStatus = myceliumStatusStopped;
+                          _myceliumStatusBackgroundColor =
+                              myceliumStatusBackgroundColorStopped;
+                        });
+                      } on PlatformException {
+                        _logger.warning("stopping VPN failed");
+                      }
                     }
-                    // store the peers if verified
-                    storePeers(peers);
-                    try {
-                      startVpn(platform, peers, privKey);
-                      // the startVpn result will be send in async way by Kotlin/Swift
-                      setState(() {
-                        _isStarted = true;
-                        _textButton = stopMyceliumText;
-                        _myceliumStatus = myceliumStatusStarted;
-                        _myceliumStatusBackgroundColor =
-                            myceliumStatusBackgroundColorStarted;
-                      });
-                    } on PlatformException {
-                      _logger.warning("Start VPN failed");
-                      _myceliumStatus = myceliumStatusFailedStart;
-                    }
-                  } else {
-                    try {
-                      stopVpn(platform);
-                      setState(() {
-                        _isStarted = false;
-                        _textButton = startMyceliumText;
-                        _myceliumStatus = myceliumStatusStopped;
-                        _myceliumStatusBackgroundColor =
-                            myceliumStatusBackgroundColorStopped;
-                      });
-                    } on PlatformException {
-                      _logger.warning("stopping VPN failed");
-                    }
-                  }
-                },
-                child: Text(_textButton),
-              ),
-              const SizedBox(height: 5), // Add some space
-              Container(
-                  color: _myceliumStatusBackgroundColor,
-                  child: Text(_myceliumStatus)),
-            ],
+                  },
+                  child: Text(_textButton),
+                ),
+                const SizedBox(height: 5), // Add some space
+                Container(
+                    color: _myceliumStatusBackgroundColor,
+                    child: Text(_myceliumStatus)),
+              ],
+            ),
           ),
         ),
       ),
