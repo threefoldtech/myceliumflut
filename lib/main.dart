@@ -20,6 +20,8 @@ const Color colorDarkBlue = Color(0xFF025996);
 const Color colorLimeGreen = Color(0xFF0D9C9E);
 const Color colorMycelRed = Color(0xFFEC3F09);
 
+const sizedBoxHeight = 40.0;
+
 Future<void> main() async {
   // Logger configuration
   Logger.root.level = Level.ALL; // Log messages emitted at all levels
@@ -125,7 +127,7 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               children: [
                 const SizedBox(
-                  height: 24,
+                  height: sizedBoxHeight,
                 ),
                 Container(
                     width: double.infinity,
@@ -141,7 +143,7 @@ class _MyAppState extends State<MyApp> {
                         style: const TextStyle(fontSize: 16),
                       ),
                     )),
-                const SizedBox(height: 20), // Add some space
+                const SizedBox(height: sizedBoxHeight), // Add some space
                 TextField(
                   controller: textEditController,
                   minLines: 1,
@@ -152,7 +154,7 @@ class _MyAppState extends State<MyApp> {
                     labelText: 'Peers',
                   ),
                 ),
-                const SizedBox(height: 20), // Add some space
+                const SizedBox(height: sizedBoxHeight), // Add some space
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -199,7 +201,7 @@ class _MyAppState extends State<MyApp> {
                     },
                   ),
                 ),
-                const SizedBox(height: 20), // Add some space
+                const SizedBox(height: sizedBoxHeight), // Add some space
                 Text(
                   _myceliumStatus,
                   style: TextStyle(
