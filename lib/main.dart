@@ -18,6 +18,7 @@ const String myceliumStatusFailedStart = 'Mycelium failed to start';
 
 const Color colorDarkBlue = Color(0xFF025996);
 const Color colorLimeGreen = Color(0xFF0D9C9E);
+const Color colorMycelRed = Color(0xFFEC3F09);
 
 Future<void> main() async {
   // Logger configuration
@@ -55,11 +56,7 @@ class _MyAppState extends State<MyApp> {
           _logger.warning("Mycelium failed to start");
           // Handle the method call and optionally return a result
           // Update the UI
-          setState(() {
-            _isStarted = false;
-            _textButton = startMyceliumText;
-            _myceliumStatus = myceliumStatusFailedStart;
-          });
+          setStateFailedStart();
 
           break;
         default:
@@ -96,6 +93,8 @@ class _MyAppState extends State<MyApp> {
   bool _isStarted = false;
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
+  Color _myceliumStatusColor = Colors.white;
+  Color _startStopButtonColor = colorDarkBlue;
 
   @override
   void dispose() {
@@ -158,9 +157,13 @@ class _MyAppState extends State<MyApp> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: colorDarkBlue,
+                        backgroundColor: _startStopButtonColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.all(16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              10.0), // reduce the roundedness
+                        ),
                         textStyle: const TextStyle(fontSize: 20)),
                     child: Text(_textButton),
                     onPressed: () {
@@ -180,23 +183,15 @@ class _MyAppState extends State<MyApp> {
                         try {
                           startVpn(platform, peers, privKey);
                           // the startVpn result will be send in async way by Kotlin/Swift
-                          setState(() {
-                            _isStarted = true;
-                            _textButton = stopMyceliumText;
-                            _myceliumStatus = myceliumStatusStarted;
-                          });
+                          setStateStarted();
                         } on PlatformException {
                           _logger.warning("Start VPN failed");
-                          _myceliumStatus = myceliumStatusFailedStart;
+                          setStateFailedStart();
                         }
                       } else {
                         try {
                           stopVpn(platform);
-                          setState(() {
-                            _isStarted = false;
-                            _textButton = startMyceliumText;
-                            _myceliumStatus = myceliumStatusStopped;
-                          });
+                          setStateStopped();
                         } on PlatformException {
                           _logger.warning("stopping VPN failed");
                         }
@@ -207,8 +202,8 @@ class _MyAppState extends State<MyApp> {
                 const SizedBox(height: 20), // Add some space
                 Text(
                   _myceliumStatus,
-                  style: const TextStyle(
-                      color: colorDarkBlue, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: _myceliumStatusColor, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -216,6 +211,36 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+
+  void setStateFailedStart() {
+    setState(() {
+      _isStarted = false;
+      _textButton = startMyceliumText;
+      _myceliumStatus = myceliumStatusFailedStart;
+      _startStopButtonColor = colorDarkBlue;
+      _myceliumStatusColor = colorMycelRed;
+    });
+  }
+
+  void setStateStopped() {
+    setState(() {
+      _isStarted = false;
+      _textButton = startMyceliumText;
+      _myceliumStatus = myceliumStatusStopped;
+      _startStopButtonColor = colorDarkBlue;
+      _myceliumStatusColor = colorMycelRed;
+    });
+  }
+
+  void setStateStarted() {
+    setState(() {
+      _isStarted = true;
+      _textButton = stopMyceliumText;
+      _myceliumStatus = myceliumStatusStarted;
+      _startStopButtonColor = colorMycelRed;
+      _myceliumStatusColor = colorDarkBlue;
+    });
   }
 }
 
