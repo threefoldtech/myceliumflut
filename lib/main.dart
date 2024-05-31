@@ -15,9 +15,7 @@ const String stopMyceliumText = 'Stop Mycelium';
 const String myceliumStatusStarted = 'Mycelium Started';
 const String myceliumStatusStopped = 'Mycelium Stopped';
 const String myceliumStatusFailedStart = 'Mycelium failed to start';
-const Color myceliumStatusBackgroundColorStarted = Colors.lightGreenAccent;
-const Color myceliumStatusBackgroundColorStopped = Colors.grey;
-const Color myceliumStatusBackgroundColorFailedStart = Colors.yellowAccent;
+const Color darkBlue = Color(0xFF025996);
 
 Future<void> main() async {
   // Logger configuration
@@ -59,8 +57,6 @@ class _MyAppState extends State<MyApp> {
             _isStarted = false;
             _textButton = startMyceliumText;
             _myceliumStatus = myceliumStatusFailedStart;
-            _myceliumStatusBackgroundColor =
-                myceliumStatusBackgroundColorFailedStart;
           });
 
           break;
@@ -98,7 +94,6 @@ class _MyAppState extends State<MyApp> {
   bool _isStarted = false;
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
-  Color _myceliumStatusBackgroundColor = Colors.white;
 
   @override
   void dispose() {
@@ -113,15 +108,35 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(fontFamily: 'Roboto'),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Mycelium App'),
+          title: Image.asset(
+            'assets/images/mycelium_top.png',
+            width: 1200, //physicalPxToLogicalPx(context, 161.9),
+            height: 150, //physicalPxToLogicalPx(context, 29.85),
+          ),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Center(
             child: Column(
               children: [
-                SelectableText(_nodeAddr),
-                const SizedBox(height: 5), // Add some space
+                const SizedBox(
+                  height: 24,
+                ),
+                Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 245, 241, 241),
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(10.0)),
+                    child: Center(
+                      child: SelectableText(
+                        _nodeAddr,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    )),
+                const SizedBox(height: 20), // Add some space
                 TextField(
                   controller: textEditController,
                   minLines: 1,
@@ -132,58 +147,63 @@ class _MyAppState extends State<MyApp> {
                     labelText: 'Peers',
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    final peers = getPeers(textEditController.text);
+                const SizedBox(height: 20), // Add some space
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: darkBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16.0),
+                        textStyle: const TextStyle(fontSize: 20)),
+                    child: Text(_textButton),
+                    onPressed: () {
+                      final peers = getPeers(textEditController.text);
 
-                    if (!_isStarted) {
-                      // verify the peers
-                      String? peerError = isValidPeers(peers);
-                      if (peerError != null) {
-                        setState(() {
-                          _myceliumStatus = peerError;
-                          _myceliumStatusBackgroundColor =
-                              myceliumStatusBackgroundColorFailedStart;
-                        });
-                        return;
+                      if (!_isStarted) {
+                        // verify the peers
+                        String? peerError = isValidPeers(peers);
+                        if (peerError != null) {
+                          setState(() {
+                            _myceliumStatus = peerError;
+                          });
+                          return;
+                        }
+                        // store the peers if verified
+                        storePeers(peers);
+                        try {
+                          startVpn(platform, peers, privKey);
+                          // the startVpn result will be send in async way by Kotlin/Swift
+                          setState(() {
+                            _isStarted = true;
+                            _textButton = stopMyceliumText;
+                            _myceliumStatus = myceliumStatusStarted;
+                          });
+                        } on PlatformException {
+                          _logger.warning("Start VPN failed");
+                          _myceliumStatus = myceliumStatusFailedStart;
+                        }
+                      } else {
+                        try {
+                          stopVpn(platform);
+                          setState(() {
+                            _isStarted = false;
+                            _textButton = startMyceliumText;
+                            _myceliumStatus = myceliumStatusStopped;
+                          });
+                        } on PlatformException {
+                          _logger.warning("stopping VPN failed");
+                        }
                       }
-                      // store the peers if verified
-                      storePeers(peers);
-                      try {
-                        startVpn(platform, peers, privKey);
-                        // the startVpn result will be send in async way by Kotlin/Swift
-                        setState(() {
-                          _isStarted = true;
-                          _textButton = stopMyceliumText;
-                          _myceliumStatus = myceliumStatusStarted;
-                          _myceliumStatusBackgroundColor =
-                              myceliumStatusBackgroundColorStarted;
-                        });
-                      } on PlatformException {
-                        _logger.warning("Start VPN failed");
-                        _myceliumStatus = myceliumStatusFailedStart;
-                      }
-                    } else {
-                      try {
-                        stopVpn(platform);
-                        setState(() {
-                          _isStarted = false;
-                          _textButton = startMyceliumText;
-                          _myceliumStatus = myceliumStatusStopped;
-                          _myceliumStatusBackgroundColor =
-                              myceliumStatusBackgroundColorStopped;
-                        });
-                      } on PlatformException {
-                        _logger.warning("stopping VPN failed");
-                      }
-                    }
-                  },
-                  child: Text(_textButton),
+                    },
+                  ),
                 ),
-                const SizedBox(height: 5), // Add some space
-                Container(
-                    color: _myceliumStatusBackgroundColor,
-                    child: Text(_myceliumStatus)),
+                const SizedBox(height: 20), // Add some space
+                Text(
+                  _myceliumStatus,
+                  style: const TextStyle(
+                      color: darkBlue, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
@@ -191,6 +211,10 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+double physicalPxToLogicalPx(BuildContext context, double physicalPx) {
+  return physicalPx / MediaQuery.of(context).devicePixelRatio;
 }
 
 List<String> getPeers(String texts) {
