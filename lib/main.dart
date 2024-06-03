@@ -72,7 +72,7 @@ class _MyAppState extends State<MyApp> {
     privKey = await loadOrGeneratePrivKey(platform);
     peers = await loadPeers();
     if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
-      peers = ['tcp://65.21.231.58:9651'];
+      peers = ['tcp://185.69.166.7:9651', 'tcp://65.21.231.58:9651'];
     }
     textEditController = TextEditingController(text: peers.join('\n'));
 
@@ -93,8 +93,10 @@ class _MyAppState extends State<MyApp> {
 
   // start/stop mycelium button variables
   bool _isStarted = false;
+  bool isRestartVisible = false;
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
+  String _peerValidity = '';
   Color _myceliumStatusColor = Colors.white;
   Color _startStopButtonColor = colorDarkBlue;
 
@@ -107,105 +109,158 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    //_logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
     return MaterialApp(
       theme: ThemeData(fontFamily: 'Roboto'),
       home: Scaffold(
         appBar: AppBar(
-          title: Image.asset(
-            'assets/images/mycelium_top.png',
-            width: 1200, //physicalPxToLogicalPx(context, 161.9),
-            height: 150, //physicalPxToLogicalPx(context, 29.85),
-          ),
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1.0),
-            child: SizedBox(width: 250, child: Divider(color: colorLimeGreen)),
+          title: Container(
+            margin: const EdgeInsets.only(top: 16.0),
+            child: Image.asset(
+              'assets/images/mycelium_top.png',
+              width: 1200, //physicalPxToLogicalPx(context, 161.9),
+              height: 150, //physicalPxToLogicalPx(context, 29.85),
+            ),
           ),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(left: 16.0, right: 16.0),
           child: Center(
             child: Column(
               children: [
                 const SizedBox(
                   height: sizedBoxHeight,
                 ),
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    // IP address title
+                    child: Text("IP Address:",
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF7D7E7E),
+                            fontWeight: FontWeight.w500))),
                 Container(
+                    // Node address
                     width: double.infinity,
-                    height: 50,
+                    height: physicalPxToLogicalPx(context, 48),
                     decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 245, 241, 241),
                         border: Border.all(color: Colors.grey),
                         borderRadius: BorderRadius.circular(10.0)),
-                    child: Center(
-                      child: SelectableText(
-                        _nodeAddr,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
-                      ),
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SelectableText(
+                            _nodeAddr,
+                            //textAlign: TextAlign.left,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: const Icon(Icons.copy),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: _nodeAddr));
+                            },
+                          ),
+                        ),
+                      ],
                     )),
-                const SizedBox(height: sizedBoxHeight), // Add some space
+                const SizedBox(height: sizedBoxHeight),
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    // Peers
+                    child: Text("Peers:",
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF7D7E7E),
+                            fontWeight: FontWeight.w500))),
                 TextField(
+                  // peers address
                   controller: textEditController,
                   minLines: 1,
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
+                  style: const TextStyle(fontSize: 14),
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    labelText: 'Peers',
+                    //labelText: 'Peers',
                   ),
                 ),
+                Text(_peerValidity,
+                    style: const TextStyle(color: colorMycelRed)),
                 const SizedBox(height: sizedBoxHeight), // Add some space
                 SizedBox(
                   width: double.infinity,
+                  height: physicalPxToLogicalPx(context, 48),
                   child: ElevatedButton(
+                    // Start/Stop button
                     style: ElevatedButton.styleFrom(
                         backgroundColor: _startStopButtonColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.only(left: 16, right: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                               10.0), // reduce the roundedness
                         ),
-                        textStyle: const TextStyle(fontSize: 20)),
+                        textStyle: const TextStyle(fontSize: 16)),
                     child: Text(_textButton),
                     onPressed: () {
-                      final peers = getPeers(textEditController.text);
-
                       if (!_isStarted) {
-                        // verify the peers
-                        String? peerError = isValidPeers(peers);
-                        if (peerError != null) {
-                          setState(() {
-                            _myceliumStatus = peerError;
-                          });
-                          return;
-                        }
-                        // store the peers if verified
-                        storePeers(peers);
-                        try {
-                          startVpn(platform, peers, privKey);
-                          // the startVpn result will be send in async way by Kotlin/Swift
-                          setStateStarted();
-                        } on PlatformException {
-                          _logger.warning("Start VPN failed");
-                          setStateFailedStart();
-                        }
+                        startMycelium();
                       } else {
-                        try {
-                          stopVpn(platform);
-                          setStateStopped();
-                        } on PlatformException {
-                          _logger.warning("stopping VPN failed");
-                        }
+                        stopMycelium();
                       }
                     },
                   ),
                 ),
-                const SizedBox(height: sizedBoxHeight), // Add some space
+                const SizedBox(height: 20), // Add some space
                 Text(
                   _myceliumStatus,
                   style: TextStyle(
-                      color: _myceliumStatusColor, fontWeight: FontWeight.bold),
+                      color: _myceliumStatusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
+                ),
+                const SizedBox(height: 20), // Add some space
+                Visibility(
+                  visible: isRestartVisible,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: physicalPxToLogicalPx(context, 48),
+                    child: ElevatedButton(
+                      // Restart button
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: colorLimeGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.only(left: 16, right: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                10.0), // reduce the roundedness
+                          ),
+                          textStyle: const TextStyle(fontSize: 16)),
+                      child: const Text.rich(
+                        TextSpan(
+                          children: [
+                            WidgetSpan(
+                              child: Icon(Icons.restart_alt_rounded,
+                                  size: 20), // Add the icon
+                            ),
+                            TextSpan(
+                              text: " RestartMycelium",
+                            ),
+                          ],
+                        ),
+                      ),
+                      onPressed: () {
+                        stopMycelium();
+                        startMycelium();
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -215,6 +270,38 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  void startMycelium() {
+    _peerValidity = '';
+    final peers = getPeers(textEditController.text);
+    // verify the peers
+    String? peerError = isValidPeers(peers);
+    if (peerError != null) {
+      setState(() {
+        _peerValidity = peerError;
+      });
+      return;
+    }
+    // store the peers if verified
+    storePeers(peers);
+    try {
+      startVpn(platform, peers, privKey);
+      // the startVpn result will be send in async way by Kotlin/Swift
+      setStateStarted();
+    } on Exception {
+      _logger.warning("Start VPN failed");
+      setStateFailedStart();
+    }
+  }
+
+  void stopMycelium() {
+    try {
+      stopVpn(platform);
+      setStateStopped();
+    } on Exception {
+      _logger.warning("stopping VPN failed");
+    }
+  }
+
   void setStateFailedStart() {
     setState(() {
       _isStarted = false;
@@ -222,6 +309,7 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusFailedStart;
       _startStopButtonColor = colorDarkBlue;
       _myceliumStatusColor = colorMycelRed;
+      isRestartVisible = false;
     });
   }
 
@@ -232,6 +320,7 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStopped;
       _startStopButtonColor = colorDarkBlue;
       _myceliumStatusColor = colorMycelRed;
+      isRestartVisible = false;
     });
   }
 
@@ -242,12 +331,16 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStarted;
       _startStopButtonColor = colorMycelRed;
       _myceliumStatusColor = colorDarkBlue;
+      isRestartVisible =
+          // TODO: restart button newer shown because of this line.
+          // It is because there is still race condition when doing stop and start consecutively
+          false;
     });
   }
 }
 
 double physicalPxToLogicalPx(BuildContext context, double physicalPx) {
-  return physicalPx / MediaQuery.of(context).devicePixelRatio;
+  return physicalPx; //x * MediaQuery.of(context).devicePixelRatio;
 }
 
 List<String> getPeers(String texts) {
@@ -319,7 +412,7 @@ String? isValidPeers(List<String> peers) {
 
 // check if a peer is a valid peer
 String? isValidPeer(String peer) {
-  final prefixRegex = RegExp(r'^(tcp|quic)://');
+  final prefixRegex = RegExp(r'^tcp://');
   final ipv4Regex = RegExp(
       r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
   final ipv6Regex = RegExp(
@@ -327,7 +420,7 @@ String? isValidPeer(String peer) {
   final portRegex = RegExp(r':9651$');
 
   if (!prefixRegex.hasMatch(peer)) {
-    return 'peer must start with tcp:// or quic://';
+    return 'peer must start with tcp://';
   }
 
   String ipPortPart = peer.substring(peer.indexOf('://') + 3);
