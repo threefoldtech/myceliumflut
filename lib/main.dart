@@ -113,7 +113,7 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         appBar: AppBar(
           title: Container(
-            margin: const EdgeInsets.only(top: 10.0),
+            margin: const EdgeInsets.only(top: 16.0),
             child: Image.asset(
               'assets/images/mycelium_top.png',
               width: 1200, //physicalPxToLogicalPx(context, 161.9),
@@ -132,7 +132,11 @@ class _MyAppState extends State<MyApp> {
                 const Align(
                     alignment: Alignment.centerLeft,
                     // IP address title
-                    child: Text("IP Address:", style: TextStyle(fontSize: 16))),
+                    child: Text("IP Address:",
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF7D7E7E),
+                            fontWeight: FontWeight.w500))),
                 Container(
                     // Node address
                     width: double.infinity,
@@ -167,7 +171,11 @@ class _MyAppState extends State<MyApp> {
                 const Align(
                     alignment: Alignment.centerLeft,
                     // Peers
-                    child: Text("Peers:", style: TextStyle(fontSize: 16))),
+                    child: Text("Peers:",
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF7D7E7E),
+                            fontWeight: FontWeight.w500))),
                 TextField(
                   // peers address
                   controller: textEditController,
@@ -197,34 +205,10 @@ class _MyAppState extends State<MyApp> {
                         textStyle: const TextStyle(fontSize: 16)),
                     child: Text(_textButton),
                     onPressed: () {
-                      final peers = getPeers(textEditController.text);
-
                       if (!_isStarted) {
-                        // verify the peers
-                        String? peerError = isValidPeers(peers);
-                        if (peerError != null) {
-                          setState(() {
-                            _myceliumStatus = peerError;
-                          });
-                          return;
-                        }
-                        // store the peers if verified
-                        storePeers(peers);
-                        try {
-                          startVpn(platform, peers, privKey);
-                          // the startVpn result will be send in async way by Kotlin/Swift
-                          setStateStarted();
-                        } on PlatformException {
-                          _logger.warning("Start VPN failed");
-                          setStateFailedStart();
-                        }
+                        startMycelium();
                       } else {
-                        try {
-                          stopVpn(platform);
-                          setStateStopped();
-                        } on PlatformException {
-                          _logger.warning("stopping VPN failed");
-                        }
+                        stopMycelium();
                       }
                     },
                   ),
@@ -243,6 +227,37 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+
+  void startMycelium() {
+    final peers = getPeers(textEditController.text);
+    // verify the peers
+    String? peerError = isValidPeers(peers);
+    if (peerError != null) {
+      setState(() {
+        _myceliumStatus = peerError;
+      });
+      return;
+    }
+    // store the peers if verified
+    storePeers(peers);
+    try {
+      startVpn(platform, peers, privKey);
+      // the startVpn result will be send in async way by Kotlin/Swift
+      setStateStarted();
+    } on Exception {
+      _logger.warning("Start VPN failed");
+      setStateFailedStart();
+    }
+  }
+
+  void stopMycelium() {
+    try {
+      stopVpn(platform);
+      setStateStopped();
+    } on Exception {
+      _logger.warning("stopping VPN failed");
+    }
   }
 
   void setStateFailedStart() {
