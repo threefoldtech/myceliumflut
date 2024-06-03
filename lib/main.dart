@@ -93,6 +93,7 @@ class _MyAppState extends State<MyApp> {
 
   // start/stop mycelium button variables
   bool _isStarted = false;
+  bool isRestartVisible = false;
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
   Color _myceliumStatusColor = Colors.white;
@@ -221,6 +222,43 @@ class _MyAppState extends State<MyApp> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16),
                 ),
+                const SizedBox(height: 20), // Add some space
+                Visibility(
+                  visible: isRestartVisible,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: physicalPxToLogicalPx(context, 48),
+                    child: ElevatedButton(
+                      // Restart button
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: colorLimeGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.only(left: 16, right: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                10.0), // reduce the roundedness
+                          ),
+                          textStyle: const TextStyle(fontSize: 16)),
+                      child: const Text.rich(
+                        TextSpan(
+                          children: [
+                            WidgetSpan(
+                              child: Icon(Icons.restart_alt_rounded,
+                                  size: 20), // Add the icon
+                            ),
+                            TextSpan(
+                              text: " RestartMycelium",
+                            ),
+                          ],
+                        ),
+                      ),
+                      onPressed: () {
+                        stopMycelium();
+                        startMycelium();
+                      },
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -267,6 +305,7 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusFailedStart;
       _startStopButtonColor = colorDarkBlue;
       _myceliumStatusColor = colorMycelRed;
+      isRestartVisible = false;
     });
   }
 
@@ -277,6 +316,7 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStopped;
       _startStopButtonColor = colorDarkBlue;
       _myceliumStatusColor = colorMycelRed;
+      isRestartVisible = false;
     });
   }
 
@@ -287,6 +327,10 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStarted;
       _startStopButtonColor = colorMycelRed;
       _myceliumStatusColor = colorDarkBlue;
+      isRestartVisible =
+          // TODO: restart button newer shown because of this line.
+          // It is because there is still race condition when doing stop and start consecutively
+          false;
     });
   }
 }
