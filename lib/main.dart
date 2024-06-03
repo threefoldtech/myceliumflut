@@ -72,7 +72,7 @@ class _MyAppState extends State<MyApp> {
     privKey = await loadOrGeneratePrivKey(platform);
     peers = await loadPeers();
     if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
-      peers = ['tcp://65.21.231.58:9651'];
+      peers = ['tcp://185.69.166.7:9651', 'tcp://65.21.231.58:9651'];
     }
     textEditController = TextEditingController(text: peers.join('\n'));
 
@@ -96,6 +96,7 @@ class _MyAppState extends State<MyApp> {
   bool isRestartVisible = false;
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
+  String _peerValidity = '';
   Color _myceliumStatusColor = Colors.white;
   Color _startStopButtonColor = colorDarkBlue;
 
@@ -108,7 +109,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    _logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
+    //_logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
     return MaterialApp(
       theme: ThemeData(fontFamily: 'Roboto'),
       home: Scaffold(
@@ -189,6 +190,8 @@ class _MyAppState extends State<MyApp> {
                     //labelText: 'Peers',
                   ),
                 ),
+                Text(_peerValidity,
+                    style: const TextStyle(color: colorMycelRed)),
                 const SizedBox(height: sizedBoxHeight), // Add some space
                 SizedBox(
                   width: double.infinity,
@@ -268,12 +271,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void startMycelium() {
+    _peerValidity = '';
     final peers = getPeers(textEditController.text);
     // verify the peers
     String? peerError = isValidPeers(peers);
     if (peerError != null) {
       setState(() {
-        _myceliumStatus = peerError;
+        _peerValidity = peerError;
       });
       return;
     }
@@ -408,7 +412,7 @@ String? isValidPeers(List<String> peers) {
 
 // check if a peer is a valid peer
 String? isValidPeer(String peer) {
-  final prefixRegex = RegExp(r'^(tcp|quic)://');
+  final prefixRegex = RegExp(r'^tcp://');
   final ipv4Regex = RegExp(
       r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
   final ipv6Regex = RegExp(
@@ -416,7 +420,7 @@ String? isValidPeer(String peer) {
   final portRegex = RegExp(r':9651$');
 
   if (!prefixRegex.hasMatch(peer)) {
-    return 'peer must start with tcp:// or quic://';
+    return 'peer must start with tcp://';
   }
 
   String ipPortPart = peer.substring(peer.indexOf('://') + 3);
