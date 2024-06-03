@@ -107,66 +107,94 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    _logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
     return MaterialApp(
       theme: ThemeData(fontFamily: 'Roboto'),
       home: Scaffold(
         appBar: AppBar(
-          title: Image.asset(
-            'assets/images/mycelium_top.png',
-            width: 1200, //physicalPxToLogicalPx(context, 161.9),
-            height: 150, //physicalPxToLogicalPx(context, 29.85),
-          ),
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1.0),
-            child: SizedBox(width: 250, child: Divider(color: colorLimeGreen)),
+          title: Container(
+            margin: const EdgeInsets.only(top: 10.0),
+            child: Image.asset(
+              'assets/images/mycelium_top.png',
+              width: 1200, //physicalPxToLogicalPx(context, 161.9),
+              height: 150, //physicalPxToLogicalPx(context, 29.85),
+            ),
           ),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(left: 16.0, right: 16.0),
           child: Center(
             child: Column(
               children: [
                 const SizedBox(
                   height: sizedBoxHeight,
                 ),
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    // IP address title
+                    child: Text("IP Address:", style: TextStyle(fontSize: 16))),
                 Container(
+                    // Node address
                     width: double.infinity,
-                    height: 50,
+                    height: physicalPxToLogicalPx(context, 48),
                     decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 245, 241, 241),
                         border: Border.all(color: Colors.grey),
                         borderRadius: BorderRadius.circular(10.0)),
-                    child: Center(
-                      child: SelectableText(
-                        _nodeAddr,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 16),
-                      ),
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SelectableText(
+                            _nodeAddr,
+                            //textAlign: TextAlign.left,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: const Icon(Icons.copy),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: _nodeAddr));
+                            },
+                          ),
+                        ),
+                      ],
                     )),
-                const SizedBox(height: sizedBoxHeight), // Add some space
+                const SizedBox(height: sizedBoxHeight),
+                const Align(
+                    alignment: Alignment.centerLeft,
+                    // Peers
+                    child: Text("Peers:", style: TextStyle(fontSize: 16))),
                 TextField(
+                  // peers address
                   controller: textEditController,
                   minLines: 1,
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
+                  style: const TextStyle(fontSize: 14),
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    labelText: 'Peers',
+                    //labelText: 'Peers',
                   ),
                 ),
                 const SizedBox(height: sizedBoxHeight), // Add some space
                 SizedBox(
                   width: double.infinity,
+                  height: physicalPxToLogicalPx(context, 48),
                   child: ElevatedButton(
+                    // Start/Stop button
                     style: ElevatedButton.styleFrom(
                         backgroundColor: _startStopButtonColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.only(left: 16, right: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                               10.0), // reduce the roundedness
                         ),
-                        textStyle: const TextStyle(fontSize: 20)),
+                        textStyle: const TextStyle(fontSize: 16)),
                     child: Text(_textButton),
                     onPressed: () {
                       final peers = getPeers(textEditController.text);
@@ -201,11 +229,13 @@ class _MyAppState extends State<MyApp> {
                     },
                   ),
                 ),
-                const SizedBox(height: sizedBoxHeight), // Add some space
+                const SizedBox(height: 20), // Add some space
                 Text(
                   _myceliumStatus,
                   style: TextStyle(
-                      color: _myceliumStatusColor, fontWeight: FontWeight.bold),
+                      color: _myceliumStatusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
                 ),
               ],
             ),
@@ -247,7 +277,7 @@ class _MyAppState extends State<MyApp> {
 }
 
 double physicalPxToLogicalPx(BuildContext context, double physicalPx) {
-  return physicalPx / MediaQuery.of(context).devicePixelRatio;
+  return physicalPx; //x * MediaQuery.of(context).devicePixelRatio;
 }
 
 List<String> getPeers(String texts) {
