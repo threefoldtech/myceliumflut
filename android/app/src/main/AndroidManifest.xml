@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="myceliumflut"
         android:name="${applicationName}"
@@ -47,5 +50,4 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
-    <uses-permission android:name="android.permission.INTERNET"/>
 </manifest>

@@ -51,7 +51,7 @@ class MainActivity: FlutterActivity() {
                 }
                 "stopVpn" -> {
                     val stopCmdSent = stopVpn()
-                    Log.d("tff",  "stopping VPN")
+                    Log.d(tag,  "stopping VPN")
                     result.success(stopCmdSent)
                 }
                 else -> result.notImplemented()
@@ -122,6 +122,9 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // ... your initialization code here ...
+        val callback = NetworkStateCallback(this)
+        callback.register()
+
         // Register the receiver
         val filter = IntentFilter(TunService.EVENT_INTENT)
         registerReceiver(tunServiceEventReceiver, filter)
