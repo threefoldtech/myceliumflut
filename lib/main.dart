@@ -14,6 +14,7 @@ const String stopMyceliumText = 'Stop Mycelium';
 
 const String myceliumStatusStarted = 'Mycelium Started';
 const String myceliumStatusStopped = 'Mycelium Stopped';
+const String myceliumStatusRestarted = 'Mycelium Restarted';
 const String myceliumStatusFailedStart = 'Mycelium failed to start';
 
 const Color colorDarkBlue = Color(0xFF025996);
@@ -56,10 +57,11 @@ class _MyAppState extends State<MyApp> {
       switch (call.method) {
         case 'notifyMyceliumFailed':
           _logger.warning("Mycelium failed to start");
-          // Handle the method call and optionally return a result
-          // Update the UI
           setStateFailedStart();
-
+          break;
+        case 'notifyMyceliumFinished':
+          _logger.info("Mycelium finished");
+          setStateStopped();
           break;
         default:
           throw MissingPluginException();
@@ -255,9 +257,19 @@ class _MyAppState extends State<MyApp> {
                           ],
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         stopMycelium();
+                        // Wait for isStarted to become false, but no more than 3 seconds
+                        final timeout =
+                            DateTime.now().add(const Duration(seconds: 3));
+                        while (_isStarted && DateTime.now().isBefore(timeout)) {
+                          await Future.delayed(
+                              const Duration(milliseconds: 100));
+                        }
                         startMycelium();
+                        setState(() {
+                          _myceliumStatus = myceliumStatusRestarted;
+                        });
                       },
                     ),
                   ),
@@ -271,6 +283,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void startMycelium() {
+    if (_isStarted) {
+      _logger.warning("Mycelium already started");
+      return;
+    }
     _peerValidity = '';
     final peers = getPeers(textEditController.text);
     // verify the peers
@@ -296,7 +312,7 @@ class _MyAppState extends State<MyApp> {
   void stopMycelium() {
     try {
       stopVpn(platform);
-      setStateStopped();
+      //setStateStopped();
     } on Exception {
       _logger.warning("stopping VPN failed");
     }
@@ -331,10 +347,7 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStarted;
       _startStopButtonColor = colorMycelRed;
       _myceliumStatusColor = colorDarkBlue;
-      isRestartVisible =
-          // TODO: restart button newer shown because of this line.
-          // It is because there is still race condition when doing stop and start consecutively
-          false;
+      isRestartVisible = true;
     });
   }
 }
