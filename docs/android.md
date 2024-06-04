@@ -55,6 +55,9 @@ alt started
     TunService->+Mycelium: stop()
     Mycelium->-TunService: stop response
     TunService->TunService: stopSelf()
+    TunService->MainActivity:sendIntent(myceliumFinished)
+    MainActivity->Flutter:sendMessage(myceliumFinished)
+    Flutter->Flutter:updateState()
 end
 
 note over TunService: stopSelf will trigger TunService `onDestroy`

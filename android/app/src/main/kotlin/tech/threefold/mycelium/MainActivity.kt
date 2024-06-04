@@ -63,7 +63,16 @@ class MainActivity: FlutterActivity() {
     // it receives events from TunService and handles them accordingly.
     private val tunServiceEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            channel.invokeMethod("notifyMyceliumFailed","")
+            val event = intent.getStringExtra("event")
+            when (event) {
+                TunService.EVENT_MYCELIUM_FINISHED -> {
+                    channel.invokeMethod("notifyMyceliumFinished","")
+                }
+                TunService.EVENT_MYCELIUM_FAILED -> {
+                    channel.invokeMethod("notifyMyceliumFailed", "")
+                }
+                else -> Log.e(tag, "tunServiceEventReceiver: Unknown event: $event")
+            }
         }
     }
 

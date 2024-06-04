@@ -18,9 +18,11 @@ private const val tag = "[TunService]"
 class TunService : VpnService(), CoroutineScope {
 
     companion object {
-        const val EVENT_INTENT = "tech.threefold.mycelium.TunService.EVENT"
         const val ACTION_START = "tech.threefold.mycelium.TunService.START"
         const val ACTION_STOP = "tech.threefold.mycelium.TunService.STOP"
+        const val EVENT_INTENT = "tech.threefold.mycelium.TunService.EVENT"
+        const val EVENT_MYCELIUM_FAILED = "mycelium_failed"
+        const val EVENT_MYCELIUM_FINISHED = "mycelium_finished"
     }
 
     private var started = AtomicBoolean()
@@ -105,7 +107,9 @@ class TunService : VpnService(), CoroutineScope {
                 if (started.get() == true) {
                     Log.e(tag, "mycelium unexpectedly finished")
                     stop(false)
-                    sendBroadcast(Intent(EVENT_INTENT))
+                    var intent = Intent(EVENT_INTENT)
+                    intent.putExtra("event", EVENT_MYCELIUM_FAILED)
+                    sendBroadcast(intent)
                 } else {
                     Log.i(tag, "mycelium finished cleanly")
                 }
@@ -131,5 +135,8 @@ class TunService : VpnService(), CoroutineScope {
         }
         parcel?.close()
         stopSelf()
+        var intent = Intent(EVENT_INTENT)
+        intent.putExtra("event", EVENT_MYCELIUM_FINISHED)
+        sendBroadcast(intent)
     }
 }
