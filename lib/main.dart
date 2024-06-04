@@ -312,7 +312,11 @@ class _MyAppState extends State<MyApp> {
   void stopMycelium() {
     try {
       stopVpn(platform);
-      //setStateStopped();
+      if (Platform.isIOS) {
+        // In Android, the stopVpn result will be send in async way by Kotlin
+        // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
+        setStateStopped();
+      }
     } on Exception {
       _logger.warning("stopping VPN failed");
     }
@@ -347,7 +351,10 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStarted;
       _startStopButtonColor = colorMycelRed;
       _myceliumStatusColor = colorDarkBlue;
-      isRestartVisible = true;
+      if (Platform.isAndroid) {
+        // only show restart button on Android because iOS doesn't support it
+        isRestartVisible = true;
+      }
     });
   }
 }
