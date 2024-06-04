@@ -74,7 +74,7 @@ class TunService : VpnService(), CoroutineScope {
             return 0
         }
         val nodeAddress = addressFromSecretKey(secretKey)
-        Log.e(tag, "creating TUN device with node address:  $nodeAddress")
+        Log.i(tag, "creating TUN device with node address:  $nodeAddress")
 
         val builder = Builder()
             .addAddress(nodeAddress, 64)
