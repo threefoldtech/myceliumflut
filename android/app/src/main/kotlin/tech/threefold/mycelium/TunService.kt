@@ -101,8 +101,6 @@ class TunService : VpnService(), CoroutineScope {
 
         Log.d(tag, "starting mycelium with parcel fd: " + parcel.fd)
         launch {
-            // TODO: detect if startMycelium failed and handle it
-            // how?
             try {
                 startMycelium(peers, parcel.fd, secretKey)
                 if (started.get() == true) {
