@@ -95,6 +95,7 @@ class TunService : VpnService(), CoroutineScope {
         if (parcel == null || !parcel.fileDescriptor.valid()) {
             Log.e(tag, "Parcel was null or invalid")
             stop(false)
+            sendMyceliumEvent(EVENT_MYCELIUM_FAILED)
             return 0
         }
 
@@ -107,11 +108,10 @@ class TunService : VpnService(), CoroutineScope {
                 if (started.get() == true) {
                     Log.e(tag, "mycelium unexpectedly finished")
                     stop(false)
-                    var intent = Intent(EVENT_INTENT)
-                    intent.putExtra("event", EVENT_MYCELIUM_FAILED)
-                    sendBroadcast(intent)
+                    sendMyceliumEvent(EVENT_MYCELIUM_FAILED)
                 } else {
                     Log.i(tag, "mycelium finished cleanly")
+                    sendMyceliumEvent(EVENT_MYCELIUM_FINISHED)
                 }
 
             } catch (e: Exception) {
@@ -124,10 +124,9 @@ class TunService : VpnService(), CoroutineScope {
     }
 
     private fun stop(stopMycelium: Boolean) {
-        Log.w(tag, "stop() called")
-
+        Log.d(tag, "stop() called")
         if (!started.compareAndSet(true, false)) {
-            Log.i(tag, "got stop when not started")
+            Log.d(tag, "got stop when not started")
             return
         }
         if (stopMycelium) {
@@ -135,8 +134,11 @@ class TunService : VpnService(), CoroutineScope {
         }
         parcel?.close()
         stopSelf()
+    }
+
+    fun sendMyceliumEvent(event: String) {
         var intent = Intent(EVENT_INTENT)
-        intent.putExtra("event", EVENT_MYCELIUM_FINISHED)
+        intent.putExtra("event", event)
         sendBroadcast(intent)
     }
 }
