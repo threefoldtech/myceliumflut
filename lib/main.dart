@@ -60,10 +60,15 @@ class _MyAppState extends State<MyApp> {
           setStateFailedStart();
           break;
         case 'notifyMyceliumFinished':
-          _logger.info("Mycelium finished");
+          _logger.warning("Mycelium finished");
           setStateStopped();
           break;
+        case 'notifyMyceliumStarted':
+          _logger.info("Mycelium started");
+          setStateStarted();
+          break;
         default:
+          _logger.warning("Unknown method call: ${call.method}");
           throw MissingPluginException();
       }
     });
@@ -315,7 +320,7 @@ class _MyAppState extends State<MyApp> {
       if (Platform.isIOS) {
         // In Android, the stopVpn result will be send in async way by Kotlin
         // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
-        setStateStopped();
+        //setStateStopped();
       }
     } on Exception {
       _logger.warning("stopping VPN failed");
