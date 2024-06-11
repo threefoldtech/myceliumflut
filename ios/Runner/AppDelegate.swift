@@ -6,19 +6,32 @@ import OSLog
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
+    // channel to communicate between flutter & Swift
+    private var flutterChannel: FlutterMethodChannel?
+    
+    // tunnel status that seen by flutter
+    private var flutterTunnelStatus: TunnelStatus = .off
+    
+    //var observer: Any? = nil
+    
+    // tunnel specific variables
     var vpnManager: NETunnelProviderManager = NETunnelProviderManager()
     let bundleIdentifier = "tech.threefold.mycelium.MyceliumTunnel"
     let localizedDescription = "mycelium tunnel"
     let vpnUsername = "aiueo"
     let vpnServerAddress = "mycelium"
 
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+    }
+    
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
             let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-            let tunChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
+            flutterChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
                                                   binaryMessenger: controller.binaryMessenger)
-            tunChannel.setMethodCallHandler({
+            flutterChannel!.setMethodCallHandler({
                 (call: FlutterMethodCall, result: FlutterResult) -> Void in
                 // This method is invoked on the UI thread.
                 switch call.method {
@@ -37,12 +50,18 @@ import OSLog
                     if let arguments = call.arguments as? Dictionary<String, Any> {
                         let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
                         let peers = arguments["peers"] as! [String]
+                        
+                        errlog("ADDING OBSERVER")
+                        NotificationCenter.default.addObserver(self, selector: #selector(self.vpnStatusDidChange(_:)), name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+                        
+                        self.flutterTunnelStatus = .started
                         self.createTunnel(secretKey: secretKey.data, peers: peers)
                         result(true) // TODO: check return value of the self.createTunnel
                     } else {
                         result(false)
                     }
                 case "stopVpn":
+                    self.flutterTunnelStatus = .stopped
                     self.stopMycelium()
                     result(true)
                 default:
@@ -50,6 +69,9 @@ import OSLog
                 }
             })
             infolog("initializing app")
+            
+            //errlog("ADDING OBSERVER")
+            //NotificationCenter.default.addObserver(self, selector: #selector(vpnStatusDidChange(_:)), name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
 
             GeneratedPluginRegistrant.register(with: self)
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -59,6 +81,7 @@ import OSLog
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         // Insert code here to handle when the app is about to terminate
         errlog("applicationWillterminate handler empty")
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
         self.stopMycelium()
         super.applicationWillTerminate(application)
     }
@@ -120,6 +143,52 @@ import OSLog
         
     }
     
+    @objc func vpnStatusDidChange(_ notification: Notification) {
+        errlog("call vpnStatusDidChange func")
+        if let vpnConnection = notification.object as? NEVPNConnection {
+            let status = vpnConnection.status
+            // Handle the status change
+            switch status {
+            case .connecting:
+                infolog("VPN is connecting")
+                //NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+            case .connected:
+                infolog("VPN is connected")
+                self.flutterTunnelStatus = .running
+                flutterChannel?.invokeMethod("notifyMyceliumStarted", arguments: nil)
+                NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+            case .disconnecting:
+                infolog("VPN is disconnecting")
+                //NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+            case .disconnected:
+                infolog("VPN is disconnected")
+                switch self.flutterTunnelStatus {
+                case .off:
+                    errlog("Unexpected: got .disconnected when flutterTunnelStatus = .off ")
+                case .started:
+                    // first disconnected, we can ignore it
+                    debuglog("fist disconnected, we can ignore it")
+                    //NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+                case .running:
+                    errlog("mycelium failed")
+                    flutterChannel?.invokeMethod("notifyMyceliumFailed", arguments: nil)
+                    //NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+                case .stopped:
+                    flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
+                    NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+                    //NotificationCenter.default.removeObserver(self.observer!)
+                    return
+                }
+            case .invalid:
+                infolog("VPN is invalid")
+            case .reasserting:
+                infolog("VPN is reasserting")
+            @unknown default:
+                infolog("VPN status is unknown")
+            }
+            //NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
+        }
+    }
 
     func createVPN() {
         // create protocol configuration
@@ -172,6 +241,13 @@ import OSLog
      // Restart any tasks that were paused (or not yet started) while the application was inactive.
      }
      */
+}
+
+enum TunnelStatus {
+    case off
+    case started
+    case running
+    case stopped
 }
 
 func debuglog(_ msg: String, _ args: CVarArg...) {

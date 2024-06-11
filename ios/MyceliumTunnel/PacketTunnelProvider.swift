@@ -41,11 +41,16 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             if let tunFd = self?.tunnelFileDescriptor {
                 self!.started = true
+                errlog("want to Dispatch mycelium")
                 DispatchQueue.global(qos: .default).async {
                     infolog("calling startMycelium()  with tun fd:\(tunFd) and peers = \(peers) ")
                     startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
                     if self?.started == true {
                         errlog("mycelium finished unexpectedly")
+                         let err = NSError(domain: "tech.threefold.mycelium", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Mycelium finished unexpectedly"])
+                        self?.cancelTunnelWithError(err) // currently no other component will read/receive the err
+                    } else {
+                        self?.cancelTunnelWithError(nil)
                     }
                     // TODO we currently can't handle failed mycelium properly
                     // see https://github.com/threefoldtech/myceliumflut/issues/35
@@ -69,17 +74,16 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
         completionHandler()
     }
-    
-    // TODO: implement this
+
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
         // Add code here to handle the message.
         errlog("handleAppMessage handler")
-        
+
         if let handler = completionHandler {
             handler(messageData)
         }
     }
-    
+
     // TODO: implement this
     override func sleep(completionHandler: @escaping () -> Void) {
         // Add code here to get ready to sleep.
