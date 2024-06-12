@@ -12,7 +12,7 @@ import OSLog
     // tunnel status that seen by flutter
     private var flutterTunnelStatus: TunnelStatus = .off
     
-    var observer: Any? = nil
+    var statusObservationToken: Any? = nil
     
     // tunnel specific variables
     private var vpnManager: NETunnelProviderManager? = nil
@@ -68,7 +68,7 @@ import OSLog
             //NotificationCenter.default.addObserver(forName: NSNotification.Name.NEVPNStatusDidChange, object: nil, queue: OperationQueue.main) { [weak self] notification in
               //  self?.vpnStatusDidChange(notification)
             //}
-            observer = observe()
+            statusObservationToken = observeVPNStatus()
             GeneratedPluginRegistrant.register(with: self)
             return super.application(application, didFinishLaunchingWithOptions: launchOptions)
         }
@@ -241,7 +241,7 @@ import OSLog
      // Restart any tasks that were paused (or not yet started) while the application was inactive.
      }
      */
-    func observe() {
+    func observeVPNStatus() {
         NotificationCenter.default.addObserver(forName: NSNotification.Name.NEVPNStatusDidChange, object: nil, queue: OperationQueue.main) { [weak self] notification in
             self?.vpnStatusDidChange(notification)
         }
