@@ -353,10 +353,7 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatus = myceliumStatusStarted;
       _startStopButtonColor = colorMycelRed;
       _myceliumStatusColor = colorDarkBlue;
-      if (Platform.isAndroid) {
-        // only show restart button on Android because iOS doesn't support it
-        isRestartVisible = true;
-      }
+      isRestartVisible = true;
     });
   }
 }
