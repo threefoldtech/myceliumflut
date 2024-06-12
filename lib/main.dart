@@ -60,7 +60,7 @@ class _MyAppState extends State<MyApp> {
           setStateFailedStart();
           break;
         case 'notifyMyceliumFinished':
-          _logger.warning("Mycelium finished");
+          _logger.info("Mycelium finished");
           setStateStopped();
           break;
         case 'notifyMyceliumStarted':
@@ -317,11 +317,8 @@ class _MyAppState extends State<MyApp> {
   void stopMycelium() {
     try {
       stopVpn(platform);
-      if (Platform.isIOS) {
-        // In Android, the stopVpn result will be send in async way by Kotlin
-        // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
-        //setStateStopped();
-      }
+      // stopVpn result will be send in async way by Kotlin/Swift
+      // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
     } on Exception {
       _logger.warning("stopping VPN failed");
     }
