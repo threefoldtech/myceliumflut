@@ -81,10 +81,15 @@ import OSLog
     }
 
     func createTunnel(secretKey: Data, peers: [String], tryNum: Int = 0) {
-        if let vpnManager = self.vpnManager {
-            infolog("use existing vpnManager")
-            self.startVpnTunnel(vpnManager: vpnManager, secretKey: secretKey, peers: peers)
-            return
+        // tryNum == 1 is a special condition, it happens on very first run after installation.
+        // in this case, we can't  use existing vpnManager, we need to do `loadAllFromPreferences`
+        // again
+        if tryNum != 1 {
+            if let vpnManager = self.vpnManager {
+                infolog("use existing vpnManager")
+                self.startVpnTunnel(vpnManager: vpnManager, secretKey: secretKey, peers: peers)
+                return
+            }
         }
 
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
