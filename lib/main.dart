@@ -188,6 +188,9 @@ class _MyAppState extends State<MyApp> {
                 TextField(
                   // peers address
                   controller: textEditController,
+                  onTapOutside: (event) => {
+                    FocusManager.instance.primaryFocus?.unfocus(),
+                  },
                   minLines: 1,
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
