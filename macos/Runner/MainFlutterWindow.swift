@@ -61,7 +61,6 @@ class MainFlutterWindow: NSWindow {
                     self.createTunnel(secretKey: secretKey.data, peers: peers)
                     result(true)
                 } else {
-                    self.sendLogToFlutter("KOk bisa masuk ELSE")
                     result(false)
                 }
             case "stopVpn":
@@ -148,10 +147,6 @@ class MainFlutterWindow: NSWindow {
         }
         
     }
-
-    func sendLogToFlutter(_ message: String) {
-    flutterChannel?.invokeMethod("log", arguments: message)
-}
     
     private func startVpnTunnel(vpnManager: NETunnelProviderManager, secretKey: Data, peers: [String]) {
         do {
@@ -160,13 +155,11 @@ class MainFlutterWindow: NSWindow {
                 "peers": peers as NSObject
             ]
             print("VPN Manager will start vpn tunnel")
-            sendLogToFlutter("VPN MAnager will startVPNTUnnel")
             NSLog("uhuyyy")
             try vpnManager.connection.startVPNTunnel(options: options)
         } catch {
             
             print("startVPNTUnnel failed:" + error.localizedDescription)
-            sendLogToFlutter("startVPNTUnnel failed:" + error.localizedDescription)
             errlog("startVPNTunnel() failed: " + error.localizedDescription)
         }
     }

@@ -22,6 +22,8 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
         infolog("startTunnel() called")
+        print("PRINT START TUNNEL")
+        NSLog("LOG START TUNNEL")
 
         // TODO: add some guard
         let peers = options!["peers"] as! [String]
