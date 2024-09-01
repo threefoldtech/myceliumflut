@@ -67,6 +67,9 @@ class _MyAppState extends State<MyApp> {
           _logger.info("Mycelium started");
           setStateStarted();
           break;
+        case 'log':
+          _logger.info(call.arguments);
+          break;
         default:
           _logger.warning("Unknown method call: ${call.method}");
           throw MissingPluginException();
