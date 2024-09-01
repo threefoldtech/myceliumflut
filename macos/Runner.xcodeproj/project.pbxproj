@@ -312,10 +312,10 @@
 				D3B59B9E3065DF2FA7DA41BA /* [CP] Check Pods Manifest.lock */,
 				33CC10E92044A3C60003C045 /* Sources */,
 				33CC10EA2044A3C60003C045 /* Frameworks */,
+				00D617942C845343009C3509 /* Embed Foundation Extensions */,
 				33CC10EB2044A3C60003C045 /* Resources */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				E51DD5065A19E15327464275 /* [CP] Embed Pods Frameworks */,
-				00D617942C845343009C3509 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
