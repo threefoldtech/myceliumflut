@@ -16,7 +16,7 @@ class MainFlutterWindow: NSWindow {
     private var vpnManager: NETunnelProviderManager? = nil
     let bundleIdentifier = "tech.threefold.mycelium.MyceliumTunnel"
     let localizedDescription = "mycelium tunnel"
-    let vpnUsername = "aiueo"
+    let vpnUsername = "masterOfMycel"
     let vpnServerAddress = "mycelium"
 
     deinit {
@@ -209,6 +209,7 @@ class MainFlutterWindow: NSWindow {
         providerProtocol.providerConfiguration = [:]
         providerProtocol.serverAddress = self.vpnServerAddress
         providerProtocol.username = self.vpnUsername
+        providerProtocol.excludeLocalNetworks = true
         
         providerProtocol.disconnectOnSleep = false
         
@@ -242,21 +243,18 @@ enum TunnelStatus {
 
 func debuglog(_ msg: String, _ args: CVarArg...) {
     mlog(msg, .debug, args)
-    print(msg)
 }
 
 func infolog(_ msg: String, _ args: CVarArg...) {
     mlog(msg, .info, args)
-    print(msg)
 }
 
 func errlog(_ msg: String, _ args: CVarArg...) {
-    print(msg)
     mlog(msg, .error, args)
 }
 
 func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
-    os_log("%{public}@ %{public}@", log: .default, type: type, "myceliumflut:AppDelegate:", String(describing: msg), args)
+    os_log("%{public}@ %{public}@", log: .default, type: type, "myceliumflut:MainFlutterWindow:", String(describing: msg), args)
 }
 
 
