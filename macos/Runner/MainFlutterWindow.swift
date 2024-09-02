@@ -178,13 +178,13 @@ class MainFlutterWindow: NSWindow {
             case .disconnecting:
                 infolog("VPN is disconnecting")
             case .disconnected:
-                infolog("VPN is disconnected")
+                infolog("VPN is disconnected.desc:" + notification.description + ". debug desc:" + notification.debugDescription)
                 switch self.flutterTunnelStatus {
                 case .off:
                     errlog("Unexpected: got .disconnected when flutterTunnelStatus = .off ")
                 case .started:
                     // first disconnected, we can ignore it
-                    debuglog("fist disconnected, we can ignore it")
+                    debuglog("first disconnected, we can ignore it")
                 case .running:
                     errlog("mycelium failed")
                     flutterChannel?.invokeMethod("notifyMyceliumFailed", arguments: nil)
@@ -216,6 +216,7 @@ class MainFlutterWindow: NSWindow {
         let vpnManager = NETunnelProviderManager()
         vpnManager.protocolConfiguration = providerProtocol
         vpnManager.localizedDescription = self.localizedDescription
+        
         return vpnManager
     }
     

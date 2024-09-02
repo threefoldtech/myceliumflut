@@ -7,6 +7,7 @@
 
 import NetworkExtension
 import OSLog
+import Foundation
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
     private let mtuSize = 1400
@@ -15,12 +16,19 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     private let routeNetworkPrefixLength : NSNumber = 7
 
     private var started = false
+    
+    override init() {
+        NSLog("INIT PTP")
+        print("INIT PTP")
+        super.init()
+    }
 
     // TODO FIXME
     // - use completionHandle properly
     // - how to prevent double start / stop
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
+        //Thread.sleep(forTimeInterval: 30)
         infolog("startTunnel() called")
         print("PRINT START TUNNEL")
         NSLog("LOG START TUNNEL")
