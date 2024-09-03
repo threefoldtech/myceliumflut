@@ -8,6 +8,7 @@
 import NetworkExtension
 import OSLog
 import Foundation
+import os.log
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
     private let mtuSize = 1400
@@ -18,8 +19,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     private var started = false
     
     override init() {
-        NSLog("INIT PTP")
-        print("INIT PTP")
+        infolog("INIT PacketTUnnelProvider")
         super.init()
     }
 
@@ -28,11 +28,8 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     // - how to prevent double start / stop
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
-        //Thread.sleep(forTimeInterval: 30)
         infolog("startTunnel() called")
-        print("PRINT START TUNNEL")
-        NSLog("LOG START TUNNEL")
-
+        
         // TODO: add some guard
         let peers = options!["peers"] as! [String]
         let secretKey = options!["secretKey"] as! Data

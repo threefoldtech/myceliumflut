@@ -32,8 +32,6 @@ class MainFlutterWindow: NSWindow {
         flutterChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
                                                   binaryMessenger: flutterViewController.engine.binaryMessenger)
         
-        errlog("AWAKE FROM NIB ERRLOG")
-        print("AWAKE FROM NIB PRINT")
         flutterChannel?.setMethodCallHandler({
             (call: FlutterMethodCall, result: FlutterResult) -> Void in
             // This method is invoked on the UI thread.
@@ -42,7 +40,6 @@ class MainFlutterWindow: NSWindow {
                 let key = generateSecretKey()
                 result(key)
             case "addressFromSecretKey":
-                print("AddressFRomSecretKey hahahahahahaha")
                 if let key = call.arguments as? FlutterStandardTypedData {
                     let nodeAddr = addressFromSecretKey(data: key.data)
                     debuglog("nodeAddr = \(nodeAddr)")
@@ -83,12 +80,9 @@ class MainFlutterWindow: NSWindow {
         // tryNum == 1 is a special condition, it happens on very first run after installation.
         // in this case, we can't  use existing vpnManager, we need to do `loadAllFromPreferences`
         // again
-        print("CREATE TUNNEL PRINT")
         if tryNum != 1 {
-            print("if tryNum != 1")
             if let vpnManager = self.vpnManager {
                 infolog("use existing vpnManager")
-                print("use EXISTING PRINT")
                 self.startVpnTunnel(vpnManager: vpnManager, secretKey: secretKey, peers: peers)
                 return
             }
@@ -154,12 +148,8 @@ class MainFlutterWindow: NSWindow {
                 "secretKey": secretKey as NSObject,
                 "peers": peers as NSObject
             ]
-            print("VPN Manager will start vpn tunnel")
-            NSLog("uhuyyy")
             try vpnManager.connection.startVPNTunnel(options: options)
         } catch {
-            
-            print("startVPNTUnnel failed:" + error.localizedDescription)
             errlog("startVPNTunnel() failed: " + error.localizedDescription)
         }
     }
