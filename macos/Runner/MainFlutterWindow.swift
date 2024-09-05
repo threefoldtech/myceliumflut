@@ -148,6 +148,7 @@ class MainFlutterWindow: NSWindow {
                 "secretKey": secretKey as NSObject,
                 "peers": peers as NSObject
             ]
+            infolog("calling startVPNTunnel")
             try vpnManager.connection.startVPNTunnel(options: options)
         } catch {
             errlog("startVPNTunnel() failed: " + error.localizedDescription)

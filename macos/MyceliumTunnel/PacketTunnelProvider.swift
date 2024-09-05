@@ -19,7 +19,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     private var started = false
     
     override init() {
-        infolog("INIT PacketTUnnelProvider")
+        infolog("INIT PacketTunnelProvider")
         super.init()
     }
 
@@ -28,7 +28,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     // - how to prevent double start / stop
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         // Add code here to start the process of connecting the tunnel.
-        infolog("startTunnel() called")
+        infolog("startTunnel called")
         
         // TODO: add some guard
         let peers = options!["peers"] as! [String]
