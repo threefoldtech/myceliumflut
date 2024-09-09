@@ -3,8 +3,11 @@ import FlutterMacOS
 import IOKit.ps
 import OSLog
 import NetworkExtension
+import SystemExtensions
 
-class MainFlutterWindow: NSWindow {
+class MainFlutterWindow: NSWindow,OSSystemExtensionRequestDelegate {
+    
+    
     // channel to communicate between flutter & Swift
     private var flutterChannel: FlutterMethodChannel?
     // tunnel status that seen by flutter
@@ -15,10 +18,10 @@ class MainFlutterWindow: NSWindow {
     // tunnel specific variables
     private var vpnManager: NETunnelProviderManager? = nil
     let bundleIdentifier = "tech.threefold.mycelium.MyceliumTunnel"
-    let localizedDescription = "mycelium tunnel"
+    let localizedDescription = "MyceliumTunnel"
     let vpnUsername = "masterOfMycel"
     let vpnServerAddress = "mycelium"
-
+    
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
     }
@@ -30,7 +33,7 @@ class MainFlutterWindow: NSWindow {
         self.setFrame(windowFrame, display: true)
         
         flutterChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
-                                                  binaryMessenger: flutterViewController.engine.binaryMessenger)
+                                              binaryMessenger: flutterViewController.engine.binaryMessenger)
         
         flutterChannel?.setMethodCallHandler({
             (call: FlutterMethodCall, result: FlutterResult) -> Void in
@@ -70,10 +73,37 @@ class MainFlutterWindow: NSWindow {
         })
         statusObservationToken = observeVPNStatus()
         
+        // Start by activating the system extension
+        let activationRequest = OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier: bundleIdentifier, queue: .main)
+        activationRequest.delegate = self
+        OSSystemExtensionManager.shared.submitRequest(activationRequest)
         
         RegisterGeneratedPlugins(registry: flutterViewController)
         
         super.awakeFromNib()
+    }
+    
+    func request(_ request: OSSystemExtensionRequest,
+                 actionForReplacingExtension existing: OSSystemExtensionProperties,
+                 withExtension extension: OSSystemExtensionProperties) -> OSSystemExtensionRequest.ReplacementAction {
+        
+        errlog("activation Replacing extension %@ version %@ with version %@", request.identifier, existing.bundleShortVersion, `extension`.bundleShortVersion)
+        return .replace
+    }
+    
+    func request(_ request: OSSystemExtensionRequest, didFinishWithResult result: OSSystemExtensionRequest.Result) {
+        // Handle successful activation
+        infolog("System extension activation succeeded with result: \(result)")
+    }
+    
+    func request(_ request: OSSystemExtensionRequest, didFailWithError error: Error) {
+        // Handle activation failure
+        infolog("System extension activation failed with error: \(error)")
+    }
+    
+    func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
+        // Handle user approval requirement
+        infolog("System extension activation requires user approval")
     }
     
     func createTunnel(secretKey: Data, peers: [String], tryNum: Int = 0) {
@@ -87,18 +117,18 @@ class MainFlutterWindow: NSWindow {
                 return
             }
         }
-
+        
         NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
             if let error = error {
                 errlog("loadAllFromPref failed:" + error.localizedDescription)
                 return
             }
-
+            
             guard let providers = providers else {
                 errlog("caught by the nil providers guard")
                 return
             } // Handle error if nil
-
+            
             if providers.count > 0 {
                 // TODO : search by bundle identifier
                 let myProvider = providers.first(where: { $0.protocolConfiguration?.serverAddress==self.vpnServerAddress })
@@ -191,7 +221,7 @@ class MainFlutterWindow: NSWindow {
             }
         }
     }
-
+    
     func createVPN() -> NETunnelProviderManager {
         // create protocol configuration
         let providerProtocol = NETunnelProviderProtocol()
@@ -216,7 +246,7 @@ class MainFlutterWindow: NSWindow {
         infolog("stopMycelium")
         self.vpnManager?.connection.stopVPNTunnel()
     }
-
+    
     func observeVPNStatus() {
         NotificationCenter.default.addObserver(forName: NSNotification.Name.NEVPNStatusDidChange, object: nil, queue: OperationQueue.main) { [weak self] notification in
             self?.vpnStatusDidChange(notification)
@@ -253,12 +283,12 @@ func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
 final class NotificationToken {
     let notificationCenter: NotificationCenter
     let token: Any
-
+    
     init(notificationCenter: NotificationCenter = .default, token: Any) {
         self.notificationCenter = notificationCenter
         self.token = token
     }
-
+    
     deinit {
         notificationCenter.removeObserver(token)
     }
