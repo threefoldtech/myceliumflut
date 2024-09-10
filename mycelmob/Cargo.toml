@@ -10,12 +10,12 @@ crate_type = ["cdylib", "staticlib"]
 name = "mycelmob"
 
 [dependencies]
-uniffi = { version = "0.27.3", features = [ "cli" ] }
-mobile = {git = "http://github.com/threefoldtech/mycelium", package = "mobile", rev = "24600ff2f0cde2cd182c26eab38f2e8c6db1c0b6"}
-#mobile = {path = "../../mycelium/mobile"}
+uniffi = { version = "0.27.3", features = ["cli"] }
+mobile = { git = "http://github.com/threefoldtech/mycelium", package = "mobile", branch = "macos-app" }
+#mobile = { path = "../../mycelium/mobile" }
 
 [build-dependencies]
-uniffi = { version = "0.27.3", features = [ "build" ] }
+uniffi = { version = "0.27.3", features = ["build"] }
 
 [[bin]]
 name = "uniffi-bindgen"
