@@ -48,3 +48,14 @@ The log will be something like this
 ```
 node_addr = 464:de5d:4945:dc4d:a0a9:3dc9:c9be:35b7
 ```
+
+## Installer
+
+### macos
+
+```bash
+flutter build macos    # build macos
+brew install node      # install NPM (nodejs package manager)
+npm install -g appdmg  # install appdmg globally
+appdmg installers/dmg_creator/config.json myceliumflut.dmg
+```
