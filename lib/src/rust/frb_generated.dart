@@ -56,7 +56,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.0.0-dev.32';
 
   @override
-  int get rustContentHash => -1849882261;
+  int get rustContentHash => 1963736516;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -72,6 +72,8 @@ abstract class RustLibApi extends BaseApi {
   Future<void> initApp({dynamic hint});
 
   String mycelAddressFromSecretKey({required List<int> data, dynamic hint});
+
+  Uint8List mycelGenerateSecretKey({dynamic hint});
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -152,6 +154,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kMycelAddressFromSecretKeyConstMeta => const TaskConstMeta(
         debugName: "mycel_address_from_secret_key",
         argNames: ["data"],
+      );
+
+  @override
+  Uint8List mycelGenerateSecretKey({dynamic hint}) {
+    return handler.executeSync(SyncTask(
+      callFfi: () {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_list_prim_u_8_strict,
+        decodeErrorData: null,
+      ),
+      constMeta: kMycelGenerateSecretKeyConstMeta,
+      argValues: [],
+      apiImpl: this,
+      hint: hint,
+    ));
+  }
+
+  TaskConstMeta get kMycelGenerateSecretKeyConstMeta => const TaskConstMeta(
+        debugName: "mycel_generate_secret_key",
+        argNames: [],
       );
 
   @protected

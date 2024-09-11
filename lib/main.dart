@@ -92,7 +92,7 @@ class _MyAppState extends State<MyApp> {
 
     //String nodeAddr = (await platform.invokeMethod<String>(
     //   'addressFromSecretKey', privKey)) as String;
-    String nodeAddr = await addressFromSecretKey(data: privKey);
+    String nodeAddr = mycelAddressFromSecretKey(data: privKey);
 
     _logger.info("nodeAddr: $nodeAddr");
 
@@ -403,8 +403,9 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
     return await file.readAsBytes();
   }
   // create new secret key if not exists
-  Uint8List privKey = (await platform
-      .invokeMethod<Uint8List>('generateSecretKey')) as Uint8List;
+  //Uint8List privKey = (await platform
+  //    .invokeMethod<Uint8List>('generateSecretKey')) as Uint8List;
+  Uint8List privKey = mycelGenerateSecretKey();
   //}
   await file.writeAsBytes(privKey);
   return privKey;

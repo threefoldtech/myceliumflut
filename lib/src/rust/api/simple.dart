@@ -11,3 +11,6 @@ String greet({required String name, dynamic hint}) =>
 
 String mycelAddressFromSecretKey({required List<int> data, dynamic hint}) =>
     RustLib.instance.api.mycelAddressFromSecretKey(data: data, hint: hint);
+
+Uint8List mycelGenerateSecretKey({dynamic hint}) =>
+    RustLib.instance.api.mycelGenerateSecretKey(hint: hint);

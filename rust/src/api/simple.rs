@@ -16,8 +16,12 @@ pub fn init_app() {
     flutter_rust_bridge::setup_default_user_utils();
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 #[flutter_rust_bridge::frb(sync)]
 pub fn mycel_address_from_secret_key(data: Vec<u8>) -> String {
     unsafe { address_from_secret_key(data) }
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn mycel_generate_secret_key() -> Vec<u8> {
+    unsafe { generate_secret_key() }
 }
