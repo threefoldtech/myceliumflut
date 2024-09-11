@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 
+import 'package:myceliumflut/src/rust/api/simple.dart';
+import 'package:myceliumflut/src/rust/frb_generated.dart';
+
 final _logger = Logger('Mycelium');
 
 const String startMyceliumText = 'Start Mycelium';
@@ -24,6 +27,7 @@ const Color colorMycelRed = Color(0xFFEC3F09);
 const sizedBoxHeight = 40.0;
 
 Future<void> main() async {
+  await RustLib.init();
   // Logger configuration
   Logger.root.level = Level.ALL; // Log messages emitted at all levels
   Logger.root.onRecord.listen((record) {
@@ -86,8 +90,9 @@ class _MyAppState extends State<MyApp> {
     }
     textEditController = TextEditingController(text: peers.join('\n'));
 
-    String nodeAddr = (await platform.invokeMethod<String>(
-        'addressFromSecretKey', privKey)) as String;
+    //String nodeAddr = (await platform.invokeMethod<String>(
+    //   'addressFromSecretKey', privKey)) as String;
+    String nodeAddr = await addressFromSecretKey(data: privKey);
 
     _logger.info("nodeAddr: $nodeAddr");
 
