@@ -8,4 +8,4 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.0.0-dev.32"
-mobile = { git = "http://github.com/threefoldtech/mycelium", package = "mobile", branch = "macos-app" }
+winmycelium = { git = "https://github.com/iwanbk/winmycelium" }

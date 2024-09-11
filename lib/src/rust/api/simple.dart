@@ -6,14 +6,8 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-///frb_encoded(235b6672622873796e63295d)
-Future<String> greet({required String name, dynamic hint}) =>
+String greet({required String name, dynamic hint}) =>
     RustLib.instance.api.greet(name: name, hint: hint);
 
-///frb_encoded(235b66726228696e6974295d)
-Future<void> initApp({dynamic hint}) =>
-    RustLib.instance.api.initApp(hint: hint);
-
-///frb_encoded(235b6672622873796e63295d)
-Future<String> addressFromSecretKey({required List<int> data, dynamic hint}) =>
-    RustLib.instance.api.addressFromSecretKey(data: data, hint: hint);
+String mycelAddressFromSecretKey({required List<int> data, dynamic hint}) =>
+    RustLib.instance.api.mycelAddressFromSecretKey(data: data, hint: hint);
