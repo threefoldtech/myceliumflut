@@ -316,7 +316,8 @@ class _MyAppState extends State<MyApp> {
     // store the peers if verified
     storePeers(peers);
     try {
-      startVpn(platform, peers, privKey);
+      //startVpn(platform, peers, privKey);
+      mycelStartMycelium(peers: peers, privKey: privKey);
       // the startVpn result will be send in async way by Kotlin/Swift
       setStateStarted();
     } on Exception {
@@ -327,7 +328,8 @@ class _MyAppState extends State<MyApp> {
 
   void stopMycelium() {
     try {
-      stopVpn(platform);
+      //stopVpn(platform);
+      mycelStopMycelium();
       // stopVpn result will be send in async way by Kotlin/Swift
       // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
     } on Exception {

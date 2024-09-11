@@ -14,3 +14,13 @@ String mycelAddressFromSecretKey({required List<int> data, dynamic hint}) =>
 
 Uint8List mycelGenerateSecretKey({dynamic hint}) =>
     RustLib.instance.api.mycelGenerateSecretKey(hint: hint);
+
+void mycelStartMycelium(
+        {required List<String> peers,
+        required List<int> privKey,
+        dynamic hint}) =>
+    RustLib.instance.api
+        .mycelStartMycelium(peers: peers, privKey: privKey, hint: hint);
+
+String mycelStopMycelium({dynamic hint}) =>
+    RustLib.instance.api.mycelStopMycelium(hint: hint);
