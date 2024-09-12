@@ -58,27 +58,28 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
-      switch (call.method) {
-        case 'notifyMyceliumFailed':
-          _logger.warning("Mycelium failed to start");
-          setStateFailedStart();
-          break;
-        case 'notifyMyceliumFinished':
-          _logger.info("Mycelium finished");
-          setStateStopped();
-          break;
-        case 'notifyMyceliumStarted':
-          _logger.info("Mycelium started");
-          setStateStarted();
-          break;
-        case 'log':
-          _logger.info(call.arguments);
-          break;
-        default:
-          _logger.warning("Unknown method call: ${call.method}");
-          throw MissingPluginException();
-      }
+      methodHandler(call.method);
     });
+  }
+
+  void methodHandler(String methodName) {
+    switch (methodName) {
+      case 'notifyMyceliumFailed':
+        _logger.warning("Mycelium failed to start");
+        setStateFailedStart();
+        break;
+      case 'notifyMyceliumFinished':
+        _logger.info("Mycelium finished");
+        setStateStopped();
+        break;
+      case 'notifyMyceliumStarted':
+        _logger.info("Mycelium started");
+        setStateStarted();
+        break;
+      default:
+        _logger.warning("Unknown method call: ${methodName}");
+        throw MissingPluginException();
+    }
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -298,7 +299,7 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  void startMycelium() {
+  void startMycelium() async {
     if (_isStarted) {
       _logger.warning("Mycelium already started");
       return;
@@ -317,19 +318,25 @@ class _MyAppState extends State<MyApp> {
     storePeers(peers);
     try {
       //startVpn(platform, peers, privKey);
-      mycelStartMycelium(peers: peers, privKey: privKey);
+      Future(() => mycelStartMycelium(peers: peers, privKey: privKey));
       // the startVpn result will be send in async way by Kotlin/Swift
       setStateStarted();
+      methodHandler('notifyMyceliumStarted');
     } on Exception {
       _logger.warning("Start VPN failed");
       setStateFailedStart();
     }
   }
 
+  //void newStartMycel() async {
+//
+  //}
+
   void stopMycelium() {
     try {
       //stopVpn(platform);
       mycelStopMycelium();
+      methodHandler('notifyMyceliumFinished');
       // stopVpn result will be send in async way by Kotlin/Swift
       // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
     } on Exception {
