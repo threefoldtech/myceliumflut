@@ -9,6 +9,7 @@ import 'package:logging/logging.dart';
 
 import 'package:myceliumflut/src/rust/api/simple.dart';
 import 'package:myceliumflut/src/rust/frb_generated.dart';
+import 'dart:isolate';
 
 final _logger = Logger('Mycelium');
 
@@ -318,25 +319,56 @@ class _MyAppState extends State<MyApp> {
     storePeers(peers);
     try {
       //startVpn(platform, peers, privKey);
-      Future(() => mycelStartMycelium(peers: peers, privKey: privKey));
+      //Future(() => mycelStartMycelium(peers: peers, privKey: privKey));
+      // Create a ReceivePort to receive messages from the isolate
+      final receivePort = ReceivePort();
+
+      // Create a Map to hold the arguments
+      final args = {
+        'sendPort': receivePort.sendPort,
+        'peers': peers,
+        'privKey': privKey,
+      };
+
+      // Spawn the isolate
+      await Isolate.spawn(mycelStartMyceliumIsolate, args);
+
       // the startVpn result will be send in async way by Kotlin/Swift
       setStateStarted();
       methodHandler('notifyMyceliumStarted');
+      // Handle the isolate completion using a StreamSubscription
+      receivePort.listen((message) {
+        if (message == 'done') {
+          _logger.info("mycelStartMycelium task completed");
+          receivePort.close();
+          methodHandler('notifyMyceliumFinished');
+        }
+      });
     } on Exception {
       _logger.warning("Start VPN failed");
       setStateFailedStart();
     }
   }
 
-  //void newStartMycel() async {
-//
-  //}
+  static void mycelStartMyceliumIsolate(Map<String, dynamic> args) async {
+    await RustLib.init();
 
-  void stopMycelium() {
+    final SendPort sendPort = args['sendPort'];
+    final List<String> peers = args['peers'];
+    final Uint8List privKey = args['privKey'];
+
+    // Perform the mycelStartMycelium task
+    mycelStartMycelium(peers: peers, privKey: privKey);
+
+    // Notify the main thread that the task is complete
+    sendPort.send('done');
+  }
+
+  void stopMycelium() async {
     try {
       //stopVpn(platform);
       mycelStopMycelium();
-      methodHandler('notifyMyceliumFinished');
+      //methodHandler('notifyMyceliumFinished');
       // stopVpn result will be send in async way by Kotlin/Swift
       // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
     } on Exception {
