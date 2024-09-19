@@ -1,0 +1,71 @@
+name: macos Build
+
+on:
+  pull_request:
+    branches:
+      - main # Or any other branch you want to monitor
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.5'
+          channel: 'stable'
+
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build mycelmob
+        run: bash build-mac.sh
+        working-directory: mycelmob
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        run: pod install
+        working-directory: macos
+
+      - name: Manually create FlutterInputs.xcfilelist # we do this because "flutter buid macos" doesnt work on github actions (need codesign)
+        run: |
+          mkdir -p macos/Flutter/ephemeral
+          echo '$(SRCROOT)/../.packages' > macos/Flutter/ephemeral/FlutterInputs.xcfilelist
+          echo '$(SRCROOT)/../pubspec.yaml' >> macos/Flutter/ephemeral/FlutterInputs.xcfilelist
+          echo '$(SRCROOT)/../pubspec.lock' >> macos/Flutter/ephemeral/FlutterInputs.xcfilelist
+          echo '$(SRCROOT)/../.flutter-plugins' >> macos/Flutter/ephemeral/FlutterInputs.xcfilelist
+          echo '$(SRCROOT)/../.flutter-plugins-dependencies' >> macos/Flutter/ephemeral/FlutterInputs.xcfilelist
+
+      - name: Manually create FlutterOutputs.xcfilelist # we do this because "flutter buid macos" doesnt work on github actions (need codesign)
+        run: |
+          mkdir -p macos/Flutter/ephemeral
+          echo '$(BUILT_PRODUCTS_DIR)/flutter_assets' > macos/Flutter/ephemeral/FlutterOutputs.xcfilelist
+
+      - name: Build macOS app with xcodebuild
+        run: |
+            xcodebuild -workspace Runner.xcworkspace \
+                       -scheme Runner \
+                       -configuration Release \
+                       -allowProvisioningUpdates \
+                       CODE_SIGNING_ALLOWED=NO \
+                       CODE_SIGNING_REQUIRED=NO \
+                       clean build
+        working-directory: macos

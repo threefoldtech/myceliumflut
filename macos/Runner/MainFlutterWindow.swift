@@ -48,13 +48,10 @@ class MainFlutterWindow: NSWindow {
                     result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
                 }
             case "startVpn":
-                infolog("CALLING STARTVPN\n\n\n\n   ")
-                print("iwanbk CALLING STARTT VPN TEAMS!")
                 if let arguments = call.arguments as? Dictionary<String, Any> {
                     let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
                     let peers = arguments["peers"] as! [String]
                     self.flutterTunnelStatus = .started
-                    print("WANT TO CREATE TUNNEL")
                     self.createTunnel(secretKey: secretKey.data, peers: peers)
                     result(true)
                 } else {
