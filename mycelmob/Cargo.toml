@@ -11,7 +11,9 @@ name = "mycelmob"
 
 [dependencies]
 uniffi = { version = "0.27.3", features = ["cli"] }
-mobile = { git = "http://github.com/threefoldtech/mycelium", package = "mobile", branch = "macos-app" }
+mobile = { git = "http://github.com/threefoldtech/mycelium", package = "mobile", branch = "mactunfd", features = [
+    "mactunfd",
+] }
 #mobile = { path = "../../mycelium/mobile" }
 
 [build-dependencies]
