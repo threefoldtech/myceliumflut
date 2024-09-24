@@ -963,7 +963,7 @@ dependencies = [
 [[package]]
 name = "mobile"
 version = "0.1.0"
-source = "git+http://github.com/threefoldtech/mycelium?branch=mactunfd#edcdaffe459e52d0b45e06a49bc1885bcf373fd9"
+source = "git+http://github.com/threefoldtech/mycelium#c404576656f13beaa8760630572c57774c1536b1"
 dependencies = [
  "mycelium",
  "once_cell",
@@ -978,7 +978,7 @@ dependencies = [
 [[package]]
 name = "mycelium"
 version = "0.5.4"
-source = "git+http://github.com/threefoldtech/mycelium?branch=mactunfd#edcdaffe459e52d0b45e06a49bc1885bcf373fd9"
+source = "git+http://github.com/threefoldtech/mycelium#c404576656f13beaa8760630572c57774c1536b1"
 dependencies = [
  "aes-gcm",
  "arc-swap",
