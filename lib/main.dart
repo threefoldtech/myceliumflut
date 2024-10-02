@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 
+import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
+
 final _logger = Logger('Mycelium');
 
 const String startMyceliumText = 'Start Mycelium';
@@ -47,6 +49,7 @@ class _MyAppState extends State<MyApp> {
   var privKey = Uint8List(0);
   List<String> peers = [];
   late TextEditingController textEditController;
+  final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
 
   @override
   void initState() {
@@ -73,6 +76,31 @@ class _MyAppState extends State<MyApp> {
         default:
           _logger.warning("Unknown method call: ${call.method}");
           throw MissingPluginException();
+      }
+    });
+    // flutter desktop sleep plugin only works on macos and windows
+    _flutterDesktopSleepPlugin.setWindowSleepHandler((String? s) async {
+      if (s != null) {
+        if (s == 'sleep') {
+        } else if (s == 'woke_up') {
+          if (_isStarted) {
+            _logger.info("[wake up handler]stopping mycelium");
+            stopMycelium();
+            // Wait for isStarted to become false, but no more than 3 seconds
+            final timeout = DateTime.now().add(const Duration(seconds: 3));
+            while (_isStarted && DateTime.now().isBefore(timeout)) {
+              await Future.delayed(const Duration(milliseconds: 20));
+            }
+            _logger.info("[wake up handler]starting mycelium");
+            startMycelium();
+          }
+        } else if (s == 'terminate_app') {
+          _logger.info("TERMINATE_APP");
+          if (_isStarted) {
+            stopMycelium();
+          }
+          _flutterDesktopSleepPlugin.terminateApp();
+        }
       }
     });
   }
