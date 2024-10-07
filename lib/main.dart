@@ -7,6 +7,12 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 
+import 'dart:ffi' as ffi;
+
+import 'package:ffi/ffi.dart';
+import 'package:path/path.dart' show join;
+import 'dart:isolate';
+
 final _logger = Logger('Mycelium');
 
 const String startMyceliumText = 'Start Mycelium';
@@ -54,27 +60,28 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
-      switch (call.method) {
-        case 'notifyMyceliumFailed':
-          _logger.warning("Mycelium failed to start");
-          setStateFailedStart();
-          break;
-        case 'notifyMyceliumFinished':
-          _logger.info("Mycelium finished");
-          setStateStopped();
-          break;
-        case 'notifyMyceliumStarted':
-          _logger.info("Mycelium started");
-          setStateStarted();
-          break;
-        case 'log':
-          _logger.info(call.arguments);
-          break;
-        default:
-          _logger.warning("Unknown method call: ${call.method}");
-          throw MissingPluginException();
-      }
+      methodHandler(call.method);
     });
+  }
+
+  void methodHandler(String methodName) {
+    switch (methodName) {
+      case 'notifyMyceliumFailed':
+        _logger.warning("Mycelium failed to start");
+        setStateFailedStart();
+        break;
+      case 'notifyMyceliumFinished':
+        _logger.info("Mycelium finished");
+        setStateStopped();
+        break;
+      case 'notifyMyceliumStarted':
+        _logger.info("Mycelium started");
+        setStateStarted();
+        break;
+      default:
+        _logger.warning("Unknown method call: $methodName");
+        throw MissingPluginException();
+    }
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -86,8 +93,13 @@ class _MyAppState extends State<MyApp> {
     }
     textEditController = TextEditingController(text: peers.join('\n'));
 
-    String nodeAddr = (await platform.invokeMethod<String>(
-        'addressFromSecretKey', privKey)) as String;
+    String nodeAddr;
+    if (isUseDylib()) {
+      nodeAddr = myFFAddressFromSecretKey(privKey);
+    } else {
+      nodeAddr = (await platform.invokeMethod<String>(
+          'addressFromSecretKey', privKey)) as String;
+    }
 
     _logger.info("nodeAddr: $nodeAddr");
 
@@ -311,13 +323,54 @@ class _MyAppState extends State<MyApp> {
     // store the peers if verified
     storePeers(peers);
     try {
-      startVpn(platform, peers, privKey);
-      // the startVpn result will be send in async way by Kotlin/Swift
-      setStateStarted();
+      if (!isUseDylib()) {
+        startVpn(platform, peers, privKey);
+        // the startVpn result will be send in async way by Kotlin/Swift
+        setStateStarted();
+      } else {
+        final receivePort = ReceivePort();
+
+        // Create a Map to hold the arguments
+        final args = {
+          'sendPort': receivePort.sendPort,
+          'peers': peers,
+          'privKey': privKey,
+        };
+
+        // Spawn the isolate
+        Isolate.spawn(startMyceliumIsolate, args);
+
+        // the startVpn result will be send in async way by Kotlin/Swift
+        setStateStarted();
+        methodHandler('notifyMyceliumStarted');
+        // Handle the isolate completion using a StreamSubscription
+        receivePort.listen((message) {
+          if (message == 'done') {
+            _logger.info("mycelStartMycelium task completed");
+            receivePort.close();
+            methodHandler('notifyMyceliumFinished');
+          } else {
+            _logger.warning("mycelStartMycelium task finished, but not done");
+            methodHandler('notifyMyceliumFinished');
+          }
+        });
+      }
     } on Exception {
       _logger.warning("Start VPN failed");
       setStateFailedStart();
     }
+  }
+
+  static void startMyceliumIsolate(Map<String, dynamic> args) {
+    final SendPort sendPort = args['sendPort'];
+    final List<String> peers = args['peers'];
+    final Uint8List privKey = args['privKey'];
+
+    // Perform the mycelStartMycelium task
+    myFFStartMycelium(peers, privKey);
+
+    // Notify the main thread that the task is complete
+    sendPort.send('done');
   }
 
   void stopMycelium() {
@@ -398,8 +451,13 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
     return await file.readAsBytes();
   }
   // create new secret key if not exists
-  Uint8List privKey = (await platform
-      .invokeMethod<Uint8List>('generateSecretKey')) as Uint8List;
+  Uint8List privKey = Uint8List(0);
+  if (isUseDylib()) {
+    privKey = myFFGenerateSecretKey();
+  } else {
+    privKey = (await platform.invokeMethod<Uint8List>('generateSecretKey'))
+        as Uint8List;
+  }
   //}
   await file.writeAsBytes(privKey);
   return privKey;
@@ -407,16 +465,25 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
 
 Future<bool?> startVpn(
     MethodChannel platform, List<String> peers, Uint8List privKey) async {
-  return platform.invokeMethod<bool>('startVpn', {
-    'peers': peers,
-    'secretKey': privKey,
-  });
-  //}
+  if (isUseDylib()) {
+    return myFFStartMycelium(peers, privKey);
+  } else {
+    return platform.invokeMethod<bool>('startVpn', {
+      'peers': peers,
+      'secretKey': privKey,
+    });
+  }
 }
 
 Future<bool> stopVpn(MethodChannel platform) async {
   // check if VPN is started is done on Kotlin / Swift side
-  var stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
+  var stopped = false;
+  if (isUseDylib()) {
+    stopped = await myFFStopMycelium();
+  } else {
+    stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
+  }
+
   _logger.info("stop vpn : $stopped");
   return stopped;
 }
@@ -458,4 +525,153 @@ String? isValidPeer(String peer) {
   }
 
   return null;
+}
+
+ffi.DynamicLibrary loadDll() {
+  if (Platform.isMacOS) {
+    var basePath =
+        'build/macos/Build/Products/Debug/myceliumflut.app/Contents/Frameworks/App.framework/Versions/A/Resources/flutter_assets';
+    var fullPath =
+        join('/Users/ibk/fun/threefoldtech/myceliumflut', basePath, dllPath());
+    return ffi.DynamicLibrary.open(fullPath);
+  } else {
+    var basePath = Directory.current.path;
+    var fullPath = join(basePath, dllPath());
+    return ffi.DynamicLibrary.open(fullPath);
+  }
+}
+
+String dllPath() {
+  return 'assets/dll/winmycelium.dll';
+}
+
+bool isUseDylib() {
+  return Platform.isWindows; //|| Platform.isMacOS;
+}
+
+typedef FuncRustGenerateSecretKey = ffi.Void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Uint8>>, ffi.Pointer<ffi.IntPtr>);
+typedef FuncDartGenerateSecretKey = void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Uint8>>, ffi.Pointer<ffi.IntPtr>);
+typedef FuncRustFreeSecretKey = ffi.Void Function(
+    ffi.Pointer<ffi.Uint8>, ffi.IntPtr);
+typedef FuncDartFreeSecretKey = void Function(ffi.Pointer<ffi.Uint8>, int);
+
+Uint8List myFFGenerateSecretKey() {
+  var dylib = loadDll();
+  final FuncDartGenerateSecretKey generateSecretKey = dylib
+      .lookup<ffi.NativeFunction<FuncRustGenerateSecretKey>>(
+          'ff_generate_secret_key')
+      .asFunction();
+  final FuncDartFreeSecretKey freeSecretKey = dylib
+      .lookup<ffi.NativeFunction<FuncRustFreeSecretKey>>('free_secret_key')
+      .asFunction();
+  final outPtr = malloc<ffi.Pointer<ffi.Uint8>>();
+  final outLen = malloc<ffi.IntPtr>();
+
+  generateSecretKey(outPtr, outLen);
+
+  final ptr = outPtr.value;
+  final len = outLen.value;
+
+  final secretKey = ptr.asTypedList(len);
+
+  // Free the allocated memory
+  freeSecretKey(ptr, len);
+  malloc.free(outPtr);
+  malloc.free(outLen);
+
+  return secretKey;
+}
+
+// Define the FFI types
+typedef FuncRustMycelAddressFromSecretKey = ffi.Pointer<ffi.Int8> Function(
+    ffi.Pointer<ffi.Uint8>, ffi.IntPtr);
+typedef FuncDartMycelAddressFromSecretKey = ffi.Pointer<ffi.Int8> Function(
+    ffi.Pointer<ffi.Uint8>, int);
+typedef FuncRustFreeCString = ffi.Void Function(ffi.Pointer<ffi.Int8>);
+typedef FuncDartFreeCString = void Function(ffi.Pointer<ffi.Int8>);
+
+String myFFAddressFromSecretKey(Uint8List data) {
+  // Load the dynamic library
+  final dylib = loadDll();
+
+// Look up the functions
+  final FuncDartMycelAddressFromSecretKey mycelAddressFromSecretKey = dylib
+      .lookup<ffi.NativeFunction<FuncRustMycelAddressFromSecretKey>>(
+          'ff_address_from_secret_key')
+      .asFunction();
+  final FuncDartFreeCString freeCString = dylib
+      .lookup<ffi.NativeFunction<FuncRustFreeCString>>('free_c_string')
+      .asFunction();
+
+  final ptr = malloc<ffi.Uint8>(data.length);
+  final nativeData = ptr.asTypedList(data.length);
+  nativeData.setAll(0, data);
+
+  final addressPtr = mycelAddressFromSecretKey(ptr, data.length);
+  final address = addressPtr.cast<Utf8>().toDartString();
+
+  // Free the allocated memory
+  freeCString(addressPtr);
+  malloc.free(ptr);
+
+  return address;
+}
+
+typedef FuncRustStartMycelium = ffi.Void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Int8>>,
+    ffi.IntPtr,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.IntPtr);
+typedef FuncDartStartMycelium = void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Int8>>, int, ffi.Pointer<ffi.Uint8>, int);
+
+Future<bool?> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
+  // Load the dynamic library
+  final dylib = loadDll();
+
+// Look up the function
+  final FuncDartStartMycelium startMycelium = dylib
+      .lookup<ffi.NativeFunction<FuncRustStartMycelium>>('ff_start_mycelium')
+      .asFunction();
+
+  // Allocate memory for peers
+  final peerPtrs = malloc<ffi.Pointer<ffi.Int8>>(peers.length);
+  for (var i = 0; i < peers.length; i++) {
+    final peer = peers[i];
+    final peerPtr = peer.toNativeUtf8().cast<ffi.Int8>();
+    peerPtrs[i] = peerPtr;
+  }
+
+  // Allocate memory for private key
+  final privKeyPtr = malloc<ffi.Uint8>(privKey.length);
+  final nativePrivKey = privKeyPtr.asTypedList(privKey.length);
+  nativePrivKey.setAll(0, privKey);
+
+  // Call the Rust function
+  startMycelium(peerPtrs, peers.length, privKeyPtr, privKey.length);
+
+  // Free the allocated memory
+  for (var i = 0; i < peers.length; i++) {
+    malloc.free(peerPtrs[i]);
+  }
+  malloc.free(peerPtrs);
+  malloc.free(privKeyPtr);
+  return true;
+}
+
+typedef FuncRustStopMycelium = ffi.Uint8 Function();
+typedef FuncDartStopMycelium = int Function();
+
+Future<bool> myFFStopMycelium() async {
+  // Load the dynamic library
+  final dylib = loadDll();
+
+  final FuncDartStopMycelium stopMycelium = dylib
+      .lookup<ffi.NativeFunction<FuncRustStopMycelium>>('ff_stop_mycelium')
+      .asFunction();
+
+  final result = stopMycelium();
+  return result != 0;
 }
