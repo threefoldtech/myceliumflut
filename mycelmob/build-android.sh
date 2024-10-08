@@ -36,3 +36,7 @@ else
     sed -i 's/package uniffi.mycelmob/package tech.threefold.mycelium.rust.uniffi.mycelmob/g' \
         ../android/app/src/main/kotlin/tech/threefold/mycelium/rust/uniffi/mycelmob/*.kt
 fi
+
+# create empty dll, because only Windoes need it
+mkdir -p ../assets/dll
+echo "" > ../assets/dll/winmycelium.dll

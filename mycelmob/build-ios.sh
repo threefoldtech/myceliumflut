@@ -31,3 +31,7 @@ IPHONEOS_DEPLOYMENT_TARGET=12.0 xcodebuild -create-xcframework \
 ls -l out/iosframework
 
 rm -rf "${NEW_HEADER_DIR}"
+
+# create empty dll, because only Windoes need it
+mkdir -p ../assets/dll
+echo "" > ../assets/dll/winmycelium.dll

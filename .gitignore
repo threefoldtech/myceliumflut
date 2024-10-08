@@ -42,3 +42,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .vscode
+
+# we get this file from the build process
+assets/dll/winmycelium.dll
