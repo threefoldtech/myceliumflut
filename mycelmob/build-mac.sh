@@ -16,26 +16,30 @@ rustup target add x86_64-apple-darwin
 MACOSX_DEPLOYMENT_TARGET=12.0 cargo build --target aarch64-apple-darwin --release
 MACOSX_DEPLOYMENT_TARGET=12.0 cargo build --target x86_64-apple-darwin --release
 
-# Buat direktori header
+# creates headers directory
 mkdir -p "${NEW_HEADER_DIR}"
 cp "${HEADERPATH}" "${NEW_HEADER_DIR}/"
 cp "outmac/${NAME}FFI.modulemap" "${NEW_HEADER_DIR}/module.modulemap"
 
-# Gabungkan library menggunakan lipo
+# combine the libs using lipo
 lipo -create -output "${TARGETDIR}/${UNIVERSAL_LIB_NAME}" \
     "${TARGETDIR}/aarch64-apple-darwin/${RELDIR}/${STATIC_LIB_NAME}" \
     "${TARGETDIR}/x86_64-apple-darwin/${RELDIR}/${STATIC_LIB_NAME}"
 
-# Hapus xcframework yang lama
+# delete old xcframework
 rm -rf "${OUTDIR}/${NAME}.xcframework"
 
-# Buat xcframework dari library universal
+# creates xcframework from the universal library
 MACOSX_DEPLOYMENT_TARGET=12.0 xcodebuild -create-xcframework \
     -library "${TARGETDIR}/${UNIVERSAL_LIB_NAME}" -headers "${NEW_HEADER_DIR}" \
     -output "${OUTDIR}/${NAME}.xcframework"
 
-# Tampilkan isi direktori output
+# for debugging
 ls -l outmac/macframework
 
-# Hapus direktori header sementara
+# remove the temporary directory
 rm -rf "${NEW_HEADER_DIR}"
+
+# create empty dll, because only Windoes need it
+mkdir -p ../assets/dll
+echo "" > ../assets/dll/winmycelium.dll
