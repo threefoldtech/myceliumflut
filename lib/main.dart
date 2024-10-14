@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
+import 'package:flutter_window_close/flutter_window_close.dart';
 import 'dart:ffi' as ffi;
 
 import 'package:ffi/ffi.dart';
@@ -67,8 +68,7 @@ class _MyAppState extends State<MyApp> {
     // flutter desktop sleep plugin only works on macos and windows
     _flutterDesktopSleepPlugin.setWindowSleepHandler((String? s) async {
       if (s != null) {
-        if (s == 'sleep') {
-        } else if (s == 'woke_up') {
+        if (s == 'woke_up') {
           if (_isStarted) {
             _logger.info("[wake up handler]stopping mycelium");
             stopMycelium();
@@ -81,14 +81,33 @@ class _MyAppState extends State<MyApp> {
             startMycelium();
           }
         } else if (s == 'terminate_app') {
-          _logger.info("TERMINATE_APP");
-          if (_isStarted) {
-            stopMycelium();
+          // only for macos because:
+          // 1. it supposed to work on Windows as well, but it doesn't
+          // 2. to make it clear that it's only for macos
+          if (Platform.isMacOS) {
+            _logger.info("TERMINATE_APP");
+            if (_isStarted) {
+              stopMycelium();
+            }
+            _flutterDesktopSleepPlugin.terminateApp();
           }
-          _flutterDesktopSleepPlugin.terminateApp();
+        } else {
+          _logger
+              .info("[flutter_desktop_sleep handler]Unknown event handler: $s");
         }
       }
     });
+
+    // only for windows because macos already has own handler
+    if (Platform.isWindows) {
+      FlutterWindowClose.setWindowShouldCloseHandler(() async {
+        _logger.info("Window close handler");
+        if (_isStarted) {
+          stopMycelium();
+        }
+        return true;
+      });
+    }
   }
 
   void methodHandler(String methodName) {
