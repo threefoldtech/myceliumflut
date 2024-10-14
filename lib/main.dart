@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
@@ -574,21 +575,24 @@ String? isValidPeer(String peer) {
 }
 
 ffi.DynamicLibrary loadDll() {
+  var dllPath = 'assets/dll/winmycelium.dll';
   if (Platform.isMacOS) {
     var basePath =
         'build/macos/Build/Products/Debug/myceliumflut.app/Contents/Frameworks/App.framework/Versions/A/Resources/flutter_assets';
     var fullPath =
-        join('/Users/ibk/fun/threefoldtech/myceliumflut', basePath, dllPath());
+        join('/Users/ibk/fun/threefoldtech/myceliumflut', basePath, dllPath);
     return ffi.DynamicLibrary.open(fullPath);
   } else {
-    var basePath = Directory.current.path;
-    var fullPath = join(basePath, dllPath());
+    var basePath = '';
+    if (kReleaseMode) {
+      basePath = join(Directory.current.path, 'data', 'flutter_assets');
+    } else {
+      basePath = Directory.current.path;
+    }
+    var fullPath = join(basePath, dllPath);
+
     return ffi.DynamicLibrary.open(fullPath);
   }
-}
-
-String dllPath() {
-  return 'assets/dll/winmycelium.dll';
 }
 
 bool isUseDylib() {
