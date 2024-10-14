@@ -3,7 +3,10 @@ name: Android Build
 on:
   pull_request:
     branches:
-      - main # Or any other branch you want to monitor
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
   build:
