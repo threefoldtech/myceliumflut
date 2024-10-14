@@ -72,3 +72,35 @@ go to `myceliumflut` dir
 
 ### Windows
 We currently need to run it as administrator
+
+## Installer
+
+### Windows
+
+Build in release mode
+```console
+flutter build windows --release
+```
+
+copy visual studo `.dll` files:
+```console
+cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40.33807\x64\Microsoft.VC143.CRT\msvcp140.dll' .\build\windows\x64\runner\Release\
+cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40.33807\x64\Microsoft.VC143.CRT\msvcp140_1.dll' .\build\windows\x64\runner\Release\ 
+cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40.33807\x64\Microsoft.VC143.CRT\msvcp140_2.dll' .\build\windows\x64\runner\Release\  
+cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40.33807\x64\Microsoft.VC143.CRT\vcruntime140.dll' .\build\windows\x64\runner\Release\
+cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40.33807\x64\Microsoft.VC143.CRT\vcruntime140_1.dll' .\build\windows\x64\runner\Release\
+```
+
+
+Run Inno Setup, our working dir is `build\windows\x64\runner\Release`:
+- myceliumflut.exe as the application main executable
+- `add file(s)` and add all `.dll` files
+- `add folder` and add `data` folder with it's subdirectories
+
+Scroll down the list & select the `data` folder path and click on `Edit…` button.
+It is important to ensure that the destination sub-folder has the same name `data` otherwise the app wont run after installation as all contents of the folder are dispersed outside. So, enter the name of the `Destination subfolder` as `data` and click `OK`.
+
+The Inno Setup script can be found [here](./files/windows_installer.iss), you need to modify the path (according to your env) before `Build` it on `Inno Setup` app.
+
+
+
