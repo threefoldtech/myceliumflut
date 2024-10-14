@@ -197,9 +197,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.28"
+version = "1.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e80e3b6a3ab07840e1cae9b0666a63970dc28e8ed5ffbcdacbfc760c281bfc1"
+checksum = "b16803a61b81d9eabb7eae2588776c4c1e584b738ede45fdbb4c972cec1e9945"
 dependencies = [
  "shlex",
 ]
@@ -716,7 +716,7 @@ dependencies = [
 [[package]]
 name = "mobile"
 version = "0.1.0"
-source = "git+http://github.com/threefoldtech/mycelium#b79dee82b1347311bc72dbd69710269b7a70738f"
+source = "git+http://github.com/threefoldtech/mycelium?tag=v0.5.6#b79dee82b1347311bc72dbd69710269b7a70738f"
 dependencies = [
  "mycelium",
  "once_cell",
@@ -738,7 +738,7 @@ dependencies = [
 [[package]]
 name = "mycelium"
 version = "0.5.6"
-source = "git+http://github.com/threefoldtech/mycelium#b79dee82b1347311bc72dbd69710269b7a70738f"
+source = "git+http://github.com/threefoldtech/mycelium?tag=v0.5.6#b79dee82b1347311bc72dbd69710269b7a70738f"
 dependencies = [
  "aes-gcm",
  "arc-swap",
