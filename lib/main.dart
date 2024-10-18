@@ -71,15 +71,7 @@ class _MyAppState extends State<MyApp> {
       if (s != null) {
         if (s == 'woke_up') {
           if (_isStarted) {
-            _logger.info("[wake up handler]stopping mycelium");
-            stopMycelium();
-            // Wait for isStarted to become false, but no more than 3 seconds
-            final timeout = DateTime.now().add(const Duration(seconds: 3));
-            while (_isStarted && DateTime.now().isBefore(timeout)) {
-              await Future.delayed(const Duration(milliseconds: 20));
-            }
-            _logger.info("[wake up handler]starting mycelium");
-            startMycelium();
+            restartMyceliumOnWakeup();
           }
         } else if (s == 'terminate_app') {
           // only for macos because:
@@ -114,21 +106,40 @@ class _MyAppState extends State<MyApp> {
   void methodHandler(String methodName) {
     switch (methodName) {
       case 'notifyMyceliumFailed':
+        // mycelium failed to start
         _logger.warning("Mycelium failed to start");
         setStateFailedStart();
         break;
       case 'notifyMyceliumFinished':
+        // mycelium finished (user triggered)
         _logger.info("Mycelium finished");
         setStateStopped();
         break;
       case 'notifyMyceliumStarted':
+        // mycelium started successfully
         _logger.info("Mycelium started");
         setStateStarted();
         break;
+      case 'notifyAppWakeup':
+        // the app woke up, after sleep
+        _logger.info("App woke up");
+        restartMyceliumOnWakeup();
       default:
         _logger.warning("Unknown method call: $methodName");
         throw MissingPluginException();
     }
+  }
+
+  void restartMyceliumOnWakeup() async {
+    _logger.info("[wake up handler]stopping mycelium");
+    stopMycelium();
+    // Wait for isStarted to become false, but no more than 3 seconds
+    final timeout = DateTime.now().add(const Duration(seconds: 3));
+    while (_isStarted && DateTime.now().isBefore(timeout)) {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+    _logger.info("[wake up handler]starting mycelium");
+    startMycelium();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
