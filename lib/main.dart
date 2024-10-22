@@ -147,7 +147,12 @@ class _MyAppState extends State<MyApp> {
     privKey = await loadOrGeneratePrivKey(platform);
     peers = await loadPeers();
     if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
-      peers = ['tcp://185.69.166.7:9651', 'tcp://65.21.231.58:9651'];
+      peers = [
+        'tcp://185.69.166.7:9651',
+        'tcp://188.40.132.242:9651',
+        'tcp://209.159.146.190:9651',
+        'tcp://5.223.43.251:9651'
+      ];
     }
     textEditController = TextEditingController(text: peers.join('\n'));
 
