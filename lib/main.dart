@@ -122,8 +122,10 @@ class _MyAppState extends State<MyApp> {
         break;
       case 'notifyAppWakeup':
         // the app woke up, after sleep
-        _logger.info("App woke up");
-        restartMyceliumOnWakeup();
+        if (_isStarted) {
+          _logger.info("App woke up");
+          restartMyceliumOnWakeup();
+        }
       default:
         _logger.warning("Unknown method call: $methodName");
         throw MissingPluginException();
