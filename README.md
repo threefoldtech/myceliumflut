@@ -73,7 +73,26 @@ go to `myceliumflut` dir
 ### Windows
 We currently need to run it as administrator
 
-## Installer
+## Installer / Release
+
+### Android
+
+**self distributed `.apk`**
+```console
+flutter build apk
+```
+
+**google playstore release**
+
+1. create the signature, as described at https://docs.flutter.dev/deployment/android#sign-the-app
+2. change `signingConfig signingConfigs.debug` in [build.gradle](./android/app/build.gradle) to `signingConfig signingConfigs.release`
+3. increase build number in pubspec.yaml
+4. build the `.aab` (application bundle)
+```console
+flutter build appbundle
+```
+
+
 
 ### Windows
 
