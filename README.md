@@ -110,16 +110,20 @@ cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40
 cp 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.40.33807\x64\Microsoft.VC143.CRT\vcruntime140_1.dll' .\build\windows\x64\runner\Release\
 ```
 
+run preparation script
+```console
+.\installers\windows\prepare.bat
+```
 
 Run Inno Setup, our working dir is `build\windows\x64\runner\Release`:
-- myceliumflut.exe as the application main executable
+- mycelium-network.exe as the application main executable (it is renamed from the original myceliumflut.exe)
 - `add file(s)` and add all `.dll` files
 - `add folder` and add `data` folder with it's subdirectories
 
 Scroll down the list & select the `data` folder path and click on `Edit…` button.
 It is important to ensure that the destination sub-folder has the same name `data` otherwise the app wont run after installation as all contents of the folder are dispersed outside. So, enter the name of the `Destination subfolder` as `data` and click `OK`.
 
-The Inno Setup script can be found [here](./files/windows_installer.iss), you need to modify the path (according to your env) before `Build` it on `Inno Setup` app.
+The Inno Setup script can be found [here](./installer/windows/myceliumflut_innosetup.iss), you need to modify the path (according to your env) before `Build` it on `Inno Setup` app.
 
 
 

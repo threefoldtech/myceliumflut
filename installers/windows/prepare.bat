@@ -1,0 +1,1 @@
+ mv .\build\windows\x64\runner\Release\myceliumflut.exe .\build\windows\x64\runner\Release\mycelium-network.exe
