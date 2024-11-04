@@ -4,7 +4,7 @@ import NetworkExtension
 import Foundation
 import OSLog
 
-@UIApplicationMain
+@main
 @objc class AppDelegate: FlutterAppDelegate {
     // channel to communicate between flutter & Swift
     private var flutterChannel: FlutterMethodChannel?
