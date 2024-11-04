@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.5' # Replace with your desired Flutter version
+          flutter-version: '3.24.4' # Replace with your desired Flutter version
           channel: 'stable' # Or 'beta', 'dev' as needed
 
       - name: Set up JDK 17
