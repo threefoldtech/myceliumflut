@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
@@ -136,7 +137,11 @@ class MainActivity: FlutterActivity() {
 
         // Register the receiver
         val filter = IntentFilter(TunService.EVENT_INTENT)
-        registerReceiver(tunServiceEventReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // SDK 34
+            registerReceiver(tunServiceEventReceiver, filter, RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(tunServiceEventReceiver, filter)
+        }
         Log.e(tag, "onCreate")
     }
 
