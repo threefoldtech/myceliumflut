@@ -371,7 +371,9 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     _peerValidity = '';
-    final peers = getPeers(textEditController.text);
+    var peers = getPeers(textEditController.text);
+    peers = preprocessPeers(peers);
+
     // verify the peers
     String? peerError = isValidPeers(peers);
     if (peerError != null) {
@@ -382,6 +384,7 @@ class _MyAppState extends State<MyApp> {
     }
     // store the peers if verified
     storePeers(peers);
+    textEditController.text = peers.join('\n');
     try {
       if (!isUseDylib()) {
         startVpn(platform, peers, privKey);
@@ -546,6 +549,14 @@ Future<bool> stopVpn(MethodChannel platform) async {
 
   _logger.info("stop vpn : $stopped");
   return stopped;
+}
+
+List<String> preprocessPeers(List<String> peers) {
+  // Remove empty elements
+  peers.removeWhere((peer) => peer.isEmpty);
+
+  // Remove duplicated elements
+  return peers.toSet().toList();
 }
 
 String? isValidPeers(List<String> peers) {
