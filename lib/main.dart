@@ -52,6 +52,7 @@ class _MyAppState extends State<MyApp> {
   List<String> peers = [];
   late TextEditingController textEditController;
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -260,19 +261,27 @@ class _MyAppState extends State<MyApp> {
                             fontSize: 16,
                             color: Color(0xFF7D7E7E),
                             fontWeight: FontWeight.w500))),
-                TextField(
-                  // peers address
-                  controller: textEditController,
-                  onTapOutside: (event) => {
-                    FocusManager.instance.primaryFocus?.unfocus(),
-                  },
-                  minLines: 1,
-                  maxLines: null,
-                  keyboardType: TextInputType.multiline,
-                  style: const TextStyle(fontSize: 14),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    //labelText: 'Peers',
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: 150,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: TextField(
+                      // peers address
+                      controller: textEditController,
+                      onTapOutside: (event) => {
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                      },
+                      minLines: 1,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      style: const TextStyle(fontSize: 14),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        //labelText: 'Peers',
+                      ),
+                    ),
                   ),
                 ),
                 Text(_peerValidity,
