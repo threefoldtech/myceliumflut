@@ -41,5 +41,7 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - run: flutter test
+
       - name: Build myceliumflut for Windows
         run: flutter build
