@@ -1,5 +1,6 @@
 package tech.threefold.mycelium
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -64,8 +65,7 @@ class MainActivity: FlutterActivity() {
     // it receives events from TunService and handles them accordingly.
     private val tunServiceEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val event = intent.getStringExtra("event")
-            when (event) {
+            when (val event = intent.getStringExtra("event")) {
                 TunService.EVENT_MYCELIUM_FINISHED -> {
                     channel.invokeMethod("notifyMyceliumFinished","")
                 }
@@ -106,7 +106,7 @@ class MainActivity: FlutterActivity() {
         }
     }
     private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
-        if (checkAskVpnPermission(peers, secretKey) == true) {
+        if (checkAskVpnPermission(peers, secretKey)) {
             // need to ask for permission, so stop the flow here.
             // permission handler will be handled by onActivityResult function
             return false
@@ -129,6 +129,7 @@ class MainActivity: FlutterActivity() {
         return true
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag", "WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // ... your initialization code here ...
