@@ -15,7 +15,7 @@ import io.flutter.plugin.common.MethodChannel
 import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
 
-private const val tag = "[Myceliumflut]"
+private const val tag = "Myceliumflut"
 
 class MainActivity: FlutterActivity() {
     private val channelName = "tech.threefold.mycelium/tun"
@@ -26,6 +26,7 @@ class MainActivity: FlutterActivity() {
     private var vpnPermissionSecretKey: ByteArray? = null
 
     private lateinit var channel : MethodChannel
+    private lateinit var preferencesManager: PreferencesManager
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -77,6 +78,18 @@ class MainActivity: FlutterActivity() {
         }
     }
 
+    private val bootReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.e(tag, ">>>>>>>>>>>>>>>>>>>>>> IBK BootReceiver received by MainActivity")
+            if (intent?.action == BootReceiver.BOOT_EVENT) {
+                // Send event to Flutter
+                Log.e(tag, ">>>>>>>>>>>>>>>>>>>>>> IBK BootReceiver BOOT_EVENT received by MainActivity")
+
+                channel.invokeMethod("onBootCompleted", null)
+            }
+        }
+    }
+
     // onActivityResult is called when the user grants or denies the VPN permission.
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -116,6 +129,9 @@ class MainActivity: FlutterActivity() {
         intent.action = TunService.ACTION_START
         intent.putExtra("secret_key", secretKey)
         intent.putStringArrayListExtra("peers", ArrayList(peers))
+
+        preferencesManager.savePeers(peers)
+        preferencesManager.saveSecretKey(secretKey)
         startService(intent)
 
         return true
@@ -130,10 +146,31 @@ class MainActivity: FlutterActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.e(tag, ">>>>>>>>>>>>>>>>>>>>>> IBK MainActivity onCreate STARTED")
         super.onCreate(savedInstanceState)
+        preferencesManager = PreferencesManager(this)
+
+        // Log the intent information
+        Log.e(tag, "Intent action: ${intent?.action}")
+        Log.e(tag, "Intent extras: ${intent?.extras}")
+
+        // Check if launched from boot receiver
+        if (intent?.getBooleanExtra("from_boot_receiver", false) == true) {
+            Log.e(tag, ">>>>>>>>>>>>>>>>>>>>>> IBK Started from boot receiver")
+        }
+
         // ... your initialization code here ...
         val callback = NetworkStateCallback(this)
         callback.register()
+
+        // boot receiver filter
+        Log.e(tag, ">>>>>>>>>>>>>>>>>>>>>> IBK onCreate boot filter config")
+        val bootFilter = IntentFilter(BootReceiver.BOOT_EVENT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerReceiver(bootReceiver, bootFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(bootReceiver, bootFilter)
+        }
 
         // Register the receiver
         val filter = IntentFilter(TunService.EVENT_INTENT)
@@ -147,7 +184,7 @@ class MainActivity: FlutterActivity() {
 
     override fun onStart() {
         super.onStart()
-        Log.e(tag, "onStart")
+        Log.e(tag, ">>>>>>>>>>>>>>>>>>>>>> IBK onStart")
         // Activity is becoming visible to the user.
         // Start animations, resume media playback, register listeners, etc.
     }
