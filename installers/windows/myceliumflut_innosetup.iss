@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "mycelium-network"
-#define MyAppVersion "0.8.2"
+#define MyAppVersion "0.10.0"
 #define MyAppPublisher "Threefold Tech"
 #define MyAppURL "https://github.com/threefoldtech/myceliumflut"
 #define MyAppExeName "mycelium-network.exe"
@@ -24,7 +24,7 @@ DisableProgramGroupPage=yes
 ;PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=commandline
 OutputDir=C:\Users\Administrator\installer
-OutputBaseFilename=mycelium-network-x86_64_v0.8.2
+OutputBaseFilename=mycelium-network-x86_64_v0.10.0
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
