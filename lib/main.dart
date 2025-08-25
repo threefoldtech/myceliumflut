@@ -50,13 +50,16 @@ class _MyAppState extends State<MyApp> {
   String _nodeAddr = '';
   var privKey = Uint8List(0);
   List<String> peers = [];
+  List<String> dnsServers = [];
   late TextEditingController textEditController;
+  late TextEditingController dnsServersController;
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     textEditController = TextEditingController(text: '');
+    dnsServersController = TextEditingController(text: '');
     super.initState();
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
@@ -144,6 +147,8 @@ class _MyAppState extends State<MyApp> {
   Future<void> initPlatformState() async {
     privKey = await loadOrGeneratePrivKey(platform);
     peers = await loadPeers();
+    dnsServers = await loadDnsServers();
+    
     if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
       peers = [
         'tcp://185.69.166.7:9651',
@@ -153,6 +158,7 @@ class _MyAppState extends State<MyApp> {
       ];
     }
     textEditController = TextEditingController(text: peers.join('\n'));
+    dnsServersController = TextEditingController(text: dnsServers.join('\n'));
 
     String nodeAddr;
     if (isUseDylib()) {
@@ -180,6 +186,7 @@ class _MyAppState extends State<MyApp> {
   String _textButton = startMyceliumText;
   String _myceliumStatus = '';
   String _peerValidity = '';
+  String _dnsValidity = '';
   Color _myceliumStatusColor = Colors.white;
   Color _startStopButtonColor = colorDarkBlue;
 
@@ -187,6 +194,7 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     // Clean up the controller when the widget is disposed.
     textEditController.dispose();
+    dnsServersController.dispose();
     super.dispose();
   }
 
@@ -206,23 +214,25 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.only(left: 16.0, right: 16.0),
-          child: Center(
-            child: Column(
-              children: [
-                const SizedBox(
-                  height: sizedBoxHeight,
-                ),
-                const Align(
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+            child: Center(
+              child: Column(
+                children: [
+                  const SizedBox(
+                    height: sizedBoxHeight,
+                  ),
+                  const Align(
                     alignment: Alignment.centerLeft,
                     // IP address title
                     child: Text("IP Address:",
                         style: TextStyle(
                             fontSize: 16,
                             color: Color(0xFF7D7E7E),
-                            fontWeight: FontWeight.w500))),
-                Container(
+                            fontWeight: FontWeight.w500)),
+                  ),
+                  Container(
                     // Node address
                     width: double.infinity,
                     height: physicalPxToLogicalPx(context, 48),
@@ -251,84 +261,85 @@ class _MyAppState extends State<MyApp> {
                           ),
                         ),
                       ],
-                    )),
-                const SizedBox(height: sizedBoxHeight),
-                const Align(
+                    ),
+                  ),
+                  const SizedBox(height: sizedBoxHeight),
+                  const Align(
                     alignment: Alignment.centerLeft,
                     // Peers
                     child: Text("Peers:",
                         style: TextStyle(
                             fontSize: 16,
                             color: Color(0xFF7D7E7E),
-                            fontWeight: FontWeight.w500))),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: 150,
+                            fontWeight: FontWeight.w500)),
                   ),
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: TextField(
-                      // peers address
-                      controller: textEditController,
-                      onTapOutside: (event) => {
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                      },
-                      minLines: 1,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        //labelText: 'Peers',
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: 150,
+                    ),
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      child: TextField(
+                        // peers address
+                        controller: textEditController,
+                        onTapOutside: (event) => {
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                        },
+                        minLines: 1,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        style: const TextStyle(fontSize: 14),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          //labelText: 'Peers',
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Text(_peerValidity,
-                    style: const TextStyle(color: colorMycelRed)),
-                const SizedBox(height: sizedBoxHeight), // Add some space
-                SizedBox(
-                  width: double.infinity,
-                  height: physicalPxToLogicalPx(context, 48),
-                  child: ElevatedButton(
-                    // Start/Stop button
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: _startStopButtonColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.only(left: 16, right: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              10.0), // reduce the roundedness
-                        ),
-                        textStyle: const TextStyle(fontSize: 16)),
-                    child: Text(_textButton),
-                    onPressed: () {
-                      if (!_isStarted) {
-                        startMycelium();
-                      } else {
-                        stopMycelium();
-                      }
-                    },
+                  Text(_peerValidity,
+                      style: const TextStyle(color: colorMycelRed)),
+                  const SizedBox(height: sizedBoxHeight / 2),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    // DNS Servers
+                    child: Text("DNS Servers:",
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF7D7E7E),
+                            fontWeight: FontWeight.w500)),
                   ),
-                ),
-                const SizedBox(height: 20), // Add some space
-                Text(
-                  _myceliumStatus,
-                  style: TextStyle(
-                      color: _myceliumStatusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-                const SizedBox(height: 20), // Add some space
-                Visibility(
-                  visible: isRestartVisible,
-                  child: SizedBox(
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: 80,
+                    ),
+                    child: SingleChildScrollView(
+                      child: TextField(
+                        // DNS servers
+                        controller: dnsServersController,
+                        onTapOutside: (event) => {
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                        },
+                        minLines: 1,
+                        maxLines: 2,
+                        keyboardType: TextInputType.multiline,
+                        style: const TextStyle(fontSize: 14),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: 'Example: 8.8.8.8, 2001:4860:4860::8888',
+                        ),
+                      ),
+                    ),
+                  ),
+                  Text(_dnsValidity,
+                      style: const TextStyle(color: colorMycelRed)),
+                  const SizedBox(height: sizedBoxHeight / 2), // Add some space
+                  SizedBox(
                     width: double.infinity,
                     height: physicalPxToLogicalPx(context, 48),
                     child: ElevatedButton(
-                      // Restart button
+                      // Start/Stop button
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: colorLimeGreen,
+                          backgroundColor: _startStopButtonColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.only(left: 16, right: 16),
                           shape: RoundedRectangleBorder(
@@ -336,37 +347,73 @@ class _MyAppState extends State<MyApp> {
                                 10.0), // reduce the roundedness
                           ),
                           textStyle: const TextStyle(fontSize: 16)),
-                      child: const Text.rich(
-                        TextSpan(
-                          children: [
-                            WidgetSpan(
-                              child: Icon(Icons.restart_alt_rounded,
-                                  size: 20), // Add the icon
-                            ),
-                            TextSpan(
-                              text: " RestartMycelium",
-                            ),
-                          ],
-                        ),
-                      ),
-                      onPressed: () async {
-                        stopMycelium();
-                        // Wait for isStarted to become false, but no more than 3 seconds
-                        final timeout =
-                            DateTime.now().add(const Duration(seconds: 3));
-                        while (_isStarted && DateTime.now().isBefore(timeout)) {
-                          await Future.delayed(
-                              const Duration(milliseconds: 100));
+                      child: Text(_textButton),
+                      onPressed: () {
+                        if (!_isStarted) {
+                          startMycelium();
+                        } else {
+                          stopMycelium();
                         }
-                        startMycelium();
-                        setState(() {
-                          _myceliumStatus = myceliumStatusRestarted;
-                        });
                       },
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20), // Add some space
+                  Text(
+                    _myceliumStatus,
+                    style: TextStyle(
+                        color: _myceliumStatusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
+                  ),
+                  const SizedBox(height: 20), // Add some space
+                  Visibility(
+                    visible: isRestartVisible,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: physicalPxToLogicalPx(context, 48),
+                      child: ElevatedButton(
+                        // Restart button
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: colorLimeGreen,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.only(left: 16, right: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  10.0), // reduce the roundedness
+                            ),
+                            textStyle: const TextStyle(fontSize: 16)),
+                        child: const Text.rich(
+                          TextSpan(
+                            children: [
+                              WidgetSpan(
+                                child: Icon(Icons.restart_alt_rounded,
+                                    size: 20), // Add the icon
+                              ),
+                              TextSpan(
+                                text: " RestartMycelium",
+                              ),
+                            ],
+                          ),
+                        ),
+                        onPressed: () async {
+                          stopMycelium();
+                          // Wait for isStarted to become false, but no more than 3 seconds
+                          final timeout =
+                              DateTime.now().add(const Duration(seconds: 3));
+                          while (_isStarted && DateTime.now().isBefore(timeout)) {
+                            await Future.delayed(
+                                const Duration(milliseconds: 100));
+                          }
+                          startMycelium();
+                          setState(() {
+                            _myceliumStatus = myceliumStatusRestarted;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -380,6 +427,7 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     _peerValidity = '';
+    _dnsValidity = '';
     var peers = getPeers(textEditController.text);
     peers = preprocessPeers(peers);
 
@@ -391,12 +439,26 @@ class _MyAppState extends State<MyApp> {
       });
       return;
     }
+    
+    // Get and validate DNS servers
+    var dnsServers = getDnsServers(dnsServersController.text);
+    String? dnsError = isValidDnsServers(dnsServers);
+    if (dnsError != null) {
+      setState(() {
+        _dnsValidity = dnsError;
+      });
+      return;
+    }
+    
     // store the peers if verified
     storePeers(peers);
+    storeDnsServers(dnsServers);
     textEditController.text = peers.join('\n');
+    dnsServersController.text = dnsServers.join('\n');
+    
     try {
       if (!isUseDylib()) {
-        startVpn(platform, peers, privKey);
+        startVpn(platform, peers, privKey, dnsServers);
         // the startVpn result will be send in async way by Kotlin/Swift
         setStateStarted();
       } else {
@@ -407,6 +469,7 @@ class _MyAppState extends State<MyApp> {
           'sendPort': receivePort.sendPort,
           'peers': peers,
           'privKey': privKey,
+          'dnsServers': dnsServers,
         };
 
         // Spawn the isolate
@@ -437,6 +500,7 @@ class _MyAppState extends State<MyApp> {
     final SendPort sendPort = args['sendPort'];
     final List<String> peers = args['peers'];
     final Uint8List privKey = args['privKey'];
+    final List<String> dnsServers = args['dnsServers'] ?? [];
 
     // Perform the mycelStartMycelium task
     myFFStartMycelium(peers, privKey);
@@ -497,6 +561,57 @@ List<String> getPeers(String texts) {
   return texts.split('\n').map((e) => e.trim()).toList();
 }
 
+List<String> getDnsServers(String texts) {
+  return texts.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+}
+
+String? isValidDnsServers(List<String> dnsServers) {
+  if (dnsServers.isEmpty) {
+    return null; // No DNS servers is valid
+  }
+  
+  if (dnsServers.length > 2) {
+    return "Maximum 2 DNS servers allowed";
+  }
+  
+  final ipv4Regex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
+  final ipv6ShortRegex = RegExp(r'^[0-9a-fA-F:]+::?$');
+  final ipv6FullRegex = RegExp(r'^([0-9a-fA-F:]+)$');
+  
+  for (var dns in dnsServers) {
+    // Remove any brackets from IPv6 addresses
+    String cleanDns = dns.replaceAll(RegExp(r'[\[\]]'), '');
+    
+    if (!ipv4Regex.hasMatch(cleanDns) && 
+        !ipv6ShortRegex.hasMatch(cleanDns) && 
+        !ipv6FullRegex.hasMatch(cleanDns)) {
+      return "Invalid DNS server format: $dns. Only IP addresses without ports are allowed.";
+    }
+  }
+  
+  return null;
+}
+
+Future<void> storeDnsServers(List<String> dnsServers) async {
+  final directory = await getApplicationSupportDirectory();
+  final file = File('${directory.path}/dns_servers.txt');
+  await file.writeAsString(dnsServers.join('\n'));
+}
+
+Future<List<String>> loadDnsServers() async {
+  try {
+    final directory = await getApplicationSupportDirectory();
+    final file = File('${directory.path}/dns_servers.txt');
+    if (await file.exists()) {
+      String contents = await file.readAsString();
+      return contents.split('\n').where((e) => e.isNotEmpty).toList();
+    }
+  } catch (e) {
+    _logger.warning("Failed to load DNS servers: $e");
+  }
+  return [];
+}
+
 Future<void> storePeers(List<String> peers) async {
   final dir = await getApplicationDocumentsDirectory();
   final file = File('${dir.path}/peers.txt');
@@ -536,13 +651,14 @@ Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
 }
 
 Future<bool?> startVpn(
-    MethodChannel platform, List<String> peers, Uint8List privKey) async {
+    MethodChannel platform, List<String> peers, Uint8List privKey, List<String> dnsServers) async {
   if (isUseDylib()) {
     return myFFStartMycelium(peers, privKey);
   } else {
     return platform.invokeMethod<bool>('startVpn', {
       'peers': peers,
       'secretKey': privKey,
+      'dnsServers': dnsServers,
     });
   }
 }

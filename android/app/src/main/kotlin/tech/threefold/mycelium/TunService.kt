@@ -60,7 +60,8 @@ class TunService : VpnService(), CoroutineScope {
             ACTION_START -> {
                 val secretKey = intent.getByteArrayExtra("secret_key") ?: ByteArray(0)
                 val peers = intent.getStringArrayListExtra("peers") ?: emptyList()
-                start(peers.toList(), secretKey)
+                val dnsServers = intent.getStringArrayListExtra("dns_servers") ?: emptyList()
+                start(peers.toList(), secretKey, dnsServers)
                 START_STICKY
             }
             else -> {
@@ -71,7 +72,7 @@ class TunService : VpnService(), CoroutineScope {
     }
 
 
-    private fun start(peers: List<String>, secretKey: ByteArray): Int {
+    private fun start(peers: List<String>, secretKey: ByteArray, dnsServers: List<String>): Int {
         if (!started.compareAndSet(false, true)) {
             return 0
         }
@@ -87,6 +88,18 @@ class TunService : VpnService(), CoroutineScope {
             //.setBlocking(true)
             //.setMtu(1400)
             .setSession("mycelium")
+            
+        // Add DNS servers if provided
+        if (dnsServers.isNotEmpty()) {
+            if (dnsServers.size >= 1) {
+                builder.addDnsServer(dnsServers[0])
+                Log.i(tag, "Added primary DNS server: ${dnsServers[0]}")
+            }
+            if (dnsServers.size >= 2) {
+                builder.addDnsServer(dnsServers[1])
+                Log.i(tag, "Added secondary DNS server: ${dnsServers[1]}")
+            }
+        }
 
 
         parcel = builder.establish()

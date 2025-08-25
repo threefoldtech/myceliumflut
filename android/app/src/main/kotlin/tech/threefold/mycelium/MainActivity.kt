@@ -22,9 +22,10 @@ class MainActivity: FlutterActivity() {
     private val channelName = "tech.threefold.mycelium/tun"
     private val vpnRequestCode = 0x0F
 
-    // these two variables are only used during VPN permission flow.
+    // these variables are only used during VPN permission flow.
     private var vpnPermissionPeers: List<String>? = null
     private var vpnPermissionSecretKey: ByteArray? = null
+    private var vpnPermissionDnsServers: List<String>? = null
 
     private lateinit var channel : MethodChannel
 
@@ -47,8 +48,10 @@ class MainActivity: FlutterActivity() {
                 "startVpn" -> {
                     val peers = call.argument<List<String>>("peers")!!
                     val secretKey = call.argument<ByteArray>("secretKey")!!
+                    val dnsServers = call.argument<List<String>>("dnsServers") ?: emptyList()
                     Log.d("tff", "peers = $peers")
-                    val started = startVpn(peers, secretKey)
+                    Log.d("tff", "dnsServers = $dnsServers")
+                    val started = startVpn(peers, secretKey, dnsServers)
                     result.success(started)
                 }
                 "stopVpn" -> {
@@ -84,7 +87,9 @@ class MainActivity: FlutterActivity() {
         if (requestCode == vpnRequestCode) {
             if (resultCode == Activity.RESULT_OK) {
                 Log.i(tag, "VPN permission granted by the user")
-                startVpn(this.vpnPermissionPeers ?: emptyList(), this.vpnPermissionSecretKey ?: ByteArray(0))
+                startVpn(this.vpnPermissionPeers ?: emptyList(), 
+                       this.vpnPermissionSecretKey ?: ByteArray(0),
+                       this.vpnPermissionDnsServers ?: emptyList())
             } else {
                 // The user denied the VPN permission,
                 // TODO: handle this case as needed
@@ -94,19 +99,20 @@ class MainActivity: FlutterActivity() {
     }
     // checkAskVpnPermission will return true if we need to ask for permission,
     // false otherwise.
-    private fun checkAskVpnPermission(peers: List<String>, secretKey: ByteArray): Boolean{
+    private fun checkAskVpnPermission(peers: List<String>, secretKey: ByteArray, dnsServers: List<String>): Boolean{
         val intent = VpnService.prepare(this)
         if (intent != null) {
             this.vpnPermissionPeers = peers
             this.vpnPermissionSecretKey = secretKey
+            this.vpnPermissionDnsServers = dnsServers
             startActivityForResult(intent, vpnRequestCode)
             return true
         } else {
             return false
         }
     }
-    private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
-        if (checkAskVpnPermission(peers, secretKey)) {
+    private fun startVpn(peers: List<String>, secretKey: ByteArray, dnsServers: List<String>): Boolean {
+        if (checkAskVpnPermission(peers, secretKey, dnsServers)) {
             // need to ask for permission, so stop the flow here.
             // permission handler will be handled by onActivityResult function
             return false
@@ -116,6 +122,7 @@ class MainActivity: FlutterActivity() {
         intent.action = TunService.ACTION_START
         intent.putExtra("secret_key", secretKey)
         intent.putStringArrayListExtra("peers", ArrayList(peers))
+        intent.putStringArrayListExtra("dns_servers", ArrayList(dnsServers))
         startService(intent)
 
         return true
