@@ -155,3 +155,48 @@ Future<bool> myFFStopMycelium() async {
   final result = stopMycelium();
   return result != 0;
 }
+
+typedef FuncRustGetPeerStatus = ffi.Void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Int8>>>, ffi.Pointer<ffi.IntPtr>);
+typedef FuncDartGetPeerStatus = void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Int8>>>, ffi.Pointer<ffi.IntPtr>);
+typedef FuncRustFreePeerStatus = ffi.Void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Int8>>, ffi.IntPtr);
+typedef FuncDartFreePeerStatus = void Function(
+    ffi.Pointer<ffi.Pointer<ffi.Int8>>, int);
+
+Future<List<String>> myFFGetPeerStatus() async {
+  // Load the dynamic library
+  final dylib = loadDll();
+
+  final FuncDartGetPeerStatus getPeerStatus = dylib
+      .lookup<ffi.NativeFunction<FuncRustGetPeerStatus>>('ff_get_peer_status')
+      .asFunction();
+  final FuncDartFreePeerStatus freePeerStatus = dylib
+      .lookup<ffi.NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+      .asFunction();
+
+  final outPtr = malloc<ffi.Pointer<ffi.Pointer<ffi.Int8>>>();
+  final outLen = malloc<ffi.IntPtr>();
+
+  getPeerStatus(outPtr, outLen);
+
+  final ptr = outPtr.value;
+  final len = outLen.value;
+
+  List<String> peerStatusList = [];
+  for (int i = 0; i < len; i++) {
+    final stringPtr = ptr[i];
+    if (stringPtr != ffi.nullptr) {
+      final dartString = stringPtr.cast<Utf8>().toDartString();
+      peerStatusList.add(dartString);
+    }
+  }
+
+  // Free the allocated memory
+  freePeerStatus(ptr, len);
+  malloc.free(outPtr);
+  malloc.free(outLen);
+
+  return peerStatusList;
+}

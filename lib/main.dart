@@ -50,6 +50,7 @@ class _MyAppState extends State<MyApp> {
   String _nodeAddr = '';
   var privKey = Uint8List(0);
   List<String> peers = [];
+  List<String> _connectedPeers = [];
   late TextEditingController textEditController;
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
   final ScrollController _scrollController = ScrollController();
@@ -366,6 +367,79 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
+                // Connected Peers Section
+                Visibility(
+                  visible: _isStarted && _connectedPeers.isNotEmpty,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: sizedBoxHeight),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text("Connected Peers:",
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF7D7E7E),
+                                fontWeight: FontWeight.w500)),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 245, 241, 241),
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _connectedPeers.map((peerInfo) {
+                              // Parse peer info: "protocol,address,connection_state"
+                              final parts = peerInfo.split(',');
+                              if (parts.length >= 3) {
+                                final protocol = parts[0];
+                                final address = parts[1];
+                                final state = parts[2];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        state.toLowerCase() == 'connected' 
+                                          ? Icons.check_circle 
+                                          : Icons.radio_button_unchecked,
+                                        color: state.toLowerCase() == 'connected' 
+                                          ? Colors.green 
+                                          : Colors.orange,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '$protocol://$address ($state)',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  child: Text(
+                                    peerInfo,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                );
+                              }
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -474,6 +548,7 @@ class _MyAppState extends State<MyApp> {
       _startStopButtonColor = colorDarkBlue;
       _myceliumStatusColor = colorMycelRed;
       isRestartVisible = false;
+      _connectedPeers.clear(); // Clear connected peers when stopped
     });
   }
 
@@ -486,6 +561,45 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatusColor = colorDarkBlue;
       isRestartVisible = true;
     });
+    // Start periodic peer status updates
+    _startPeerStatusUpdates();
+  }
+
+  void _startPeerStatusUpdates() {
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!_isStarted) {
+        timer.cancel();
+        return;
+      }
+      _updatePeerStatus();
+    });
+  }
+
+  void _updatePeerStatus() async {
+    if (!_isStarted) return;
+    
+    try {
+      List<String> peerStatus;
+      if (isUseDylib()) {
+        // Windows platform - use FFI
+        peerStatus = await myFFGetPeerStatus();
+      } else {
+        // Android/iOS platform - use platform channel
+        final result = await platform.invokeMethod<List<dynamic>>('getPeerStatus');
+        peerStatus = result?.cast<String>() ?? [];
+      }
+      
+      // Filter out the first element if it's "ok" (status indicator)
+      if (peerStatus.isNotEmpty && peerStatus[0] == "ok") {
+        peerStatus = peerStatus.sublist(1);
+      }
+      
+      setState(() {
+        _connectedPeers = peerStatus;
+      });
+    } catch (e) {
+      _logger.warning("Failed to get peer status: $e");
+    }
   }
 }
 
