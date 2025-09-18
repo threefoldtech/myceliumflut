@@ -36,7 +36,13 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
+    
+      - name: Setup iOS SDK env for bindgen
+        run: |
+          export SDKROOT=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=--sysroot=$SDKROOT" >> $GITHUB_ENV
+      
       - name: Build mycelmob
         run: bash build-ios.sh
         working-directory: mycelmob

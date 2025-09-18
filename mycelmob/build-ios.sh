@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+export SDKROOT="${SDKROOT:-$(xcrun --sdk iphonesimulator --show-sdk-path)}"
+export BINDGEN_EXTRA_CLANG_ARGS="${BINDGEN_EXTRA_CLANG_ARGS:---sysroot=$SDKROOT}"
+
 NAME="mycelmob"
 HEADERPATH="out/${NAME}FFI.h"
 TARGETDIR="target"
