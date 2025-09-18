@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
 NAME="mycelmob"
 HEADERPATH="out/${NAME}FFI.h"
 TARGETDIR="target"
