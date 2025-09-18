@@ -7,7 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
-import 'package:flutter_window_close/flutter_window_close.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'myceliumflut_ffi_binding.dart';
 
@@ -45,7 +46,7 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with TrayListener, WindowListener, WidgetsBindingObserver {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _nodeAddr = '';
   var privKey = Uint8List(0);
@@ -58,6 +59,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     textEditController = TextEditingController(text: '');
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
       methodHandler(call.method);
@@ -87,16 +89,32 @@ class _MyAppState extends State<MyApp> {
       }
     });
 
-    // only for windows because macos already has own handler
-    if (Platform.isWindows) {
-      FlutterWindowClose.setWindowShouldCloseHandler(() async {
-        _logger.info("Window close handler");
-        if (_isStarted) {
-          stopMycelium();
-        }
-        return true;
-      });
+    _initDesktopLifecycle();
+  }
+
+  Future<void> _initDesktopLifecycle() async {
+    if (!(Platform.isMacOS || Platform.isWindows)) {
+      return;
     }
+
+    await windowManager.ensureInitialized();
+    windowManager.addListener(this);
+    await windowManager.setPreventClose(true);
+
+    trayManager.addListener(this);
+    await trayManager.setIcon('assets/images/mycelium_icon.png');
+    final items = [
+      MenuItem(key: 'show', label: 'Show Window'),
+      MenuItem(key: 'hide', label: 'Hide Window'),
+      MenuItem.separator(),
+      MenuItem(key: 'toggle', label: 'Start/Stop Mycelium'),
+      MenuItem.separator(),
+      MenuItem(key: 'quit', label: 'Quit'),
+    ];
+    await trayManager.setContextMenu(Menu(items: items));
+
+    // Optional: start minimized to tray when app launches on desktop
+    // await windowManager.hide();
   }
 
   void methodHandler(String methodName) {
@@ -172,6 +190,15 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _nodeAddr = nodeAddr;
     });
+
+    // Query native layer for current VPN status to sync UI
+    if (!isUseDylib()) {
+      try {
+        await platform.invokeMethod('queryStatus');
+      } catch (e) {
+        _logger.warning("queryStatus not implemented: $e");
+      }
+    }
   }
 
   // start/stop mycelium button variables
@@ -187,6 +214,11 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     // Clean up the controller when the widget is disposed.
     textEditController.dispose();
+    if (Platform.isMacOS || Platform.isWindows) {
+      windowManager.removeListener(this);
+      trayManager.removeListener(this);
+    }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -374,6 +406,17 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (!isUseDylib()) {
+        platform.invokeMethod('queryStatus').catchError((e) {
+          _logger.warning("queryStatus on resume failed: $e");
+        });
+      }
+    }
+  }
+
   void startMycelium() {
     if (_isStarted) {
       _logger.warning("Mycelium already started");
@@ -486,6 +529,61 @@ class _MyAppState extends State<MyApp> {
       _myceliumStatusColor = colorDarkBlue;
       isRestartVisible = true;
     });
+  }
+  // Window lifecycle handlers
+  @override
+  void onWindowClose() async {
+    // Intercept close to keep app running in tray
+    await windowManager.hide();
+  }
+
+  // Tray handlers
+  @override
+  void onTrayIconMouseDown() async {
+    if (await windowManager.isVisible()) {
+      await windowManager.hide();
+    } else {
+      await windowManager.show();
+      await windowManager.focus();
+    }
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) async {
+    switch (menuItem.key) {
+      case 'show':
+        await windowManager.show();
+        await windowManager.focus();
+        break;
+      case 'hide':
+        await windowManager.hide();
+        break;
+      case 'toggle':
+        if (!_isStarted) {
+          startMycelium();
+        } else {
+          stopMycelium();
+        }
+        break;
+      case 'quit':
+        if (_isStarted) {
+          stopMycelium();
+        }
+        // Give a brief moment for stop to propagate
+        await Future.delayed(const Duration(milliseconds: 200));
+        // Terminate application
+        if (Platform.isMacOS) {
+          // Use existing plugin to terminate if available
+          try {
+            _flutterDesktopSleepPlugin.terminateApp();
+          } catch (_) {
+            exit(0);
+          }
+        } else {
+          exit(0);
+        }
+        break;
+    }
   }
 }
 
