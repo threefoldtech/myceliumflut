@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:flutter_window_close/flutter_window_close.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import 'myceliumflut_ffi_binding.dart';
 
@@ -50,13 +52,21 @@ class _MyAppState extends State<MyApp> {
   String _nodeAddr = '';
   var privKey = Uint8List(0);
   List<String> peers = [];
+  Map<String, String> _peerToCountry = {};
+  Timer? _geoDebounce;
+  late FocusNode _peersFocusNode;
+  String _rawPeersText = '';
   late TextEditingController textEditController;
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
-  final ScrollController _scrollController = ScrollController();
+ 
 
   @override
   void initState() {
     textEditController = TextEditingController(text: '');
+    _peersFocusNode = FocusNode();
+    _peersFocusNode.addListener(() {
+      setState(() {});
+    });
     super.initState();
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
@@ -152,7 +162,9 @@ class _MyAppState extends State<MyApp> {
         'tcp://5.223.43.251:9651'
       ];
     }
-    textEditController = TextEditingController(text: peers.join('\n'));
+    _rawPeersText = peers.join('\n');
+    textEditController = TextEditingController(text: _rawPeersText);
+    await _fetchAndGroupPeersByCountry(peers);
 
     String nodeAddr;
     if (isUseDylib()) {
@@ -173,6 +185,95 @@ class _MyAppState extends State<MyApp> {
       _nodeAddr = nodeAddr;
     });
   }
+  Future<void> _fetchAndGroupPeersByCountry(List<String> peersList) async {
+    try {
+      final Map<String, String> p2c = {};
+      for (final p in peersList) {
+        final host = _extractHost(p);
+        if (host.isEmpty) continue;
+        final ip = await _resolveHost(host);
+        if (ip == null) continue;
+        final info = await _geoLookup(ip);
+        final country = info['country_name']?.toString() ?? 'Unknown';
+        p2c[p] = country;
+      }
+      if (mounted) {
+        setState(() {
+          _peerToCountry = p2c;
+        });
+      }
+    } catch (e) {
+      _logger.warning('geo overlay update failed');
+    }
+  }
+
+  String _extractHost(String peer) {
+    try {
+      final withoutScheme = peer.substring(peer.indexOf('://') + 3);
+      if (withoutScheme.startsWith('[')) {
+        final end = withoutScheme.indexOf(']');
+        if (end > 1) return withoutScheme.substring(1, end);
+        return '';
+      }
+      final colon = withoutScheme.lastIndexOf(':');
+      if (colon > 0) return withoutScheme.substring(0, colon);
+      return '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<String?> _resolveHost(String host) async {
+    try {
+      final addresses = await InternetAddress.lookup(host);
+      if (addresses.isNotEmpty) {
+        return addresses.first.address;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<Map<String, dynamic>> _geoLookup(String ip) async {
+    final uri = Uri.parse('https://geoip.grid.tf/?ip=${Uri.encodeQueryComponent(ip)}');
+    final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+    if (resp.statusCode != 200) {
+      throw Exception('geo lookup failed: ${resp.statusCode}');
+    }
+    return json.decode(resp.body) as Map<String, dynamic>;
+  }
+
+  Widget _buildGreyCountryOverlay(String rawText, Map<String, String> map) {
+    final lines = rawText.split('\n');
+    final spans = <TextSpan>[];
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final trimmedLine = line.trim();
+      if (trimmedLine.isEmpty) {
+        spans.add(const TextSpan(text: '\n'));
+        continue;
+      }
+      final country = map[trimmedLine];
+      if (country != null) {
+        spans.add(TextSpan(
+          text: '$line  —  ',
+          style: const TextStyle(fontSize: 14, color: Colors.black),
+        ));
+        spans.add(TextSpan(
+          text: country + (i < lines.length - 1 ? '\n' : ''),
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ));
+      } else {
+        spans.add(TextSpan(
+          text: line + (i < lines.length - 1 ? '\n' : ''),
+          style: const TextStyle(fontSize: 14, color: Colors.black),
+        ));
+      }
+    }
+    return RichText(
+      text: TextSpan(children: spans),
+      textAlign: TextAlign.left,
+    );
+  }
 
   // start/stop mycelium button variables
   bool _isStarted = false;
@@ -187,6 +288,7 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     // Clean up the controller when the widget is disposed.
     textEditController.dispose();
+    _peersFocusNode.dispose();
     super.dispose();
   }
 
@@ -265,22 +367,52 @@ class _MyAppState extends State<MyApp> {
                   constraints: BoxConstraints(
                     maxHeight: 150,
                   ),
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: TextField(
-                      // peers address
-                      controller: textEditController,
-                      onTapOutside: (event) => {
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                      },
-                      minLines: 1,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        //labelText: 'Peers',
-                      ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                    child: Stack(
+                      children: [
+                        TextField(
+                          controller: textEditController,
+                          focusNode: _peersFocusNode,
+                          onChanged: (v) {
+                            _rawPeersText = v;
+                            _geoDebounce?.cancel();
+                            _geoDebounce = Timer(const Duration(milliseconds: 500), () async {
+                              final currentPeers = preprocessPeers(getPeers(_rawPeersText));
+                              await _fetchAndGroupPeersByCountry(currentPeers);
+                              if (mounted) setState(() {});
+                            });
+                          },
+                          onTapOutside: (event) => {
+                            FocusManager.instance.primaryFocus?.unfocus(),
+                          },
+                          minLines: 1,
+                          maxLines: null,
+                          keyboardType: TextInputType.multiline,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: (!_peersFocusNode.hasFocus && _peerToCountry.isNotEmpty)
+                                ? Colors.transparent
+                                : Colors.black,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(12.0),
+                          ),
+                        ),
+                        if (!_peersFocusNode.hasFocus && _peerToCountry.isNotEmpty)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.all(12.0),
+                                child: _buildGreyCountryOverlay(_rawPeersText, _peerToCountry),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -444,6 +576,10 @@ class _MyAppState extends State<MyApp> {
     // Notify the main thread that the task is complete
     sendPort.send('done');
   }
+
+  
+
+
 
   void stopMycelium() {
     try {
