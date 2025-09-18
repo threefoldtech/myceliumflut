@@ -1,9 +1,3 @@
-#!/usr/bin/env bash
-set -euxo pipefail
-
-export SDKROOT="${SDKROOT:-$(xcrun --sdk iphonesimulator --show-sdk-path)}"
-export BINDGEN_EXTRA_CLANG_ARGS="${BINDGEN_EXTRA_CLANG_ARGS:---sysroot=$SDKROOT}"
-
 NAME="mycelmob"
 HEADERPATH="out/${NAME}FFI.h"
 TARGETDIR="target"
@@ -11,6 +5,9 @@ OUTDIR="out/iosframework"
 RELDIR="release"
 STATIC_LIB_NAME="lib${NAME}.a"
 NEW_HEADER_DIR="out/include"
+
+export SDKROOT=$(xcrun --sdk iphonesimulator --show-sdk-path)
+export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=${SDKROOT} -target arm64-apple-ios15.0-simulator"
 
 cargo build
 cargo run --bin uniffi-bindgen generate --library target/debug/lib${NAME}.dylib --language swift --out-dir out
