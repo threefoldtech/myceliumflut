@@ -234,8 +234,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<Map<String, dynamic>> _geoLookup(String ip) async {
-    final uri = Uri.parse('https://geoip.grid.tf/?ip=${Uri.encodeQueryComponent(ip)}');
-    final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+    final uri = Uri.parse('https://geoip.grid.tf/');
+    final resp = await http
+        .get(uri, headers: {'Accept': 'application/json', 'X-Real-IP': ip});
     if (resp.statusCode != 200) {
       throw Exception('geo lookup failed: ${resp.statusCode}');
     }
@@ -381,7 +382,14 @@ class _MyAppState extends State<MyApp> {
                             _rawPeersText = v;
                             _geoDebounce?.cancel();
                             _geoDebounce = Timer(const Duration(milliseconds: 500), () async {
+                              if (!mounted) return;
                               final currentPeers = preprocessPeers(getPeers(_rawPeersText));
+                              if (currentPeers.isEmpty) {
+                                setState(() {
+                                  _peerToCountry = {};
+                                });
+                                return;
+                              }
                               await _fetchAndGroupPeersByCountry(currentPeers);
                               if (mounted) setState(() {});
                             });
