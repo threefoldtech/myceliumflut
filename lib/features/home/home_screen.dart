@@ -15,8 +15,33 @@ class HomeScreen extends ConsumerWidget {
     final statusAsync = ref.watch(nodeStatusProvider);
     final service = ref.read(myceliumServiceProvider);
     final status = statusAsync.asData?.value ?? NodeStatus.disconnected;
+
+    final buttonColor = Theme.of(context).colorScheme.primary;
+    final onButtonColor = Theme.of(context).colorScheme.onPrimary;
+
     return AppScaffold(
-      title: 'Home',
+      title: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        color: buttonColor,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/mycelium_icon.png',
+              height: 32,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Mycelium',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: onButtonColor,
+              ),
+            ),
+          ],
+        ),
+      ),
       currentIndex: 0,
       onTabSelected: null,
       child: ListView(
@@ -32,8 +57,6 @@ class HomeScreen extends ConsumerWidget {
             },
           ),
           const SizedBox(height: AppSpacing.xxl),
-          const _ActionsRow(),
-          const SizedBox(height: AppSpacing.xxl),
           const _StatsRow(),
           const SizedBox(height: AppSpacing.xxxl),
         ],
@@ -47,20 +70,35 @@ class _HeaderCard extends StatelessWidget {
   final VoidCallback onConnect;
   final VoidCallback onDisconnect;
 
-  const _HeaderCard({required this.status, required this.onConnect, required this.onDisconnect});
+  const _HeaderCard({
+    required this.status,
+    required this.onConnect,
+    required this.onDisconnect,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = status == NodeStatus.connected;
+    final isConnecting = status == NodeStatus.connecting;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(status == NodeStatus.connected ? Icons.wifi : Icons.wifi_off, size: 40),
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Icon(
+              isConnected ? Icons.wifi : Icons.wifi_off,
+              size: 32,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            status == NodeStatus.connected
+            isConnected
                 ? 'Mycelium Started'
-                : status == NodeStatus.connecting
+                : isConnecting
                     ? 'Starting Mycelium...'
                     : status == NodeStatus.failed
                         ? 'Start Failed'
@@ -68,32 +106,49 @@ class _HeaderCard extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text('Tap to start the Mycelium node', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+          Text(
+            'Tap to start the Mycelium node',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+          ),
           const SizedBox(height: AppSpacing.xxl),
           AppButton(
-            label: status == NodeStatus.connected ? 'Stop Mycelium' : 'Start Mycelium',
-            onPressed: status == NodeStatus.connected ? onDisconnect : onConnect,
-            isLoading: status == NodeStatus.connecting,
+            label: isConnected ? 'Stop Mycelium' : 'Start Mycelium',
+            onPressed: isConnected ? onDisconnect : onConnect,
+            isLoading: isConnecting,
           ),
           const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            margin: EdgeInsets.zero,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.restart_alt_rounded),
+                SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child:
+                      Text('Restart Mycelium', overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            margin: EdgeInsets.zero,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Flexible(
+                  child:
+                      Text('Advanced Options', overflow: TextOverflow.ellipsis),
+                ),
+                Icon(Icons.chevron_right),
+              ],
+            ),
+          ),
         ],
       ),
-    );
-  }
-}
-
-class _ActionsRow extends StatelessWidget {
-  const _ActionsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    // Use a simple column to avoid Expanded in unbounded height (ListView context)
-    return Column(
-      children: [
-        AppCard(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: const [Icon(Icons.restart_alt_rounded), SizedBox(width: AppSpacing.sm), Flexible(child: Text('Restart Mycelium', overflow: TextOverflow.ellipsis))])),
-        const SizedBox(height: AppSpacing.lg),
-        AppCard(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: const [Flexible(child: Text('Advanced Options', overflow: TextOverflow.ellipsis)), Icon(Icons.chevron_right)])),
-      ],
     );
   }
 }
@@ -104,6 +159,7 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget tileContent(IconData icon, String title, String value) => Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon),
@@ -114,31 +170,40 @@ class _StatsRow extends StatelessWidget {
           ],
         );
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final double spacing = AppSpacing.lg;
-      final int columns = constraints.maxWidth >= 800
-          ? 3
-          : constraints.maxWidth >= 500
-              ? 2
-              : 1;
-      final double itemWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
-      final items = [
-        SizedBox(
-          width: itemWidth,
-          child: AppCard(margin: EdgeInsets.zero, child: tileContent(Icons.people, 'Peers', '8')),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: AppCard(margin: EdgeInsets.zero, child: tileContent(Icons.podcasts, 'Bandwidth', '2.4 MB/s')),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: AppCard(margin: EdgeInsets.zero, child: tileContent(Icons.access_time, 'Uptime', '2h 34m')),
-        ),
-      ];
-      return Wrap(spacing: spacing, runSpacing: spacing, children: items);
-    });
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: [
+          Expanded(
+            child: AppCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: tileContent(Icons.people, 'Peers', '8'),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: AppCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: tileContent(Icons.podcasts, 'Bandwidth', '2 MB/s'),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: AppCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: tileContent(Icons.access_time, 'Uptime', '2h 34m'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-
+// TODO: VPN implemented or not and if yes, how to get its data ?
+//TODO: How to get num of peers, bandwidth, uptime ??
+//TODO: How to get All data in peers screen ?
+// TODO: what is the input to add a peer ?

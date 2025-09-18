@@ -3,7 +3,7 @@ import '../theme/tokens.dart';
 import 'package:go_router/go_router.dart';
 
 class AppScaffold extends StatelessWidget {
-  final String title;
+  final Widget title;
   final Widget child;
   final int currentIndex;
   final ValueChanged<int>? onTabSelected;
@@ -14,7 +14,7 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: title,
       ),
       body: SafeArea(
         child: Padding(

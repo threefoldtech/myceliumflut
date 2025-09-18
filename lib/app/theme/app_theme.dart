@@ -121,6 +121,45 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: AppTypography.title.copyWith(color: colorScheme.onSurface),
       ),
+      cardTheme: CardTheme(
+        color: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+        ),
+        margin: const EdgeInsets.all(0),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.disabled)) {
+              return AppColors.neutral600;
+            }
+            return colorScheme.primary;
+          }),
+          foregroundColor: MaterialStateProperty.all(Colors.white),
+          minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
+          shape: MaterialStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
+          ),
+          padding: MaterialStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          ),
+          animationDuration: AppMotion.medium,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: BorderSide(color: colorScheme.outline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: BorderSide(color: colorScheme.primary),
+        ),
+        contentPadding: const EdgeInsets.all(AppSpacing.lg),
+      ),
       dividerColor: colorScheme.outline,
     );
   }

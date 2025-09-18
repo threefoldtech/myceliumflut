@@ -6,7 +6,7 @@ class AppColors {
   AppColors._();
 
   // Brand
-  static const Color brandPrimary = Color(0xFF025996); // dark blue
+  static const Color brandPrimary = Color(0xFF0988B0); // main color
   static const Color brandAccent = Color(0xFF0D9C9E); // lime/teal
   static const Color brandAlert = Color(0xFFEC3F09); // mycel red
 

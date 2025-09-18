@@ -197,13 +197,16 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     //_logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
-    final settings = ProviderScope.containerOf(context, listen: true).read(appSettingsProvider).themeMode;
-
-    return MaterialApp.router(
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: settings,
-      routerConfig: appRouter,
+    return Consumer(
+      builder: (context, ref, child) {
+        final settings = ref.watch(appSettingsProvider);
+        return MaterialApp.router(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: settings.themeMode,
+          routerConfig: appRouter,
+        );
+      },
     );
   }
 
