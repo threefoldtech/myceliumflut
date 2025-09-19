@@ -43,14 +43,14 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _nodeAddr = '';
   var privKey = Uint8List(0);
@@ -199,9 +199,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     //_logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
-    final settings = ProviderScope.containerOf(context, listen: true)
-        .read(appSettingsProvider)
-        .themeMode;
+    final settings = ref.watch(appSettingsProvider).themeMode;
     return MaterialApp.router(
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

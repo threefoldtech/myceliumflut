@@ -8,9 +8,11 @@ import '../../myceliumflut_ffi_binding.dart';
 enum NodeStatus { disconnected, connecting, connected, failed }
 
 class MyceliumService {
-  static const MethodChannel _platform = MethodChannel("tech.threefold.mycelium/tun");
+  static const MethodChannel _platform =
+      MethodChannel("tech.threefold.mycelium/tun");
 
-  final StreamController<NodeStatus> _statusController = StreamController<NodeStatus>.broadcast();
+  final StreamController<NodeStatus> _statusController =
+      StreamController<NodeStatus>.broadcast();
   NodeStatus _status = NodeStatus.disconnected;
   Uint8List? _privKey;
 
@@ -29,7 +31,8 @@ class MyceliumService {
     if (isUseDylib()) {
       privKey = myFFGenerateSecretKey();
     } else {
-      privKey = (await _platform.invokeMethod<Uint8List>('generateSecretKey')) as Uint8List;
+      privKey = (await _platform.invokeMethod<Uint8List>('generateSecretKey'))
+          as Uint8List;
     }
     await file.writeAsBytes(privKey);
     _privKey = privKey;
@@ -59,18 +62,22 @@ class MyceliumService {
 
   String? validatePeer(String peer) {
     final prefixRegex = RegExp(r'^tcp://');
-    final ipv4Regex = RegExp(r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
-    final ipv6Regex = RegExp(r'\[(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))\]');
+    final ipv4Regex = RegExp(
+        r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
+    final ipv6Regex = RegExp(
+        r'\[(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))\]');
     final portRegex = RegExp(r':9651$');
     if (!prefixRegex.hasMatch(peer)) return 'peer must start with tcp://';
     final ipPortPart = peer.substring(peer.indexOf('://') + 3);
-    if (!ipv4Regex.hasMatch(ipPortPart) && !ipv6Regex.hasMatch(ipPortPart)) return 'peer must contain a valid IPv4 or IPv6 address';
+    if (!ipv4Regex.hasMatch(ipPortPart) && !ipv6Regex.hasMatch(ipPortPart))
+      return 'peer must contain a valid IPv4 or IPv6 address';
     if (!portRegex.hasMatch(ipPortPart)) return 'peer must end with :9651';
     return null;
   }
 
   String? validatePeers(List<String> peers) {
-    if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) return "peers can't be empty";
+    if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty))
+      return "peers can't be empty";
     for (final p in peers) {
       final e = validatePeer(p);
       if (e != null) return 'invalid peer:`$p` $e';
@@ -147,7 +154,8 @@ class MyceliumService {
         peerStatus = await myFFGetPeerStatus();
       } else {
         // Android/iOS platform - use platform channel
-        final result = await _platform.invokeMethod<List<dynamic>>('getPeerStatus');
+        final result =
+            await _platform.invokeMethod<List<dynamic>>('getPeerStatus');
         peerStatus = result?.cast<String>() ?? [];
       }
 
@@ -165,6 +173,34 @@ class MyceliumService {
   void dispose() {
     _statusController.close();
   }
+
+  Future<List<String>> proxyConnect(String remote) async {
+    try {
+      if (isUseDylib()) {
+        return myFFProxyConnect(remote);
+      } else {
+        final result = await _platform.invokeMethod<List<dynamic>>(
+          'proxyConnect',
+          {'remote': remote},
+        );
+        return result?.cast<String>() ?? [];
+      }
+    } catch (e) {
+      throw Exception("Failed to proxyConnect: $e");
+    }
+  }
+
+  Future<List<String>> proxyDisconnect() async {
+    try {
+      if (isUseDylib()) {
+        return myFFProxyDisconnect();
+      } else {
+        final result =
+            await _platform.invokeMethod<List<dynamic>>('proxyDisconnect');
+        return result?.cast<String>() ?? [];
+      }
+    } catch (e) {
+      throw Exception("Failed to proxyDisconnect: $e");
+    }
+  }
 }
-
-

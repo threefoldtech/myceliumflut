@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// import 'package:mycelmob/mycelmob.dart';
 import '../../app/widgets/app_scaffold.dart';
 import '../../app/widgets/app_button.dart';
 import '../../app/widgets/app_card.dart';
@@ -60,6 +61,7 @@ class HomeScreen extends ConsumerWidget {
             onDisconnect: () async {
               await service.stop();
             },
+            service: service,
           ),
           const SizedBox(height: AppSpacing.xxl),
           const _StatsRow(),
@@ -74,11 +76,13 @@ class _HeaderCard extends StatefulWidget {
   final NodeStatus status;
   final Future<void> Function() onConnect;
   final Future<void> Function() onDisconnect;
+  final dynamic service;
 
   const _HeaderCard({
     required this.status,
     required this.onConnect,
     required this.onDisconnect,
+    required this.service,
   });
 
   @override
@@ -87,6 +91,7 @@ class _HeaderCard extends StatefulWidget {
 
 class _HeaderCardState extends State<_HeaderCard> {
   bool _isLoading = false;
+  bool _isSocks5Enabled = false;
 
   bool get isRestartVisible =>
       widget.status == NodeStatus.connected && !_isLoading;
@@ -181,14 +186,35 @@ class _HeaderCardState extends State<_HeaderCard> {
           const SizedBox(height: AppSpacing.lg),
           AppCard(
             margin: EdgeInsets.zero,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Flexible(
-                  child:
-                      Text('Advanced Options', overflow: TextOverflow.ellipsis),
+            child: ExpansionTile(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Flexible(
+                    child: Text('Advanced Options',
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  Icon(Icons.expand_more),
+                ],
+              ),
+              children: [
+                ListTile(
+                  title: const Text('Enable SOCKS5 tunneling as VPN'),
+                  trailing: Switch(
+                    value: _isSocks5Enabled,
+                    onChanged: (value) async {
+                      setState(() => _isSocks5Enabled = value);
+                      if (value) {
+                        final result =
+                            await widget.service.proxyConnect('127.0.0.1:1080');
+                        debugPrint('Proxy connect result: $result');
+                      } else {
+                        final result = await widget.service.proxyDisconnect();
+                        debugPrint('Proxy disconnect result: $result');
+                      }
+                    },
+                  ),
                 ),
-                Icon(Icons.chevron_right),
               ],
             ),
           ),

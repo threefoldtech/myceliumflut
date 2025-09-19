@@ -1,7 +1,7 @@
-use mobile;
-
+use mobile::proxy::{proxy_connect, proxy_disconnect};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+
 
 #[no_mangle]
 pub extern "C" fn ff_generate_secret_key(out_ptr: *mut *mut u8, out_len: *mut usize) {
@@ -114,4 +114,20 @@ pub extern "C" fn free_peer_status(ptr: *mut *mut c_char, len: usize) {
         // Free the array of pointers
         Vec::from_raw_parts(ptr, len, len);
     }
+}
+
+#[no_mangle]
+pub extern "C" fn ff_proxy_connect(remote_str: *const c_char) -> bool {
+    let c_str = unsafe { CStr::from_ptr(remote_str) };
+    let remote_str = c_str.to_string_lossy();
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let result = rt.block_on(proxy_connect(&remote_str));
+    result == "ok"
+}
+
+#[no_mangle]
+pub extern "C" fn ff_proxy_disconnect() -> bool {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let result = rt.block_on(proxy_disconnect());
+    result == "ok"
 }

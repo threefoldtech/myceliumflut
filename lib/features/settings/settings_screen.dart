@@ -71,7 +71,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   title: 'Mycelium Core',
                   subtitle: 'Network Protocol Version',
-                  value: 'v2.1.4',
+                  value: 'v0.6.2',
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 _InfoRowWithSubtitle(

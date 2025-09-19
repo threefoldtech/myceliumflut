@@ -3,6 +3,8 @@ import 'package:ffi/ffi.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' show join;
+import 'dart:ffi';
+import 'dart:typed_data';
 
 ffi.DynamicLibrary loadDll() {
   var dllPath = 'assets/dll/winmycelium.dll';
@@ -199,4 +201,47 @@ Future<List<String>> myFFGetPeerStatus() async {
   malloc.free(outLen);
 
   return peerStatusList;
+}
+
+final DynamicLibrary _dylib = Platform.isMacOS || Platform.isWindows
+    ? DynamicLibrary.open('libmycelium.dylib')
+    : DynamicLibrary.open('libmycelium.so');
+
+typedef _ffiProxyConnectC = Pointer<Utf8> Function(Pointer<Utf8>);
+typedef _ffiProxyConnectDart = Pointer<Utf8> Function(Pointer<Utf8>);
+
+typedef _ffiProxyDisconnectC = Pointer<Utf8> Function();
+typedef _ffiProxyDisconnectDart = Pointer<Utf8> Function();
+
+final _ffiProxyConnect =
+    _dylib.lookupFunction<_ffiProxyConnectC, _ffiProxyConnectDart>(
+        'ffi_proxy_connect');
+
+final _ffiProxyDisconnect =
+    _dylib.lookupFunction<_ffiProxyDisconnectC, _ffiProxyDisconnectDart>(
+        'ffi_proxy_disconnect');
+
+/// Helper to free strings
+typedef _ffiFreeStringC = Void Function(Pointer<Utf8>);
+typedef _ffiFreeStringDart = void Function(Pointer<Utf8>);
+final _ffiFreeString = _dylib
+    .lookupFunction<_ffiFreeStringC, _ffiFreeStringDart>('ffi_free_string');
+
+List<String> myFFProxyConnect(String remote) {
+  final remotePtr = remote.toNativeUtf8();
+  final resultPtr = _ffiProxyConnect(remotePtr);
+  calloc.free(remotePtr);
+
+  final result = resultPtr.toDartString();
+  _ffiFreeString(resultPtr);
+
+  return result.split(','); // convert "a,b,c" -> ["a","b","c"]
+}
+
+List<String> myFFProxyDisconnect() {
+  final resultPtr = _ffiProxyDisconnect();
+  final result = resultPtr.toDartString();
+  _ffiFreeString(resultPtr);
+
+  return result.split(',');
 }
