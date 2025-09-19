@@ -65,10 +65,10 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HeaderCard extends StatelessWidget {
+class _HeaderCard extends StatefulWidget {
   final NodeStatus status;
-  final VoidCallback onConnect;
-  final VoidCallback onDisconnect;
+  final Future<void> Function() onConnect;
+  final Future<void> Function() onDisconnect;
 
   const _HeaderCard({
     required this.status,
@@ -77,9 +77,31 @@ class _HeaderCard extends StatelessWidget {
   });
 
   @override
+  State<_HeaderCard> createState() => _HeaderCardState();
+}
+
+class _HeaderCardState extends State<_HeaderCard> {
+  bool _isLoading = false;
+
+  bool get isRestartVisible =>
+      widget.status == NodeStatus.connected && !_isLoading;
+
+  Future<void> startMycelium() async {
+    setState(() => _isLoading = true);
+    await widget.onConnect();
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> stopMycelium() async {
+    setState(() => _isLoading = true);
+    await widget.onDisconnect();
+    setState(() => _isLoading = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isConnected = status == NodeStatus.connected;
-    final isConnecting = status == NodeStatus.connecting;
+    final isConnected = widget.status == NodeStatus.connected;
+    final isConnecting = _isLoading || widget.status == NodeStatus.connecting;
 
     return AppCard(
       child: Column(
@@ -100,7 +122,7 @@ class _HeaderCard extends StatelessWidget {
                 ? 'Mycelium Started'
                 : isConnecting
                     ? 'Starting Mycelium...'
-                    : status == NodeStatus.failed
+                    : widget.status == NodeStatus.failed
                         ? 'Start Failed'
                         : 'Mycelium Stopped',
             style: Theme.of(context).textTheme.headlineMedium,
@@ -115,22 +137,43 @@ class _HeaderCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxl),
           AppButton(
             label: isConnected ? 'Stop Mycelium' : 'Start Mycelium',
-            onPressed: isConnected ? onDisconnect : onConnect,
+            onPressed: isConnected ? stopMycelium : startMycelium,
             isLoading: isConnecting,
           ),
           const SizedBox(height: AppSpacing.lg),
-          AppCard(
-            margin: EdgeInsets.zero,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.restart_alt_rounded),
-                SizedBox(width: AppSpacing.sm),
-                Flexible(
-                  child:
-                      Text('Restart Mycelium', overflow: TextOverflow.ellipsis),
+          Visibility(
+            visible: isRestartVisible,
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      Theme.of(context).cardColor, 
+                  foregroundColor: Theme.of(context)
+                      .colorScheme
+                      .onSurface,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(fontSize: 16),
                 ),
-              ],
+                child: const Text.rich(
+                  TextSpan(
+                    children: [
+                      WidgetSpan(
+                        child: Icon(Icons.restart_alt_rounded, size: 20),
+                      ),
+                      TextSpan(text: " Restart Mycelium"),
+                    ],
+                  ),
+                ),
+                onPressed: () async {
+                  await stopMycelium();
+                  await startMycelium();
+                },
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
