@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myceliumflut/features/peers/peers_repository.dart';
 import '../services/ffi/mycelium_service.dart';
+import '../services/peers_service.dart';
 
 final myceliumServiceProvider = Provider<MyceliumService>((ref) {
   final service = MyceliumService();
@@ -8,74 +10,54 @@ final myceliumServiceProvider = Provider<MyceliumService>((ref) {
   return service;
 });
 
+final peersServiceProvider = Provider<PeersService>((ref) => PeersService());
+
 final nodeStatusProvider = StreamProvider<NodeStatus>((ref) {
   return ref.watch(myceliumServiceProvider).statusStream;
 });
 
-class PeersNotifier extends StateNotifier<List<String>> {
-  final MyceliumService _service;
-  Timer? _timer;
-  bool _isActive = false;
-  bool _isDisposed = false;
+class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
+  final PeersService _service;
+  final PeersRepository _repo;
 
-  PeersNotifier(this._service) : super([]) {
-    _startPeerStatusUpdates();
+  PeersNotifier(this._service, this._repo) : super(const AsyncLoading()) {
+    _fetchPeers();
   }
 
-  void _startPeerStatusUpdates() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!_isActive) {
-        timer.cancel();
-        return;
-      }
-      _updatePeerStatus();
-    });
-  }
-
-  Future<void> _updatePeerStatus() async {
-    if (_isDisposed || !_isActive) return;
+  Future<void> _fetchPeers() async {
     try {
-      final peerStatus = await _service.getPeerStatus();
-      print('Updated peer status: $peerStatus');
-      if (!_isDisposed && _isActive) {
-        state = peerStatus;
-      }
-    } catch (e) {
-      print('Failed to update peer status: $e');
-      // Handle error, perhaps log or set to empty
-      if (!_isDisposed && _isActive) {
-        state = [];
-      }
+      final userPeers = await _repo.loadPeers();
+      final fetchedPeers = await _service.fetchPeers();
+
+      final allPeers = {...userPeers, ...fetchedPeers}.toList();
+      state = AsyncData(allPeers);
+    } catch (e, stack) {
+      state = AsyncError(e, stack);
     }
   }
 
-  void startUpdates() {
-    _isActive = true;
-    if (_timer == null || !_timer!.isActive) {
-      _startPeerStatusUpdates();
+  Future<void> addPeer(String peer) async {
+    await _repo.addPeer(peer);
+    final current = state.value ?? [];
+    if (!current.contains(peer)) {
+      state = AsyncData([...current, peer]);
     }
   }
 
-  void stopUpdates() {
-    _isActive = false;
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  void dispose() {
-    _isDisposed = true;
-    stopUpdates();
-    super.dispose();
+  Future<void> removePeer(String peer) async {
+    await _repo.removePeer(peer);
+    final current = state.value ?? [];
+    state = AsyncData(current.where((p) => p != peer).toList());
   }
 }
 
-final peersProvider = StateNotifierProvider<PeersNotifier, List<String>>((ref) {
-  final service = ref.watch(myceliumServiceProvider);
-  final notifier = PeersNotifier(service);
-  ref.onDispose(notifier.dispose);
-  return notifier;
+final peersRepositoryProvider =
+    Provider<PeersRepository>((ref) => PeersRepository());
+
+final peersProvider =
+    StateNotifierProvider<PeersNotifier, AsyncValue<List<String>>>((ref) {
+  final service = ref.watch(peersServiceProvider);
+  final repo = ref.watch(peersRepositoryProvider);
+
+  return PeersNotifier(service, repo);
 });
-
-
-

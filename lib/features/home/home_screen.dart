@@ -229,8 +229,8 @@ class _StatsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final peers = ref.watch(peersProvider);
-    final peersCount = peers.length;
+    final peersAsync = ref.watch(peersProvider);
+    final peersCount = peersAsync.maybeWhen(data: (list) => list.length, orElse: () => 0);
     Widget tileContent(IconData icon, String title, String value) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -279,4 +279,4 @@ class _StatsRow extends ConsumerWidget {
 // TODO: VPN implemented or not and if yes, how to get its data ?
 //TODO: How to get num of peers, bandwidth, uptime ??
 //TODO: How to get All data in peers screen ?
-// TODO: what is the input to add a peer ?
+ 

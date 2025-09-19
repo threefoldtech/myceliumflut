@@ -6,37 +6,96 @@ import 'widgets/peer_details_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/mycelium_providers.dart';
 import 'package:go_router/go_router.dart';
+import '../../services/ffi/mycelium_service.dart';
 
-class PeersScreen extends ConsumerStatefulWidget {
+class PeersScreen extends ConsumerWidget {
   const PeersScreen({super.key});
 
   @override
-  ConsumerState<PeersScreen> createState() => _PeersScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final peersAsync = ref.watch(peersProvider);
+    final title =
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/'),
+          ),
+          const Spacer(),
+          const Text(
+            'Peers',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const Spacer(),
+        ],
+      ),
+      Divider(
+        height: 1,
+        thickness: 1,
+        color: Theme.of(context).dividerColor,
+      ),
+    ]);
+    return peersAsync.when(
+      loading: () => AppScaffold(
+        title: title,
+        currentIndex: 1,
+        onTabSelected: null,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => AppScaffold(
+        title: title,
+        currentIndex: 1,
+        onTabSelected: null,
+        child: Center(child: Text('Error loading peers: $error')),
+      ),
+      data: (peers) => _PeersDataScreen(peers: peers),
+    );
+  }
 }
 
-class _PeersScreenState extends ConsumerState<PeersScreen> {
+class _PeersDataScreen extends ConsumerStatefulWidget {
+  final List<String> peers;
+
+  const _PeersDataScreen({required this.peers});
+
+  @override
+  ConsumerState<_PeersDataScreen> createState() => _PeersDataScreenState();
+}
+
+class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
   String query = '';
+  List<String> peerStatus = [];
+  String? peerStatusError;
 
   @override
   void initState() {
     super.initState();
-    ref.read(peersProvider.notifier).startUpdates();
+    _fetchPeerStatus();
   }
 
-  @override
-  void dispose() {
-    ref.read(peersProvider.notifier).stopUpdates();
-    super.dispose();
+  Future<void> _fetchPeerStatus() async {
+    try {
+      final service = MyceliumService();
+      final status = await service.getPeerStatus();
+      setState(() {
+        peerStatus = status;
+        peerStatusError = null;
+      });
+      print('Peer status: $status');
+    } catch (e) {
+      setState(() {
+        peerStatusError = e.toString();
+      });
+      print('Error getting peer status: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final peers = ref.watch(peersProvider);
-    print("Hello ya peers");
-    print(peers);
     final filtered = query.isEmpty
-        ? peers
-        : peers
+        ? widget.peers
+        : widget.peers
             .where((p) => p.toLowerCase().contains(query.toLowerCase()))
             .toList();
     return AppScaffold(
@@ -65,32 +124,47 @@ class _PeersScreenState extends ConsumerState<PeersScreen> {
       currentIndex: 1,
       onTabSelected: null,
       child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         children: [
-          const SizedBox(height: AppSpacing.lg),
           _SearchAddBar(
-              onChanged: (v) => setState(() => query = v), onAdd: () {}),
-          const SizedBox(height: AppSpacing.xxl),
+            onChanged: (v) => setState(() => query = v),
+            onAdd: () => _showAddPeerDialog(context, ref),
+          ),
+          const SizedBox(height: AppSpacing.md),
           if (filtered.isEmpty)
             _PeersEmptyState()
           else
-            ...filtered.map((p) => _PeerTile.sample(index: p.hashCode)),
-          const SizedBox(height: AppSpacing.xxl),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (_, index) {
+                final p = filtered[index];
+                return _PeerTile(
+                  ip: p,
+                  country: "Unknown",
+                  health: 0.8,
+                );
+              },
+            ),
+          const SizedBox(height: AppSpacing.md),
           AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Icon(Icons.public,
-                        size: 24, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Peer Summary',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                        size: 20, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text('Peer Summary',
+                        style: Theme.of(context).textTheme.titleMedium),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
@@ -105,23 +179,39 @@ class _PeersScreenState extends ConsumerState<PeersScreen> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
+          if (peerStatusError != null)
+            Text('Error getting peer status: $peerStatusError',
+                style: TextStyle(color: Colors.red)),
+          if (peerStatus.isNotEmpty)
+            AppCard(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Peer Status:',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.sm),
+                  ...peerStatus.map((status) => Text(status)).toList(),
+                ],
+              ),
+            ),
+          const SizedBox(height: AppSpacing.md),
           AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Icon(Icons.podcasts,
-                        size: 24, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Network Traffic',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                        size: 20, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text('Network Traffic',
+                        style: Theme.of(context).textTheme.titleMedium),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
@@ -133,20 +223,19 @@ class _PeersScreenState extends ConsumerState<PeersScreen> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xxxl),
         ],
       ),
     );
   }
 }
 
-class _SearchAddBar extends StatelessWidget {
+class _SearchAddBar extends ConsumerWidget {
   final VoidCallback onAdd;
   final ValueChanged<String>? onChanged;
   const _SearchAddBar({required this.onAdd, this.onChanged});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
@@ -160,7 +249,7 @@ class _SearchAddBar extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.lg),
         FilledButton.icon(
-          onPressed: () => _showAddPeerDialog(context),
+          onPressed: () => _showAddPeerDialog(context, ref),
           icon: const Icon(Icons.add),
           label: const Text('Add Peer'),
         ),
@@ -170,131 +259,94 @@ class _SearchAddBar extends StatelessWidget {
 }
 
 class _PeerTile extends StatelessWidget {
+  final String ip;
   final String country;
-  final String city;
-  final String status;
-  final String latency;
   final double health;
 
-  const _PeerTile(
-      {required this.country,
-      required this.city,
-      required this.status,
-      required this.latency,
-      required this.health});
-
-  factory _PeerTile.sample({required int index}) {
-    final samples = [
-      ('United States', 'New York', 'Connected', '45ms', 0.9),
-      ('Germany', 'Berlin', 'Connected', '78ms', 0.85),
-      ('Japan', 'Tokyo', 'Connecting', '156ms', 0.5),
-      ('United Kingdom', 'London', 'Usable', '92ms', 0.8),
-      ('Canada', 'Toronto', 'Disconnected', '—', 0.2),
-      ('Australia', 'Sydney', 'Connected', '203ms', 0.75),
-    ];
-    final s = samples[index % samples.length];
-    return _PeerTile(
-        country: s.$1, city: s.$2, status: s.$3, latency: s.$4, health: s.$5);
-  }
-
-  Color _statusColor(BuildContext context) {
-    switch (status) {
-      case 'Connected':
-      case 'Usable':
-        return Colors.green;
-      case 'Connecting':
-        return Colors.orange;
-      default:
-        return Theme.of(context).colorScheme.error;
-    }
-  }
+  const _PeerTile({
+    required this.ip,
+    required this.country,
+    required this.health,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: AppCard(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(radius: 16, child: Text('US')),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                              child: Text(country,
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
-                                  overflow: TextOverflow.ellipsis)),
-                          const SizedBox(width: AppSpacing.sm),
-                          Container(
-                            decoration: BoxDecoration(
-                                color: _statusColor(context).withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            child: Text(status,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(color: _statusColor(context))),
-                          ),
-                          const Spacer(),
-                          Text(latency,
-                              style: Theme.of(context).textTheme.labelMedium),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(city,
-                          style: Theme.of(context).textTheme.labelMedium,
-                          overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                child: Text(
+                  country.isNotEmpty
+                      ? country.substring(0, 2).toUpperCase()
+                      : "??",
                 ),
-                IconButton(
-                    icon: const Icon(Icons.more_horiz),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        useSafeArea: true,
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        builder: (_) => PeerDetailsSheet(
-                            country: country,
-                            city: city,
-                            latency: latency,
-                            status: status),
-                      );
-                    }),
-              ],
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ip,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      country,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.more_horiz),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    useSafeArea: true,
+                    isScrollControlled: true,
+                    showDragHandle: true,
+                    builder: (_) => PeerDetailsSheet(
+                      country: country,
+                      city: "",
+                      latency: "",
+                      status: "",
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              minHeight: 6,
+              value: health,
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                health > 0.7
+                    ? Colors.green
+                    : (health > 0.3 ? Colors.orange : Colors.red),
+              ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                  minHeight: 6,
-                  value: health,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(_statusColor(context))),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _PeersEmptyState extends StatelessWidget {
+class _PeersEmptyState extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         Icon(Icons.hub_outlined,
@@ -309,7 +361,7 @@ class _PeersEmptyState extends StatelessWidget {
                     Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
         const SizedBox(height: AppSpacing.xxl),
         FilledButton.icon(
-          onPressed: () => _showAddPeerDialog(context),
+          onPressed: () => _showAddPeerDialog(context, ref),
           icon: const Icon(Icons.add),
           label: const Text('Add Peer'),
         ),
@@ -353,8 +405,9 @@ class _SummaryItem extends StatelessWidget {
   }
 }
 
-void _showAddPeerDialog(BuildContext context) {
+void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
   final controller = TextEditingController();
+  final peersNotifier = ref.read(peersProvider.notifier);
 
   showDialog(
     context: context,
@@ -362,9 +415,7 @@ void _showAddPeerDialog(BuildContext context) {
       title: const Text('Add Peer'),
       content: TextField(
         controller: controller,
-        decoration: const InputDecoration(
-          hintText: 'Enter peer IP',
-        ),
+        decoration: const InputDecoration(hintText: 'Enter peer IP'),
         keyboardType: TextInputType.url,
       ),
       actions: [
@@ -373,10 +424,10 @@ void _showAddPeerDialog(BuildContext context) {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
             final ip = controller.text.trim();
             if (ip.isNotEmpty) {
-              print('Add peer: $ip');
+              await peersNotifier.addPeer(ip);
             }
             Navigator.of(context).pop();
           },
