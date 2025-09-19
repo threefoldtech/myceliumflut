@@ -723,6 +723,8 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -741,6 +743,8 @@ internal interface UniffiLib : Library {
     fun uniffi_mycelmob_fn_func_address_from_secret_key(`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_generate_secret_key(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_mycelmob_fn_func_get_peer_status(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_hello_int(uniffi_out_err: UniffiRustCallStatus, 
     ): Int
@@ -866,6 +870,8 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_mycelmob_checksum_func_generate_secret_key(
     ): Short
+    fun uniffi_mycelmob_checksum_func_get_peer_status(
+    ): Short
     fun uniffi_mycelmob_checksum_func_hello_int(
     ): Short
     fun uniffi_mycelmob_checksum_func_hello_mycelios(
@@ -895,6 +901,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mycelmob_checksum_func_generate_secret_key() != 63601.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mycelmob_checksum_func_get_peer_status() != 1198.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mycelmob_checksum_func_hello_int() != 31063.toShort()) {
@@ -1094,6 +1103,15 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
             return FfiConverterByteArray.lift(
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_generate_secret_key(
+        _status)
+}
+    )
+    }
+    
+ fun `getPeerStatus`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_get_peer_status(
         _status)
 }
     )

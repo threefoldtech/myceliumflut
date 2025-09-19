@@ -15,6 +15,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
+import tech.threefold.mycelium.rust.uniffi.mycelmob.getPeerStatus
 
 private const val tag = "[Myceliumflut]"
 
@@ -55,6 +56,15 @@ class MainActivity: FlutterActivity() {
                     val stopCmdSent = stopVpn()
                     Log.d(tag,  "stopping VPN")
                     result.success(stopCmdSent)
+                }
+                "getPeerStatus" -> {
+                    try {
+                        val peerStatus = getPeerStatus()
+                        result.success(peerStatus)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Error getting peer status: ${e.message}")
+                        result.error("PEER_STATUS_ERROR", e.message, null)
+                    }
                 }
                 else -> result.notImplemented()
             }

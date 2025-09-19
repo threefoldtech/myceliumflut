@@ -31,3 +31,8 @@ pub fn generate_secret_key() -> Vec<u8> {
 pub fn address_from_secret_key(data: Vec<u8>) -> String {
     mobile::address_from_secret_key(data)
 }
+
+#[uniffi::export]
+pub fn get_peer_status() -> Vec<String> {
+    mobile::get_peer_status()
+}

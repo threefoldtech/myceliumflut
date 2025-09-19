@@ -73,3 +73,45 @@ pub extern "C" fn ff_stop_mycelium() -> bool {
     let result = mobile::stop_mycelium();
     result == "ok"
 }
+
+#[no_mangle]
+pub extern "C" fn ff_get_peer_status(out_ptr: *mut *mut *mut c_char, out_len: *mut usize) {
+    let peer_status = mobile::get_peer_status();
+    let len = peer_status.len();
+    
+    // Convert Vec<String> to Vec<*mut c_char>
+    let c_strings: Vec<*mut c_char> = peer_status
+        .into_iter()
+        .map(|s| CString::new(s).unwrap().into_raw())
+        .collect();
+    
+    let ptr = c_strings.as_ptr() as *mut *mut c_char;
+    
+    // Transfer ownership to the caller
+    std::mem::forget(c_strings);
+    
+    unsafe {
+        *out_ptr = ptr;
+        *out_len = len;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn free_peer_status(ptr: *mut *mut c_char, len: usize) {
+    unsafe {
+        if ptr.is_null() {
+            return;
+        }
+        
+        // Free each C string
+        for i in 0..len {
+            let c_str_ptr = *ptr.add(i);
+            if !c_str_ptr.is_null() {
+                let _ = CString::from_raw(c_str_ptr);
+            }
+        }
+        
+        // Free the array of pointers
+        Vec::from_raw_parts(ptr, len, len);
+    }
+}
