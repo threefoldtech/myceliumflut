@@ -20,13 +20,17 @@ class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
   final PeersService _service;
   final PeersRepository _repo;
 
+  List<String> _userPeers = [];
+
+  List<String> get userPeers => _userPeers;
+
   PeersNotifier(this._service, this._repo) : super(const AsyncLoading()) {
     _fetchPeers();
   }
 
   Future<void> _fetchPeers() async {
     try {
-      final userPeers = await _repo.loadPeers();
+      _userPeers = await _repo.loadPeers();
       final fetchedPeers = await _service.fetchPeers();
 
       final allPeers = {...userPeers, ...fetchedPeers}.toList();
@@ -38,6 +42,7 @@ class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
 
   Future<void> addPeer(String peer) async {
     await _repo.addPeer(peer);
+    _userPeers.add(peer);
     final current = state.value ?? [];
     if (!current.contains(peer)) {
       state = AsyncData([...current, peer]);
@@ -46,6 +51,7 @@ class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
 
   Future<void> removePeer(String peer) async {
     await _repo.removePeer(peer);
+    _userPeers.remove(peer); 
     final current = state.value ?? [];
     state = AsyncData(current.where((p) => p != peer).toList());
   }

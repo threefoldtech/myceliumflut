@@ -93,6 +93,8 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final peersNotifier = ref.read(peersProvider.notifier);
+    final userPeers = peersNotifier.userPeers;
     final filtered = query.isEmpty
         ? widget.peers
         : widget.peers
@@ -117,8 +119,7 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
         Divider(
           height: 1,
           thickness: 1,
-          color: Theme.of(context)
-              .dividerColor, // You can use Theme.of(context).dividerColor for theme-aware color
+          color: Theme.of(context).dividerColor,
         ),
       ]),
       currentIndex: 1,
@@ -142,10 +143,12 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
                   const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, index) {
                 final p = filtered[index];
+                final isUserPeer = userPeers.contains(p);
                 return _PeerTile(
                   ip: p,
                   country: "Unknown",
                   health: 0.8,
+                  isUserPeer: isUserPeer,
                 );
               },
             ),
@@ -262,12 +265,13 @@ class _PeerTile extends StatelessWidget {
   final String ip;
   final String country;
   final double health;
+  final bool isUserPeer;
 
-  const _PeerTile({
-    required this.ip,
-    required this.country,
-    required this.health,
-  });
+  const _PeerTile(
+      {required this.ip,
+      required this.country,
+      required this.health,
+      required this.isUserPeer});
 
   @override
   Widget build(BuildContext context) {
@@ -315,9 +319,11 @@ class _PeerTile extends StatelessWidget {
                     showDragHandle: true,
                     builder: (_) => PeerDetailsSheet(
                       country: country,
+                      ip: ip,
                       city: "",
                       latency: "",
                       status: "",
+                      isUserPeer: isUserPeer,
                     ),
                   );
                 },
@@ -415,7 +421,9 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
       title: const Text('Add Peer'),
       content: TextField(
         controller: controller,
-        decoration: const InputDecoration(hintText: 'Enter peer IP'),
+        decoration: const InputDecoration(
+          hintText: 'Enter peer IP (e.g. 185.69.166.7)',
+        ),
         keyboardType: TextInputType.url,
       ),
       actions: [
@@ -427,7 +435,10 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
           onPressed: () async {
             final ip = controller.text.trim();
             if (ip.isNotEmpty) {
-              await peersNotifier.addPeer(ip);
+              final formattedPeer =
+                  ip.startsWith('tcp://') ? ip : 'tcp://$ip:9651';
+
+              await peersNotifier.addPeer(formattedPeer);
             }
             Navigator.of(context).pop();
           },
