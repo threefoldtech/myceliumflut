@@ -18,8 +18,27 @@ class _PeersScreenState extends ConsumerState<PeersScreen> {
   String query = '';
 
   @override
+  void initState() {
+    super.initState();
+    ref.read(peersProvider.notifier).startUpdates();
+  }
+
+  @override
+  void dispose() {
+    ref.read(peersProvider.notifier).stopUpdates();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final peersAsync = ref.watch(peersFutureProvider);
+    final peers = ref.watch(peersProvider);
+    print("Hello ya peers");
+    print(peers);
+    final filtered = query.isEmpty
+        ? peers
+        : peers
+            .where((p) => p.toLowerCase().contains(query.toLowerCase()))
+            .toList();
     return AppScaffold(
       title: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(
@@ -45,105 +64,77 @@ class _PeersScreenState extends ConsumerState<PeersScreen> {
       ]),
       currentIndex: 1,
       onTabSelected: null,
-      child: peersAsync.when(
-        data: (peers) {
-          final filtered = query.isEmpty
-              ? peers
-              : peers
-                  .where((p) => p.toLowerCase().contains(query.toLowerCase()))
-                  .toList();
-          if (filtered.isEmpty) {
-            return ListView(
+      child: ListView(
+        children: [
+          const SizedBox(height: AppSpacing.lg),
+          _SearchAddBar(
+              onChanged: (v) => setState(() => query = v), onAdd: () {}),
+          const SizedBox(height: AppSpacing.xxl),
+          if (filtered.isEmpty)
+            _PeersEmptyState()
+          else
+            ...filtered.map((p) => _PeerTile.sample(index: p.hashCode)),
+          const SizedBox(height: AppSpacing.xxl),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Icon(Icons.public,
+                        size: 24, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Peer Summary',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.lg),
-                _SearchAddBar(
-                    onChanged: (v) => setState(() => query = v), onAdd: () {}),
-                const SizedBox(height: AppSpacing.xxl),
-                _PeersEmptyState(),
-                const SizedBox(height: AppSpacing.xxxl),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    _SummaryItem(
+                        label: '5', subtitle: 'Usable', color: Colors.green),
+                    _SummaryItem(
+                        label: '2', subtitle: 'Slow', color: Colors.orange),
+                    _SummaryItem(
+                        label: '1', subtitle: 'Down', color: Colors.red),
+                  ],
+                ),
               ],
-            );
-          }
-          return ListView(
-            children: [
-              const SizedBox(height: AppSpacing.lg),
-              _SearchAddBar(
-                  onChanged: (v) => setState(() => query = v), onAdd: () {}),
-              const SizedBox(height: AppSpacing.xxl),
-              if (filtered.isEmpty)
-                _PeersEmptyState()
-              else
-                ...filtered.map((p) => _PeerTile.sample(index: p.hashCode)),
-              const SizedBox(height: AppSpacing.xxl),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.public,
-                            size: 24,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Peer Summary',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        _SummaryItem(
-                            label: '5',
-                            subtitle: 'Usable',
-                            color: Colors.green),
-                        _SummaryItem(
-                            label: '2', subtitle: 'Slow', color: Colors.orange),
-                        _SummaryItem(
-                            label: '1', subtitle: 'Down', color: Colors.red),
-                      ],
+                    Icon(Icons.podcasts,
+                        size: 24, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Network Traffic',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.podcasts,
-                            size: 24,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Network Traffic',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        _SummaryItem(
-                            label: '10.5 MB/s', subtitle: 'Total Upload'),
-                        _SummaryItem(
-                            label: '20.5 MB/s', subtitle: 'Total Download'),
-                      ],
-                    ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    _SummaryItem(label: '10.5 MB/s', subtitle: 'Total Upload'),
+                    _SummaryItem(
+                        label: '20.5 MB/s', subtitle: 'Total Download'),
                   ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Failed to load peers')),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+        ],
       ),
     );
   }

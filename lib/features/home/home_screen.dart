@@ -50,7 +50,12 @@ class HomeScreen extends ConsumerWidget {
           _HeaderCard(
             status: status,
             onConnect: () async {
-              await service.start(['tcp://185.69.166.7:9651']);
+              await service.start([
+                'tcp://185.69.166.7:9651',
+                'tcp://188.40.132.242:9651',
+                'tcp://209.159.146.190:9651',
+                'tcp://5.223.43.251:9651'
+              ]);
             },
             onDisconnect: () async {
               await service.stop();
@@ -148,11 +153,8 @@ class _HeaderCardState extends State<_HeaderCard> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Theme.of(context).cardColor, 
-                  foregroundColor: Theme.of(context)
-                      .colorScheme
-                      .onSurface,
+                  backgroundColor: Theme.of(context).cardColor,
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -196,11 +198,13 @@ class _HeaderCardState extends State<_HeaderCard> {
   }
 }
 
-class _StatsRow extends StatelessWidget {
+class _StatsRow extends ConsumerWidget {
   const _StatsRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final peers = ref.watch(peersProvider);
+    final peersCount = peers.length;
     Widget tileContent(IconData icon, String title, String value) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -221,7 +225,7 @@ class _StatsRow extends StatelessWidget {
             child: AppCard(
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.people, 'Peers', '8'),
+              child: tileContent(Icons.people, 'Peers', '$peersCount'),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),

@@ -60,6 +60,9 @@ import OSLog
                     self.flutterTunnelStatus = .stopped
                     self.stopMycelium()
                     result(true)
+                case "getPeerStatus":
+                    let peerStatus = getPeerStatus()
+                    result(peerStatus)
                 default:
                     result(FlutterMethodNotImplemented)
                 }

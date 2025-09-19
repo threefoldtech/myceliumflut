@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myceliumflut/features/home/home_screen.dart';
 import 'app/theme/app_theme.dart';
 import 'app/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -198,257 +199,14 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     //_logger.info("ratio: ${MediaQuery.devicePixelRatioOf(context)}");
-    return MaterialApp(
-      theme: ThemeData(fontFamily: 'Roboto'),
-      home: Scaffold(
-        appBar: AppBar(
-          title: Container(
-            margin: const EdgeInsets.only(top: 16.0),
-            child: Image.asset(
-              'assets/images/mycelium_top.png',
-              width: 1200, //physicalPxToLogicalPx(context, 161.9),
-              height: 150, //physicalPxToLogicalPx(context, 29.85),
-            ),
-          ),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.only(left: 16.0, right: 16.0),
-          child: Center(
-            child: Column(
-              children: [
-                const SizedBox(
-                  height: sizedBoxHeight,
-                ),
-                const Align(
-                    alignment: Alignment.centerLeft,
-                    // IP address title
-                    child: Text("IP Address:",
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF7D7E7E),
-                            fontWeight: FontWeight.w500))),
-                Container(
-                    // Node address
-                    width: double.infinity,
-                    height: physicalPxToLogicalPx(context, 48),
-                    decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 245, 241, 241),
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10.0)),
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: SelectableText(
-                            _nodeAddr,
-                            //textAlign: TextAlign.left,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.copy),
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: _nodeAddr));
-                            },
-                          ),
-                        ),
-                      ],
-                    )),
-                const SizedBox(height: sizedBoxHeight),
-                const Align(
-                    alignment: Alignment.centerLeft,
-                    // Peers
-                    child: Text("Peers:",
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF7D7E7E),
-                            fontWeight: FontWeight.w500))),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: 150,
-                  ),
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: TextField(
-                      // peers address
-                      controller: textEditController,
-                      onTapOutside: (event) => {
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                      },
-                      minLines: 1,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        //labelText: 'Peers',
-                      ),
-                    ),
-                  ),
-                ),
-                Text(_peerValidity,
-                    style: const TextStyle(color: colorMycelRed)),
-                const SizedBox(height: sizedBoxHeight), // Add some space
-                SizedBox(
-                  width: double.infinity,
-                  height: physicalPxToLogicalPx(context, 48),
-                  child: ElevatedButton(
-                    // Start/Stop button
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: _startStopButtonColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.only(left: 16, right: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              10.0), // reduce the roundedness
-                        ),
-                        textStyle: const TextStyle(fontSize: 16)),
-                    child: Text(_textButton),
-                    onPressed: () {
-                      if (!_isStarted) {
-                        startMycelium();
-                      } else {
-                        stopMycelium();
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20), // Add some space
-                Text(
-                  _myceliumStatus,
-                  style: TextStyle(
-                      color: _myceliumStatusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-                const SizedBox(height: 20), // Add some space
-                Visibility(
-                  visible: isRestartVisible,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: physicalPxToLogicalPx(context, 48),
-                    child: ElevatedButton(
-                      // Restart button
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: colorLimeGreen,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.only(left: 16, right: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                10.0), // reduce the roundedness
-                          ),
-                          textStyle: const TextStyle(fontSize: 16)),
-                      child: const Text.rich(
-                        TextSpan(
-                          children: [
-                            WidgetSpan(
-                              child: Icon(Icons.restart_alt_rounded,
-                                  size: 20), // Add the icon
-                            ),
-                            TextSpan(
-                              text: " RestartMycelium",
-                            ),
-                          ],
-                        ),
-                      ),
-                      onPressed: () async {
-                        stopMycelium();
-                        // Wait for isStarted to become false, but no more than 3 seconds
-                        final timeout =
-                            DateTime.now().add(const Duration(seconds: 3));
-                        while (_isStarted && DateTime.now().isBefore(timeout)) {
-                          await Future.delayed(
-                              const Duration(milliseconds: 100));
-                        }
-                        startMycelium();
-                        setState(() {
-                          _myceliumStatus = myceliumStatusRestarted;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                // Connected Peers Section
-                Visibility(
-                  visible: _isStarted && _connectedPeers.isNotEmpty,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: sizedBoxHeight),
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text("Connected Peers:",
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF7D7E7E),
-                                fontWeight: FontWeight.w500)),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        constraints: const BoxConstraints(maxHeight: 200),
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 245, 241, 241),
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _connectedPeers.map((peerInfo) {
-                              // Parse peer info: "protocol,address,connection_state"
-                              final parts = peerInfo.split(',');
-                              if (parts.length >= 3) {
-                                final protocol = parts[0];
-                                final address = parts[1];
-                                final state = parts[2];
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        state.toLowerCase() == 'connected' 
-                                          ? Icons.check_circle 
-                                          : Icons.radio_button_unchecked,
-                                        color: state.toLowerCase() == 'connected' 
-                                          ? Colors.green 
-                                          : Colors.orange,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          '$protocol://$address ($state)',
-                                          style: const TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              } else {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                  child: Text(
-                                    peerInfo,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                );
-                              }
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    final settings = ProviderScope.containerOf(context, listen: true)
+        .read(appSettingsProvider)
+        .themeMode;
+    return MaterialApp.router(
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: settings,
+      routerConfig: appRouter,
     );
   }
 
@@ -581,7 +339,7 @@ class _MyAppState extends State<MyApp> {
 
   void _updatePeerStatus() async {
     if (!_isStarted) return;
-    
+
     try {
       List<String> peerStatus;
       if (isUseDylib()) {
@@ -589,15 +347,16 @@ class _MyAppState extends State<MyApp> {
         peerStatus = await myFFGetPeerStatus();
       } else {
         // Android/iOS platform - use platform channel
-        final result = await platform.invokeMethod<List<dynamic>>('getPeerStatus');
+        final result =
+            await platform.invokeMethod<List<dynamic>>('getPeerStatus');
         peerStatus = result?.cast<String>() ?? [];
       }
-      
+
       // Filter out the first element if it's "ok" (status indicator)
       if (peerStatus.isNotEmpty && peerStatus[0] == "ok") {
         peerStatus = peerStatus.sublist(1);
       }
-      
+
       setState(() {
         _connectedPeers = peerStatus;
       });

@@ -79,30 +79,37 @@ class MyceliumService {
   }
 
   Future<bool> start(List<String> peers) async {
+    print('MyceliumService: Starting with peers: $peers');
     _status = NodeStatus.connecting;
     _statusController.add(_status);
     final cleaned = preprocessPeers(peers);
+    print('MyceliumService: Cleaned peers: $cleaned');
     final error = validatePeers(cleaned);
     if (error != null) {
+      print('MyceliumService: Validation error: $error');
       _status = NodeStatus.failed;
       _statusController.add(_status);
       return false;
     }
     await storePeers(cleaned);
     final key = await _loadOrGeneratePrivKey();
+    print('MyceliumService: Loaded key, starting VPN...');
     try {
       if (isUseDylib()) {
         await myFFStartMycelium(cleaned, key);
       } else {
-        await _platform.invokeMethod<bool>('startVpn', {
+        final result = await _platform.invokeMethod<bool>('startVpn', {
           'peers': cleaned,
           'secretKey': key,
         });
+        print('MyceliumService: startVpn result: $result');
       }
       _status = NodeStatus.connected;
       _statusController.add(_status);
+      print('MyceliumService: Successfully connected');
       return true;
-    } catch (_) {
+    } catch (e) {
+      print('MyceliumService: Failed to start: $e');
       _status = NodeStatus.failed;
       _statusController.add(_status);
       return false;
@@ -126,6 +133,32 @@ class MyceliumService {
       _status = NodeStatus.failed;
       _statusController.add(_status);
       return false;
+    }
+  }
+
+  Future<List<String>> getPeerStatus() async {
+    if (_status != NodeStatus.connected) {
+      return [];
+    }
+    try {
+      List<String> peerStatus;
+      if (isUseDylib()) {
+        // Windows platform - use FFI
+        peerStatus = await myFFGetPeerStatus();
+      } else {
+        // Android/iOS platform - use platform channel
+        final result = await _platform.invokeMethod<List<dynamic>>('getPeerStatus');
+        peerStatus = result?.cast<String>() ?? [];
+      }
+
+      // Filter out the first element if it's "ok" (status indicator)
+      if (peerStatus.isNotEmpty && peerStatus[0] == "ok") {
+        peerStatus = peerStatus.sublist(1);
+      }
+
+      return peerStatus;
+    } catch (e) {
+      throw Exception("Failed to get peer status: $e");
     }
   }
 
