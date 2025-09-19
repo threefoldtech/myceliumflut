@@ -61,8 +61,30 @@ import OSLog
                     self.stopMycelium()
                     result(true)
                 case "getPeerStatus":
-                    let peerStatus = getPeerStatus()
-                    result(peerStatus)
+                    do {
+                        let peerStatus = getPeerStatus()
+                        result(peerStatus)
+                    } catch {
+                        debuglog("Error getting peer status: \(error.localizedDescription)")
+                        result(FlutterError(code: "PEER_STATUS_ERROR", message: error.localizedDescription, details: nil))
+                    }
+                case "proxyConnect":
+                    do {
+                        let remote = call.arguments as? String ?? ""
+                        let proxyResult = proxyConnect(remote: remote)
+                        result(proxyResult)
+                    } catch {
+                        debuglog("Error in proxyConnect: \(error.localizedDescription)")
+                        result(FlutterError(code: "PROXY_CONNECT_ERROR", message: error.localizedDescription, details: nil))
+                    }
+                case "proxyDisconnect":
+                    do {
+                        let proxyResult = proxyDisconnect()
+                        result(proxyResult)
+                    } catch {
+                        debuglog("Error in proxyDisconnect: \(error.localizedDescription)")
+                        result(FlutterError(code: "PROXY_DISCONNECT_ERROR", message: error.localizedDescription, details: nil))
+                    }
                 default:
                     result(FlutterMethodNotImplemented)
                 }

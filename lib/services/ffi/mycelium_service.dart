@@ -144,9 +144,6 @@ class MyceliumService {
   }
 
   Future<List<String>> getPeerStatus() async {
-    if (_status != NodeStatus.connected) {
-      return [];
-    }
     try {
       List<String> peerStatus;
       if (isUseDylib()) {
@@ -158,7 +155,6 @@ class MyceliumService {
             await _platform.invokeMethod<List<dynamic>>('getPeerStatus');
         peerStatus = result?.cast<String>() ?? [];
       }
-
       // Filter out the first element if it's "ok" (status indicator)
       if (peerStatus.isNotEmpty && peerStatus[0] == "ok") {
         peerStatus = peerStatus.sublist(1);
@@ -177,7 +173,7 @@ class MyceliumService {
   Future<List<String>> proxyConnect(String remote) async {
     try {
       if (isUseDylib()) {
-        return myFFProxyConnect(remote);
+        return await myFFProxyConnect(remote);
       } else {
         final result = await _platform.invokeMethod<List<dynamic>>(
           'proxyConnect',
@@ -186,21 +182,23 @@ class MyceliumService {
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      throw Exception("Failed to proxyConnect: $e");
+      print("Failed to proxyConnect: $e");
+      return ['Failed to connect proxy'];
     }
   }
 
   Future<List<String>> proxyDisconnect() async {
     try {
       if (isUseDylib()) {
-        return myFFProxyDisconnect();
+        return await myFFProxyDisconnect();
       } else {
         final result =
             await _platform.invokeMethod<List<dynamic>>('proxyDisconnect');
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      throw Exception("Failed to proxyDisconnect: $e");
+      print("Failed to proxyDisconnect: $e");
+      return ['Failed to disconnect proxy'];
     }
   }
 }

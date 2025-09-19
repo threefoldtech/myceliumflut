@@ -16,6 +16,8 @@ import io.flutter.plugin.common.MethodChannel
 import tech.threefold.mycelium.rust.uniffi.mycelmob.addressFromSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.getPeerStatus
+import tech.threefold.mycelium.rust.uniffi.mycelmob.proxyConnect
+import tech.threefold.mycelium.rust.uniffi.mycelmob.proxyDisconnect
 
 private const val tag = "[Myceliumflut]"
 
@@ -64,6 +66,25 @@ class MainActivity: FlutterActivity() {
                     } catch (e: Exception) {
                         Log.e(tag, "Error getting peer status: ${e.message}")
                         result.error("PEER_STATUS_ERROR", e.message, null)
+                    }
+                }
+                "proxyConnect" -> {
+                    try {
+                        val remote = call.argument<String>("remote") ?: ""
+                        val proxyResult = proxyConnect(remote)
+                        result.success(proxyResult)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Error in proxyConnect: ${e.message}")
+                        result.error("PROXY_CONNECT_ERROR", e.message, null)
+                    }
+                }
+                "proxyDisconnect" -> {
+                    try {
+                        val proxyResult = proxyDisconnect()
+                        result.success(proxyResult)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Error in proxyDisconnect: ${e.message}")
+                        result.error("PROXY_DISCONNECT_ERROR", e.message, null)
                     }
                 }
                 else -> result.notImplemented()

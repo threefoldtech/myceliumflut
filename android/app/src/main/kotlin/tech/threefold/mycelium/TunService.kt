@@ -81,11 +81,13 @@ class TunService : VpnService(), CoroutineScope {
         val builder = Builder()
             .addAddress(nodeAddress, 64)
             .addRoute("400::", 7)
-            .allowBypass()
+            .addDnsServer("8.8.8.8")
+            .addDnsServer("8.8.4.4")
+            .addDnsServer("2001:4860:4860::8888")
+            .addDnsServer("2001:4860:4860::8844")
             .allowFamily(OsConstants.AF_INET)
-            //.allowFamily(OsConstants.AF_INET6)
-            //.setBlocking(true)
-            //.setMtu(1400)
+            .allowFamily(OsConstants.AF_INET6)
+            .setMtu(1420)
             .setSession("mycelium")
 
 

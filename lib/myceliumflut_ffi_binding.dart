@@ -102,14 +102,11 @@ String myFFAddressFromSecretKey(Uint8List data) {
 }
 
 typedef FuncRustStartMycelium = ffi.Void Function(
-    ffi.Pointer<ffi.Pointer<ffi.Int8>>,
-    ffi.IntPtr,
-    ffi.Pointer<ffi.Uint8>,
-    ffi.IntPtr);
+    ffi.Pointer<ffi.Pointer<ffi.Int8>>, ffi.Size, ffi.Pointer<ffi.Uint8>, ffi.Size);
 typedef FuncDartStartMycelium = void Function(
     ffi.Pointer<ffi.Pointer<ffi.Int8>>, int, ffi.Pointer<ffi.Uint8>, int);
 
-Future<bool?> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
+Future<bool> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
   // Load the dynamic library
   final dylib = loadDll();
 
@@ -131,20 +128,25 @@ Future<bool?> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
   final nativePrivKey = privKeyPtr.asTypedList(privKey.length);
   nativePrivKey.setAll(0, privKey);
 
-  // Call the Rust function
-  startMycelium(peerPtrs, peers.length, privKeyPtr, privKey.length);
-
-  // Free the allocated memory
-  for (var i = 0; i < peers.length; i++) {
-    malloc.free(peerPtrs[i]);
+  try {
+    // Call the Rust function
+    startMycelium(peerPtrs, peers.length, privKeyPtr, privKey.length);
+    return true;
+  } catch (e) {
+    print('Error starting mycelium: $e');
+    return false;
+  } finally {
+    // Free the allocated memory
+    for (var i = 0; i < peers.length; i++) {
+      malloc.free(peerPtrs[i]);
+    }
+    malloc.free(peerPtrs);
+    malloc.free(privKeyPtr);
   }
-  malloc.free(peerPtrs);
-  malloc.free(privKeyPtr);
-  return true;
 }
 
-typedef FuncRustStopMycelium = ffi.Uint8 Function();
-typedef FuncDartStopMycelium = int Function();
+typedef FuncRustStopMycelium = ffi.Bool Function();
+typedef FuncDartStopMycelium = bool Function();
 
 Future<bool> myFFStopMycelium() async {
   // Load the dynamic library
@@ -155,7 +157,7 @@ Future<bool> myFFStopMycelium() async {
       .asFunction();
 
   final result = stopMycelium();
-  return result != 0;
+  return result;
 }
 
 typedef FuncRustGetPeerStatus = ffi.Void Function(
@@ -168,80 +170,112 @@ typedef FuncDartFreePeerStatus = void Function(
     ffi.Pointer<ffi.Pointer<ffi.Int8>>, int);
 
 Future<List<String>> myFFGetPeerStatus() async {
-  // Load the dynamic library
-  final dylib = loadDll();
+  final outPtr = calloc<Pointer<Pointer<Int8>>>();
+  final outLen = calloc<IntPtr>();
 
-  final FuncDartGetPeerStatus getPeerStatus = dylib
-      .lookup<ffi.NativeFunction<FuncRustGetPeerStatus>>('ff_get_peer_status')
-      .asFunction();
-  final FuncDartFreePeerStatus freePeerStatus = dylib
-      .lookup<ffi.NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
-      .asFunction();
+  try {
+    var dylib = loadDll();
+    final ffGetPeerStatus = dylib
+        .lookup<NativeFunction<FuncRustGetPeerStatus>>('ff_get_peer_status')
+        .asFunction<FuncDartGetPeerStatus>();
 
-  final outPtr = malloc<ffi.Pointer<ffi.Pointer<ffi.Int8>>>();
-  final outLen = malloc<ffi.IntPtr>();
+    ffGetPeerStatus(outPtr, outLen);
 
-  getPeerStatus(outPtr, outLen);
+    final length = outLen.value;
+    final ptr = outPtr.value;
 
-  final ptr = outPtr.value;
-  final len = outLen.value;
-
-  List<String> peerStatusList = [];
-  for (int i = 0; i < len; i++) {
-    final stringPtr = ptr[i];
-    if (stringPtr != ffi.nullptr) {
-      final dartString = stringPtr.cast<Utf8>().toDartString();
-      peerStatusList.add(dartString);
+    final List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      final stringPtr = ptr.elementAt(i).value;
+      if (stringPtr != nullptr) {
+        result.add(stringPtr.cast<Utf8>().toDartString());
+      }
     }
+
+    // Free the memory
+    final freePeerStatus = dylib
+        .lookup<NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+        .asFunction<FuncDartFreePeerStatus>();
+    freePeerStatus(ptr, length);
+
+    return result;
+  } finally {
+    calloc.free(outPtr);
+    calloc.free(outLen);
   }
-
-  // Free the allocated memory
-  freePeerStatus(ptr, len);
-  malloc.free(outPtr);
-  malloc.free(outLen);
-
-  return peerStatusList;
 }
 
-final DynamicLibrary _dylib = Platform.isMacOS || Platform.isWindows
-    ? DynamicLibrary.open('libmycelium.dylib')
-    : DynamicLibrary.open('libmycelium.so');
-
-typedef _ffiProxyConnectC = Pointer<Utf8> Function(Pointer<Utf8>);
-typedef _ffiProxyConnectDart = Pointer<Utf8> Function(Pointer<Utf8>);
-
-typedef _ffiProxyDisconnectC = Pointer<Utf8> Function();
-typedef _ffiProxyDisconnectDart = Pointer<Utf8> Function();
-
-final _ffiProxyConnect =
-    _dylib.lookupFunction<_ffiProxyConnectC, _ffiProxyConnectDart>(
-        'ffi_proxy_connect');
-
-final _ffiProxyDisconnect =
-    _dylib.lookupFunction<_ffiProxyDisconnectC, _ffiProxyDisconnectDart>(
-        'ffi_proxy_disconnect');
-
-/// Helper to free strings
-typedef _ffiFreeStringC = Void Function(Pointer<Utf8>);
-typedef _ffiFreeStringDart = void Function(Pointer<Utf8>);
-final _ffiFreeString = _dylib
-    .lookupFunction<_ffiFreeStringC, _ffiFreeStringDart>('ffi_free_string');
-
-List<String> myFFProxyConnect(String remote) {
+Future<List<String>> myFFProxyConnect(String remote) async {
+  final outPtr = calloc<Pointer<Pointer<Int8>>>();
+  final outLen = calloc<IntPtr>();
   final remotePtr = remote.toNativeUtf8();
-  final resultPtr = _ffiProxyConnect(remotePtr);
-  calloc.free(remotePtr);
 
-  final result = resultPtr.toDartString();
-  _ffiFreeString(resultPtr);
+  try {
+    var dylib = loadDll();
+    final ffProxyConnect = dylib
+        .lookup<NativeFunction<Void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>, Pointer<IntPtr>)>>('ff_proxy_connect')
+        .asFunction<void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>, Pointer<IntPtr>)>();
 
-  return result.split(','); // convert "a,b,c" -> ["a","b","c"]
+    ffProxyConnect(remotePtr, outPtr, outLen);
+
+    final length = outLen.value;
+    final ptr = outPtr.value;
+
+    final List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      final stringPtr = ptr.elementAt(i).value;
+      if (stringPtr != nullptr) {
+        result.add(stringPtr.cast<Utf8>().toDartString());
+      }
+    }
+
+    // Free the memory
+    final freePeerStatus = dylib
+        .lookup<NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+        .asFunction<FuncDartFreePeerStatus>();
+    freePeerStatus(ptr, length);
+
+    return result;
+  } finally {
+    calloc.free(remotePtr);
+    calloc.free(outPtr);
+    calloc.free(outLen);
+  }
 }
 
-List<String> myFFProxyDisconnect() {
-  final resultPtr = _ffiProxyDisconnect();
-  final result = resultPtr.toDartString();
-  _ffiFreeString(resultPtr);
+Future<List<String>> myFFProxyDisconnect() async {
+  final outPtr = calloc<Pointer<Pointer<Int8>>>();
+  final outLen = calloc<IntPtr>();
 
-  return result.split(',');
+  try {
+    var dylib = loadDll();
+    final ffProxyDisconnect = dylib
+        .lookup<NativeFunction<FuncRustGetPeerStatus>>('ff_proxy_disconnect')
+        .asFunction<FuncDartGetPeerStatus>();
+
+    ffProxyDisconnect(outPtr, outLen);
+
+    final length = outLen.value;
+    final ptr = outPtr.value;
+
+    final List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      final stringPtr = ptr.elementAt(i).value;
+      if (stringPtr != nullptr) {
+        result.add(stringPtr.cast<Utf8>().toDartString());
+      }
+    }
+
+    // Free the memory
+    final freePeerStatus = dylib
+        .lookup<NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+        .asFunction<FuncDartFreePeerStatus>();
+    freePeerStatus(ptr, length);
+
+    return result;
+  } finally {
+    calloc.free(outPtr);
+    calloc.free(outLen);
+  }
 }
+

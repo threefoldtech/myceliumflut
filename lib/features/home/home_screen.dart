@@ -205,8 +205,7 @@ class _HeaderCardState extends State<_HeaderCard> {
                     onChanged: (value) async {
                       setState(() => _isSocks5Enabled = value);
                       if (value) {
-                        final result =
-                            await widget.service.proxyConnect('127.0.0.1:1080');
+                        final result = await widget.service.proxyConnect('');
                         debugPrint('Proxy connect result: $result');
                       } else {
                         final result = await widget.service.proxyDisconnect();
@@ -230,7 +229,8 @@ class _StatsRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final peersAsync = ref.watch(peersProvider);
-    final peersCount = peersAsync.maybeWhen(data: (list) => list.length, orElse: () => 0);
+    final peersCount =
+        peersAsync.maybeWhen(data: (list) => list.length, orElse: () => 0);
     Widget tileContent(IconData icon, String title, String value) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -279,4 +279,3 @@ class _StatsRow extends ConsumerWidget {
 // TODO: VPN implemented or not and if yes, how to get its data ?
 //TODO: How to get num of peers, bandwidth, uptime ??
 //TODO: How to get All data in peers screen ?
- 
