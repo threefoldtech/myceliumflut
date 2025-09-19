@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'app/theme/app_theme.dart';
+import 'app/router/app_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'state/app_settings.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
@@ -35,7 +39,7 @@ Future<void> main() async {
     // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatefulWidget {

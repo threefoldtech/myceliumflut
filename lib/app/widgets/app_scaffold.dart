@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+import '../theme/tokens.dart';
+import 'package:go_router/go_router.dart';
+
+class AppScaffold extends StatelessWidget {
+  final Widget title;
+  final Widget child;
+  final int currentIndex;
+  final ValueChanged<int>? onTabSelected;
+
+  const AppScaffold({super.key, required this.title, required this.child, this.currentIndex = 0, this.onTabSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: title,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: child,
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: onTabSelected ?? (index) {
+          switch (index) {
+            case 0:
+              if (context.mounted) context.go('/');
+              break;
+            case 1:
+              if (context.mounted) context.go('/peers');
+              break;
+            case 2:
+              if (context.mounted) context.go('/settings');
+              break;
+          }
+        },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'Peers'),
+          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
+        ],
+      ),
+    );
+  }
+}
+
+
