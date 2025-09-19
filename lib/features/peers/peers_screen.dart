@@ -169,9 +169,10 @@ class _SearchAddBar extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.lg),
         FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Peer')),
+          onPressed: () => _showAddPeerDialog(context),
+          icon: const Icon(Icons.add),
+          label: const Text('Add Peer'),
+        ),
       ],
     );
   }
@@ -317,9 +318,10 @@ class _PeersEmptyState extends StatelessWidget {
                     Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
         const SizedBox(height: AppSpacing.xxl),
         FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.add),
-            label: const Text('Add Peer')),
+          onPressed: () => _showAddPeerDialog(context),
+          icon: const Icon(Icons.add),
+          label: const Text('Add Peer'),
+        ),
       ],
     );
   }
@@ -358,4 +360,38 @@ class _SummaryItem extends StatelessWidget {
       ],
     );
   }
+}
+
+void _showAddPeerDialog(BuildContext context) {
+  final controller = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Add Peer'),
+      content: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          hintText: 'Enter peer IP',
+        ),
+        keyboardType: TextInputType.url,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final ip = controller.text.trim();
+            if (ip.isNotEmpty) {
+              print('Add peer: $ip');
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    ),
+  );
 }
