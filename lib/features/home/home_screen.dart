@@ -433,9 +433,16 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
     }
   }
 
+  int _getConnectedPeersCount() {
+    return peerStatus.where((peer) => 
+      peer.connectionState == peer_models.ConnectionState.connected
+    ).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final networkTraffic = _calculateNetworkTraffic();
+    final connectedCount = _getConnectedPeersCount();
     
     return Row(
       children: [
@@ -450,7 +457,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '${peerStatus.length}',
+                  '$connectedCount',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
