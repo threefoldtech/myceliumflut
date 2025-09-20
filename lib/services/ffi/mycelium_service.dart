@@ -173,20 +173,33 @@ class MyceliumService {
         peerStatusStrings = result?.cast<String>() ?? [];
       }
       
-      // Filter out the first element if it's "ok" (status indicator)
-      if (peerStatusStrings.isNotEmpty && peerStatusStrings[0] == "ok") {
-        peerStatusStrings = peerStatusStrings.sublist(1);
+      // Check for error responses first
+      if (peerStatusStrings.isNotEmpty) {
+        final firstResponse = peerStatusStrings[0];
+        if (firstResponse.startsWith('err_')) {
+          // Handle error responses like "err_node_timeout"
+          throw Exception('Mycelium service error: $firstResponse');
+        }
+        
+        // Filter out the first element if it's "ok" (status indicator)
+        if (firstResponse == "ok") {
+          peerStatusStrings = peerStatusStrings.sublist(1);
+        }
       }
 
       // Parse JSON strings into PeerStats objects
       List<PeerStats> peerStats = [];
       for (String jsonString in peerStatusStrings) {
         try {
+          // Skip empty or error strings
+          if (jsonString.trim().isEmpty || jsonString.startsWith('err_')) {
+            continue;
+          }
+          
           final Map<String, dynamic> json = jsonDecode(jsonString);
           peerStats.add(PeerStats.fromJson(json));
         } catch (e) {
-          print('Failed to parse peer JSON: $jsonString, error: $e');
-          // Skip malformed entries
+          // Skip malformed entries silently to prevent spam
         }
       }
 
@@ -218,7 +231,15 @@ class MyceliumService {
         };
         return jsonEncode(statusMap);
       } else {
-        // For mobile platforms, use getPeerStatus as fallback since getStatus isn't implemented
+        // For mobile platforms, don't call getPeerStatus if service is not running
+        if (_status != NodeStatus.connected) {
+          final statusMap = {
+            'peers': <Map<String, dynamic>>[],
+            'status': _status.toString(),
+          };
+          return jsonEncode(statusMap);
+        }
+        
         try {
           final peerStats = await getPeerStatus();
           final statusMap = {
@@ -227,8 +248,7 @@ class MyceliumService {
           };
           return jsonEncode(statusMap);
         } catch (e) {
-          print("Failed to get peer status for mobile fallback: $e");
-          // Return minimal status if peer status also fails
+          // Silent fallback for mobile when service is unavailable
           final statusMap = {
             'peers': <Map<String, dynamic>>[],
             'status': _status.toString(),

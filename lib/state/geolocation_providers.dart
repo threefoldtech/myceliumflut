@@ -27,9 +27,7 @@ class PeerLocationNotifier extends StateNotifier<LocationInfo?> {
         cleanIP = cleanIP.split(':')[0]; // Remove port if present
       }
       
-      print('Fetching location for peer: $_peerAddress -> cleaned IP: $cleanIP');
       final location = await _geolocationService.getLocationForIP(cleanIP);
-      print('Location result for $cleanIP: ${location.country}, ${location.city}');
       
       if (mounted) {
         state = location;

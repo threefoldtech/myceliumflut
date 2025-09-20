@@ -46,7 +46,6 @@ class GeolocationService {
   Future<LocationInfo> getLocationForIP(String ip) async {
     // Check cache first
     if (_cache.containsKey(ip)) {
-      print('Cache hit for $ip: ${_cache[ip]!.country}');
       return _cache[ip]!;
     }
 
@@ -61,35 +60,27 @@ class GeolocationService {
         targetIP = ip.split(':')[0];
       }
 
-      print('Making API call to: $_apiUrl with X-Real-IP: $targetIP');
       final response = await http.get(
         Uri.parse(_apiUrl),
         headers: {
           'Accept': 'application/json',
           'X-Real-IP': targetIP,
         },
-      ).timeout(const Duration(seconds: 10));
-
-      print('API response status: ${response.statusCode}');
-      print('API response body: ${response.body}');
+      ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final locationInfo = LocationInfo.fromGridTFJson(data);
-        print('Parsed location: ${locationInfo.country}, ${locationInfo.city}');
         _cache[ip] = locationInfo;
         return locationInfo;
-      } else {
-        print('API returned non-200 status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Geolocation error for $ip: $e');
+      // Silent error handling for performance
     }
 
     // Return unknown location and cache it
     final unknownLocation = LocationInfo.unknown();
     _cache[ip] = unknownLocation;
-    print('Returning unknown location for $ip');
     return unknownLocation;
   }
 

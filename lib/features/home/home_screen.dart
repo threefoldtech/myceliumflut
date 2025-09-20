@@ -50,44 +50,58 @@ class HomeScreen extends ConsumerWidget {
       ),
       currentIndex: 0,
       onTabSelected: null,
-      child: ListView(
-        children: [
-          const SizedBox(height: AppSpacing.xxl),
-          _HeaderCard(
-            status: status,
-            onConnect: () async {
-              final peers = peersAsync.asData?.value ?? [];
-              if (peers.isNotEmpty) {
-                await service.start(peers);
-              } else {
-                // Fallback to PeersService if no peers available
-                final peersService = PeersService();
-                final fallbackPeers = await peersService.fetchPeers();
-                await service.start(fallbackPeers);
-              }
-            },
-            onDisconnect: () async {
-              await service.stop();
-            },
-            service: service,
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          const _StatsRow(),
-          const SizedBox(height: AppSpacing.xxl),
-          Consumer(
-            builder: (context, ref, child) {
-              final trafficStats = ref.watch(dynamicTrafficProvider);
-              
-              return TrafficSummary(
-                totalUpload: trafficStats.totalUploadFormatted,
-                totalDownload: trafficStats.totalDownloadFormatted,
-                peakUpload: trafficStats.peakUploadFormatted,
-                peakDownload: trafficStats.peakDownloadFormatted,
+      child: ListView.builder(
+        itemCount: 5,
+        itemBuilder: (context, index) {
+          switch (index) {
+            case 0:
+              return const SizedBox(height: AppSpacing.xxl);
+            case 1:
+              return _HeaderCard(
+                status: status,
+                onConnect: () async {
+                  final peers = peersAsync.asData?.value ?? [];
+                  if (peers.isNotEmpty) {
+                    await service.start(peers);
+                  } else {
+                    // Fallback to PeersService if no peers available
+                    final peersService = PeersService();
+                    final fallbackPeers = await peersService.fetchPeers();
+                    await service.start(fallbackPeers);
+                  }
+                },
+                onDisconnect: () async {
+                  await service.stop();
+                },
+                service: service,
               );
-            },
-          ),
-          const SizedBox(height: AppSpacing.xxxl),
-        ],
+            case 2:
+              return Column(
+                children: [
+                  const SizedBox(height: AppSpacing.xxl),
+                  const _StatsRow(),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+              );
+            case 3:
+              return Consumer(
+                builder: (context, ref, child) {
+                  final trafficStats = ref.watch(dynamicTrafficProvider);
+                  
+                  return TrafficSummary(
+                    totalUpload: trafficStats.totalUploadFormatted,
+                    totalDownload: trafficStats.totalDownloadFormatted,
+                    peakUpload: trafficStats.peakUploadFormatted,
+                    peakDownload: trafficStats.peakDownloadFormatted,
+                  );
+                },
+              );
+            case 4:
+              return const SizedBox(height: AppSpacing.xxxl);
+            default:
+              return const SizedBox.shrink();
+          }
+        },
       ),
     );
   }
@@ -266,35 +280,138 @@ class _HeaderCardState extends State<_HeaderCard> {
   }
 }
 
-class _StatsRow extends ConsumerStatefulWidget {
+class _StatsRow extends ConsumerWidget {
   const _StatsRow();
 
   @override
-  ConsumerState<_StatsRow> createState() => _StatsRowState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nodeStatusAsync = ref.watch(nodeStatusProvider);
+    final uptimeNotifier = ref.watch(uptimeProvider.notifier);
+    
+    return nodeStatusAsync.when(
+      loading: () => _buildStatsCards(context, [], uptimeNotifier),
+      error: (error, stack) => _buildStatsCards(context, [], uptimeNotifier),
+      data: (status) {
+        if (status == NodeStatus.connected) {
+          return _ConnectedStatsRow(uptimeNotifier: uptimeNotifier);
+        } else {
+          return _buildStatsCards(context, [], uptimeNotifier);
+        }
+      },
+    );
+  }
+
+  Widget _buildStatsCards(BuildContext context, List<peer_models.PeerStats> peerStatus, UptimeNotifier uptimeNotifier) {
+    final networkTraffic = _calculateNetworkTraffic(peerStatus);
+    
+    return Row(
+      children: [
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Connected Peers',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${peerStatus.length}',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Uptime',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  uptimeNotifier.formattedUptime,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Traffic',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '↓${networkTraffic['rx']} ↑${networkTraffic['tx']}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Map<String, String> _calculateNetworkTraffic(List<peer_models.PeerStats> peerStatus) {
+    int totalRx = 0;
+    int totalTx = 0;
+
+    for (final peer in peerStatus) {
+      totalRx += peer.rxBytes;
+      totalTx += peer.txBytes;
+    }
+    return {
+      'rx': peer_models.PeerStats.formatBytes(totalRx),
+      'tx': peer_models.PeerStats.formatBytes(totalTx),
+    };
+  }
 }
 
-class _StatsRowState extends ConsumerState<_StatsRow> {
+class _ConnectedStatsRow extends ConsumerStatefulWidget {
+  final UptimeNotifier uptimeNotifier;
+  
+  const _ConnectedStatsRow({required this.uptimeNotifier});
+
+  @override
+  ConsumerState<_ConnectedStatsRow> createState() => _ConnectedStatsRowState();
+}
+
+class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
   List<peer_models.PeerStats> peerStatus = [];
   Timer? _refreshTimer;
-  Timer? _uptimeTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchPeerStatus();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _fetchPeerStatus();
-    });
-    _uptimeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      // Trigger rebuild to update uptime display
-      if (mounted) setState(() {});
     });
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    _uptimeTimer?.cancel();
     super.dispose();
   }
 
@@ -302,14 +419,91 @@ class _StatsRowState extends ConsumerState<_StatsRow> {
     try {
       final service = MyceliumService();
       final status = await service.getPeerStatus();
-      setState(() {
-        peerStatus = status;
-      });
+      if (mounted) {
+        setState(() {
+          peerStatus = status;
+        });
+      }
     } catch (e) {
-      // Handle error silently
+      if (mounted) {
+        setState(() {
+          peerStatus = [];
+        });
+      }
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final networkTraffic = _calculateNetworkTraffic();
+    
+    return Row(
+      children: [
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Connected Peers',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${peerStatus.length}',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Uptime',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  widget.uptimeNotifier.formattedUptime,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Traffic',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '↓${networkTraffic['rx']} ↑${networkTraffic['tx']}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Map<String, String> _calculateNetworkTraffic() {
     int totalRx = 0;
@@ -328,70 +522,4 @@ class _StatsRowState extends ConsumerState<_StatsRow> {
     };
   }
 
-  int _getConnectedPeersCount() {
-    return peerStatus.where((peer) => 
-      peer.connectionState == peer_models.ConnectionState.connected
-    ).length;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final uptimeNotifier = ref.read(uptimeProvider.notifier);
-    final connectedPeers = _getConnectedPeersCount();
-    final networkTraffic = _calculateNetworkTraffic();
-    final uptime = uptimeNotifier.formattedUptime;
-    Widget tileContent(IconData icon, String title, String value) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              title, 
-              style: Theme.of(context).textTheme.labelMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              value, 
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        children: [
-          Expanded(
-            child: AppCard(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.people, 'Connected Peers', '$connectedPeers'),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: AppCard(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.podcasts, 'Total Traffic', networkTraffic['total'] ?? '0 B'),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: AppCard(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.access_time, 'Uptime', uptime),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
-
-// TODO: VPN implemented or not and if yes, how to get its data ?
-//TODO: How to get num of peers, bandwidth, uptime ??
-//TODO: How to get All data in peers screen ?

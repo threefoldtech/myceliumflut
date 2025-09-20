@@ -77,10 +77,23 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchPeerStatus();
-    // Refresh peer status every 5 seconds
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _fetchPeerStatus();
+    _startConditionalPolling();
+  }
+
+  void _startConditionalPolling() {
+    // Only start polling if mounted and Mycelium is connected
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
+      final nodeStatusAsync = ref.read(nodeStatusProvider);
+      nodeStatusAsync.whenData((status) {
+        if (mounted && status == NodeStatus.connected) {
+          _fetchPeerStatus();
+          _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+            if (mounted) _fetchPeerStatus();
+          });
+        }
+      });
     });
   }
 
@@ -91,29 +104,27 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
   }
 
   Future<void> _fetchPeerStatus() async {
+    if (!mounted) return;
+    
     try {
       final service = MyceliumService();
       final status = await service.getPeerStatus();
-      setState(() {
-        peerStatus = status;
-        peerStatusError = null;
-      });
-      print('Fetched ${status.length} peer statuses:');
-      for (final peer in status) {
-        print(
-            '  - Endpoint: ${peer.endpoint}, State: ${peer.connectionState}, Type: ${peer.peerType}');
-      }
-      print('Current peer list:');
-      for (final peer in widget.peers) {
-        print('  - Peer: $peer');
+      if (mounted) {
+        setState(() {
+          peerStatus = status;
+          peerStatusError = null;
+        });
       }
     } catch (e) {
-      // Don't show error when Mycelium is not running - this is expected
-      setState(() {
-        peerStatus = [];
-        peerStatusError = null;
-      });
-      print('Mycelium not running or error getting peer status: $e');
+      // Stop polling on errors to prevent spam
+      _refreshTimer?.cancel();
+      _refreshTimer = null;
+      if (mounted) {
+        setState(() {
+          peerStatus = [];
+          peerStatusError = null;
+        });
+      }
     }
   }
 
@@ -154,10 +165,7 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
     for (final peer in peerStatus) {
       totalRx += peer.rxBytes;
       totalTx += peer.txBytes;
-      print('Peer ${peer.endpoint}: RX=${peer.rxBytes} TX=${peer.txBytes}');
     }
-
-    print('Total network traffic: RX=$totalRx TX=$totalTx');
     return {
       'rx': peer_models.PeerStats.formatBytes(totalRx),
       'tx': peer_models.PeerStats.formatBytes(totalTx),
@@ -180,23 +188,16 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
         statusIp = statusIp.split(':')[0];
       }
 
-      print(
-          'Matching peer: "$peerIp" vs status: "$statusIp" (full endpoint: ${peer.endpoint}), status: ${peer.connectionState}');
-
       // Try exact match first
       if (peerIp == statusIp) {
-        print('✓ Found exact match for $peerAddress');
         return peer;
       }
 
       // Try matching the full peer address with the endpoint
       if (peerAddress == peer.endpoint) {
-        print('✓ Found full address match for $peerAddress');
         return peer;
       }
     }
-    print(
-        '✗ No match found for peer: $peerAddress in ${peerStatus.length} status entries');
     return null;
   }
 
@@ -440,12 +441,10 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
         (widget.peerStats!.connectionState == peer_models.ConnectionState.connected ||
          widget.peerStats!.connectionState == peer_models.ConnectionState.connecting)) {
       
-      print('Starting periodic ping for ${widget.ip}');
       
       // Initial ping after 2 seconds
       Timer(const Duration(seconds: 2), () {
         if (mounted) {
-          print('Performing initial ping for ${widget.ip}');
           _performPingTest(isAutomatic: true);
         }
       });
@@ -453,12 +452,10 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
       // Then ping every 30 seconds
       _periodicPingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
         if (mounted) {
-          print('Performing periodic ping for ${widget.ip}');
           _performPingTest(isAutomatic: true);
         }
       });
     } else {
-      print('Not starting periodic ping for ${widget.ip} - peer stats: ${widget.peerStats?.connectionState}');
     }
   }
 
@@ -566,7 +563,6 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                       builder: (context, ref, child) {
                         final locationAsync = ref.watch(peerLocationProvider(widget.ip));
                         
-                        print('Location widget for ${widget.ip}: $locationAsync');
                         
                         if (locationAsync != null && locationAsync.country != 'Unknown') {
                           final geoService = ref.read(geolocationServiceProvider);
