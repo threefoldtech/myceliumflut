@@ -56,7 +56,12 @@ class AppTheme {
             }
             return colorScheme.primary;
           }),
-          foregroundColor: MaterialStateProperty.all(Colors.white),
+          foregroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.disabled)) {
+              return colorScheme.onSurface.withOpacity(0.38);
+            }
+            return colorScheme.onPrimary;
+          }),
           minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
           shape: MaterialStateProperty.all(
             RoundedRectangleBorder(
@@ -136,7 +141,12 @@ class AppTheme {
             }
             return colorScheme.primary;
           }),
-          foregroundColor: MaterialStateProperty.all(Colors.white),
+          foregroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.disabled)) {
+              return colorScheme.onSurface.withOpacity(0.38);
+            }
+            return colorScheme.onPrimary;
+          }),
           minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
           shape: MaterialStateProperty.all(
             RoundedRectangleBorder(

@@ -7,7 +7,12 @@ class AppButton extends StatelessWidget {
   final bool isPrimary;
   final bool isLoading;
 
-  const AppButton({super.key, required this.label, this.onPressed, this.isPrimary = true, this.isLoading = false});
+  const AppButton(
+      {super.key,
+      required this.label,
+      this.onPressed,
+      this.isPrimary = true,
+      this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -15,18 +20,26 @@ class AppButton extends StatelessWidget {
         ? Theme.of(context).elevatedButtonTheme.style
         : ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.secondary,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.onSecondary,
             minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.md)),
           );
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: style,
       child: isLoading
-          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+          ? SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            )
           : Text(label),
     );
   }
 }
-
-

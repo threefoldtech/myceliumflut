@@ -65,7 +65,7 @@ class SettingsScreen extends ConsumerWidget {
                   icon: CircleAvatar(
                     radius: 14,
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     child: const Text('M',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
                   icon: CircleAvatar(
                     radius: 14,
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     child: const Icon(Icons.phone_android, size: 16),
                   ),
                   title: 'Mobile App',
@@ -98,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       child: const Icon(Icons.color_lens, size: 16),
                     ),
                     const SizedBox(width: 10),
@@ -124,7 +124,7 @@ class SettingsScreen extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: Colors.grey),
+                              ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                         ),
                       ],
                     ),
@@ -142,11 +142,11 @@ class SettingsScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '© 2024 Mycelium Network',
+                ' 2024 Mycelium Network',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: Colors.grey),
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
@@ -155,7 +155,7 @@ class SettingsScreen extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: Colors.grey),
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -194,7 +194,7 @@ class _InfoRowWithSubtitle extends StatelessWidget {
               Text(title, style: textTheme.bodyMedium),
               Text(
                 subtitle,
-                style: textTheme.bodySmall?.copyWith(color: Colors.grey),
+                style: textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
               ),
             ],
           ),

@@ -124,21 +124,87 @@ class _HeaderCard extends StatefulWidget {
   State<_HeaderCard> createState() => _HeaderCardState();
 }
 
-class _HeaderCardState extends State<_HeaderCard> {
+class _HeaderCardState extends State<_HeaderCard>
+    with TickerProviderStateMixin {
   bool _isLoading = false;
   bool _isSocks5Enabled = false;
+  late AnimationController _pulseController;
+  late AnimationController _rotationController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _rotationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _rotationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_HeaderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.status != widget.status) {
+      _updateAnimations();
+    }
+  }
+
+  void _updateAnimations() {
+    final isConnected = widget.status == NodeStatus.connected;
+    final isConnecting = _isLoading || widget.status == NodeStatus.connecting;
+
+    if (isConnecting) {
+      _rotationController.repeat();
+      _pulseController.stop();
+    } else if (isConnected) {
+      _rotationController.stop();
+      _pulseController.repeat(reverse: true);
+    } else {
+      _rotationController.stop();
+      _pulseController.stop();
+    }
+  }
 
   bool get isRestartVisible =>
       widget.status == NodeStatus.connected && !_isLoading;
 
   Future<void> startMycelium() async {
     setState(() => _isLoading = true);
+    _updateAnimations();
     await widget.onConnect();
     setState(() => _isLoading = false);
+    _updateAnimations();
   }
 
   Future<void> stopMycelium() async {
     setState(() => _isLoading = true);
+    _updateAnimations();
 
     // Stop proxy first if it's enabled
     if (_isSocks5Enabled) {
@@ -153,6 +219,7 @@ class _HeaderCardState extends State<_HeaderCard> {
 
     await widget.onDisconnect();
     setState(() => _isLoading = false);
+    _updateAnimations();
   }
 
   @override
@@ -164,14 +231,29 @@ class _HeaderCardState extends State<_HeaderCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            child: Icon(
-              isConnected ? Icons.wifi : Icons.wifi_off,
-              size: 32,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
+          AnimatedBuilder(
+            animation:
+                Listenable.merge([_pulseController, _rotationController]),
+            builder: (context, child) {
+              return Transform.scale(
+                scale: isConnected ? _pulseAnimation.value : 1.0,
+                child: Transform.rotate(
+                  angle: isConnecting
+                      ? _rotationAnimation.value * 2 * 3.14159
+                      : 0.0,
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(
+                      isConnected ? Icons.wifi : Icons.wifi_off,
+                      size: 32,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
@@ -205,13 +287,14 @@ class _HeaderCardState extends State<_HeaderCard> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).cardColor,
-                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   textStyle: const TextStyle(fontSize: 16),
+                  elevation: 0,
                 ),
                 child: const Text.rich(
                   TextSpan(
