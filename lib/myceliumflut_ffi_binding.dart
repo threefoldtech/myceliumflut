@@ -279,3 +279,111 @@ Future<List<String>> myFFProxyDisconnect() async {
   }
 }
 
+Future<List<String>> myFFStartProxyProbe() async {
+  final outPtr = calloc<Pointer<Pointer<Int8>>>();
+  final outLen = calloc<IntPtr>();
+
+  try {
+    var dylib = loadDll();
+    final ffStartProxyProbe = dylib
+        .lookup<NativeFunction<FuncRustGetPeerStatus>>('ff_start_proxy_probe')
+        .asFunction<FuncDartGetPeerStatus>();
+
+    ffStartProxyProbe(outPtr, outLen);
+
+    final length = outLen.value;
+    final ptr = outPtr.value;
+
+    final List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      final stringPtr = ptr.elementAt(i).value;
+      if (stringPtr != nullptr) {
+        result.add(stringPtr.cast<Utf8>().toDartString());
+      }
+    }
+
+    // Free the memory
+    final freePeerStatus = dylib
+        .lookup<NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+        .asFunction<FuncDartFreePeerStatus>();
+    freePeerStatus(ptr, length);
+
+    return result;
+  } finally {
+    calloc.free(outPtr);
+    calloc.free(outLen);
+  }
+}
+
+Future<List<String>> myFFStopProxyProbe() async {
+  final outPtr = calloc<Pointer<Pointer<Int8>>>();
+  final outLen = calloc<IntPtr>();
+
+  try {
+    var dylib = loadDll();
+    final ffStopProxyProbe = dylib
+        .lookup<NativeFunction<FuncRustGetPeerStatus>>('ff_stop_proxy_probe')
+        .asFunction<FuncDartGetPeerStatus>();
+
+    ffStopProxyProbe(outPtr, outLen);
+
+    final length = outLen.value;
+    final ptr = outPtr.value;
+
+    final List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      final stringPtr = ptr.elementAt(i).value;
+      if (stringPtr != nullptr) {
+        result.add(stringPtr.cast<Utf8>().toDartString());
+      }
+    }
+
+    // Free the memory
+    final freePeerStatus = dylib
+        .lookup<NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+        .asFunction<FuncDartFreePeerStatus>();
+    freePeerStatus(ptr, length);
+
+    return result;
+  } finally {
+    calloc.free(outPtr);
+    calloc.free(outLen);
+  }
+}
+
+Future<List<String>> myFFListProxies() async {
+  final outPtr = calloc<Pointer<Pointer<Int8>>>();
+  final outLen = calloc<IntPtr>();
+
+  try {
+    var dylib = loadDll();
+    final ffListProxies = dylib
+        .lookup<NativeFunction<FuncRustGetPeerStatus>>('ff_list_proxies')
+        .asFunction<FuncDartGetPeerStatus>();
+
+    ffListProxies(outPtr, outLen);
+
+    final length = outLen.value;
+    final ptr = outPtr.value;
+
+    final List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      final stringPtr = ptr.elementAt(i).value;
+      if (stringPtr != nullptr) {
+        result.add(stringPtr.cast<Utf8>().toDartString());
+      }
+    }
+
+    // Free the memory
+    final freePeerStatus = dylib
+        .lookup<NativeFunction<FuncRustFreePeerStatus>>('free_peer_status')
+        .asFunction<FuncDartFreePeerStatus>();
+    freePeerStatus(ptr, length);
+
+    return result;
+  } finally {
+    calloc.free(outPtr);
+    calloc.free(outLen);
+  }
+}
+

@@ -86,6 +86,30 @@ pub extern "C" fn ffi_proxy_disconnect() -> *mut c_char {
     CString::new(joined).unwrap().into_raw()
 }
 
+#[no_mangle]
+pub extern "C" fn ffi_start_proxy_probe() -> *mut c_char {
+    let result = start_proxy_probe();
+    let joined = result.join(",");
+
+    CString::new(joined).unwrap().into_raw()
+}
+
+#[no_mangle]
+pub extern "C" fn ffi_stop_proxy_probe() -> *mut c_char {
+    let result = stop_proxy_probe();
+    let joined = result.join(",");
+
+    CString::new(joined).unwrap().into_raw()
+}
+
+#[no_mangle]
+pub extern "C" fn ffi_list_proxies() -> *mut c_char {
+    let result = list_proxies();
+    let joined = result.join(",");
+
+    CString::new(joined).unwrap().into_raw()
+}
+
 /// Helper to free strings allocated by Rust
 #[no_mangle]
 pub extern "C" fn ffi_free_string(s: *mut c_char) {

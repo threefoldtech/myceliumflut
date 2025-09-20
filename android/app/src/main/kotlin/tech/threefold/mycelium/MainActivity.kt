@@ -18,6 +18,9 @@ import tech.threefold.mycelium.rust.uniffi.mycelmob.generateSecretKey
 import tech.threefold.mycelium.rust.uniffi.mycelmob.getPeerStatus
 import tech.threefold.mycelium.rust.uniffi.mycelmob.proxyConnect
 import tech.threefold.mycelium.rust.uniffi.mycelmob.proxyDisconnect
+import tech.threefold.mycelium.rust.uniffi.mycelmob.startProxyProbe
+import tech.threefold.mycelium.rust.uniffi.mycelmob.stopProxyProbe
+import tech.threefold.mycelium.rust.uniffi.mycelmob.listProxies
 
 private const val tag = "[Myceliumflut]"
 
@@ -25,9 +28,10 @@ class MainActivity: FlutterActivity() {
     private val channelName = "tech.threefold.mycelium/tun"
     private val vpnRequestCode = 0x0F
 
-    // these two variables are only used during VPN permission flow.
+    // these variables are only used during VPN permission flow.
     private var vpnPermissionPeers: List<String>? = null
     private var vpnPermissionSecretKey: ByteArray? = null
+    private var vpnPermissionSocksEnabled: Boolean = false
 
     private lateinit var channel : MethodChannel
 
@@ -50,8 +54,9 @@ class MainActivity: FlutterActivity() {
                 "startVpn" -> {
                     val peers = call.argument<List<String>>("peers")!!
                     val secretKey = call.argument<ByteArray>("secretKey")!!
-                    Log.d("tff", "peers = $peers")
-                    val started = startVpn(peers, secretKey)
+                    val socksEnabled = call.argument<Boolean>("socksEnabled") ?: false
+                    Log.d("tff", "peers = $peers, socksEnabled = $socksEnabled")
+                    val started = startVpn(peers, secretKey, socksEnabled)
                     result.success(started)
                 }
                 "stopVpn" -> {
@@ -87,6 +92,33 @@ class MainActivity: FlutterActivity() {
                         result.error("PROXY_DISCONNECT_ERROR", e.message, null)
                     }
                 }
+                "startProxyProbe" -> {
+                    try {
+                        val proxyResult = startProxyProbe()
+                        result.success(proxyResult)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Error in startProxyProbe: ${e.message}")
+                        result.error("START_PROXY_PROBE_ERROR", e.message, null)
+                    }
+                }
+                "stopProxyProbe" -> {
+                    try {
+                        val proxyResult = stopProxyProbe()
+                        result.success(proxyResult)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Error in stopProxyProbe: ${e.message}")
+                        result.error("STOP_PROXY_PROBE_ERROR", e.message, null)
+                    }
+                }
+                "listProxies" -> {
+                    try {
+                        val proxyResult = listProxies()
+                        result.success(proxyResult)
+                    } catch (e: Exception) {
+                        Log.e(tag, "Error in listProxies: ${e.message}")
+                        result.error("LIST_PROXIES_ERROR", e.message, null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -115,7 +147,7 @@ class MainActivity: FlutterActivity() {
         if (requestCode == vpnRequestCode) {
             if (resultCode == Activity.RESULT_OK) {
                 Log.i(tag, "VPN permission granted by the user")
-                startVpn(this.vpnPermissionPeers ?: emptyList(), this.vpnPermissionSecretKey ?: ByteArray(0))
+                startVpn(this.vpnPermissionPeers ?: emptyList(), this.vpnPermissionSecretKey ?: ByteArray(0), this.vpnPermissionSocksEnabled)
             } else {
                 // The user denied the VPN permission,
                 // TODO: handle this case as needed
@@ -125,19 +157,20 @@ class MainActivity: FlutterActivity() {
     }
     // checkAskVpnPermission will return true if we need to ask for permission,
     // false otherwise.
-    private fun checkAskVpnPermission(peers: List<String>, secretKey: ByteArray): Boolean{
+    private fun checkAskVpnPermission(peers: List<String>, secretKey: ByteArray, socksEnabled: Boolean): Boolean{
         val intent = VpnService.prepare(this)
         if (intent != null) {
             this.vpnPermissionPeers = peers
             this.vpnPermissionSecretKey = secretKey
+            this.vpnPermissionSocksEnabled = socksEnabled
             startActivityForResult(intent, vpnRequestCode)
             return true
         } else {
             return false
         }
     }
-    private fun startVpn(peers: List<String>, secretKey: ByteArray): Boolean {
-        if (checkAskVpnPermission(peers, secretKey)) {
+    private fun startVpn(peers: List<String>, secretKey: ByteArray, socksEnabled: Boolean = false): Boolean {
+        if (checkAskVpnPermission(peers, secretKey, socksEnabled)) {
             // need to ask for permission, so stop the flow here.
             // permission handler will be handled by onActivityResult function
             return false
@@ -146,6 +179,7 @@ class MainActivity: FlutterActivity() {
         val intent = Intent(this, TunService::class.java)
         intent.action = TunService.ACTION_START
         intent.putExtra("secret_key", secretKey)
+        intent.putExtra("socks_enabled", socksEnabled)
         intent.putStringArrayListExtra("peers", ArrayList(peers))
         startService(intent)
 

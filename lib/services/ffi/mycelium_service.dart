@@ -85,8 +85,11 @@ class MyceliumService {
     return null;
   }
 
-  Future<bool> start(List<String> peers) async {
-    print('MyceliumService: Starting with peers: $peers');
+  bool _socksEnabled = false;
+
+  Future<bool> start(List<String> peers, {bool socksEnabled = false}) async {
+    print('MyceliumService: Starting with peers: $peers, SOCKS: $socksEnabled');
+    _socksEnabled = socksEnabled;
     _status = NodeStatus.connecting;
     _statusController.add(_status);
     final cleaned = preprocessPeers(peers);
@@ -108,6 +111,7 @@ class MyceliumService {
         final result = await _platform.invokeMethod<bool>('startVpn', {
           'peers': cleaned,
           'secretKey': key,
+          'socksEnabled': socksEnabled,
         });
         print('MyceliumService: startVpn result: $result');
       }
@@ -122,6 +126,8 @@ class MyceliumService {
       return false;
     }
   }
+
+  bool get socksEnabled => _socksEnabled;
 
   Future<bool> stop() async {
     try {
@@ -199,6 +205,51 @@ class MyceliumService {
     } catch (e) {
       print("Failed to proxyDisconnect: $e");
       return ['Failed to disconnect proxy'];
+    }
+  }
+
+  Future<List<String>> startProxyProbe() async {
+    try {
+      if (isUseDylib()) {
+        return await myFFStartProxyProbe();
+      } else {
+        final result =
+            await _platform.invokeMethod<List<dynamic>>('startProxyProbe');
+        return result?.cast<String>() ?? [];
+      }
+    } catch (e) {
+      print("Failed to startProxyProbe: $e");
+      return ['Failed to start proxy probe'];
+    }
+  }
+
+  Future<List<String>> stopProxyProbe() async {
+    try {
+      if (isUseDylib()) {
+        return await myFFStopProxyProbe();
+      } else {
+        final result =
+            await _platform.invokeMethod<List<dynamic>>('stopProxyProbe');
+        return result?.cast<String>() ?? [];
+      }
+    } catch (e) {
+      print("Failed to stopProxyProbe: $e");
+      return ['Failed to stop proxy probe'];
+    }
+  }
+
+  Future<List<String>> listProxies() async {
+    try {
+      if (isUseDylib()) {
+        return await myFFListProxies();
+      } else {
+        final result =
+            await _platform.invokeMethod<List<dynamic>>('listProxies');
+        return result?.cast<String>() ?? [];
+      }
+    } catch (e) {
+      print("Failed to listProxies: $e");
+      return ['Failed to list proxies'];
     }
   }
 }

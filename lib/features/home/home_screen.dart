@@ -205,10 +205,18 @@ class _HeaderCardState extends State<_HeaderCard> {
                     onChanged: (value) async {
                       setState(() => _isSocks5Enabled = value);
                       if (value) {
-                        final result = await widget.service.proxyConnect('');
+                        // First start proxy probing to discover available proxies
+                        await widget.service.startProxyProbe();
+                        // Wait a bit for probes to discover proxies
+                        await Future.delayed(Duration(seconds: 10));
+                        // Then connect to best available proxy
+                        final result = await widget.service.proxyConnect(
+                            '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
                         debugPrint('Proxy connect result: $result');
                       } else {
                         final result = await widget.service.proxyDisconnect();
+                        // Stop proxy probing when disabled
+                        await widget.service.stopProxyProbe();
                         debugPrint('Proxy disconnect result: $result');
                       }
                     },

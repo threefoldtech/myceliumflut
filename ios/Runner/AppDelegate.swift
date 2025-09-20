@@ -85,6 +85,30 @@ import OSLog
                         debuglog("Error in proxyDisconnect: \(error.localizedDescription)")
                         result(FlutterError(code: "PROXY_DISCONNECT_ERROR", message: error.localizedDescription, details: nil))
                     }
+                case "startProxyProbe":
+                    do {
+                        let proxyResult = startProxyProbe()
+                        result(proxyResult)
+                    } catch {
+                        debuglog("Error in startProxyProbe: \(error.localizedDescription)")
+                        result(FlutterError(code: "START_PROXY_PROBE_ERROR", message: error.localizedDescription, details: nil))
+                    }
+                case "stopProxyProbe":
+                    do {
+                        let proxyResult = stopProxyProbe()
+                        result(proxyResult)
+                    } catch {
+                        debuglog("Error in stopProxyProbe: \(error.localizedDescription)")
+                        result(FlutterError(code: "STOP_PROXY_PROBE_ERROR", message: error.localizedDescription, details: nil))
+                    }
+                case "listProxies":
+                    do {
+                        let proxyResult = listProxies()
+                        result(proxyResult)
+                    } catch {
+                        debuglog("Error in listProxies: \(error.localizedDescription)")
+                        result(FlutterError(code: "LIST_PROXIES_ERROR", message: error.localizedDescription, details: nil))
+                    }
                 default:
                     result(FlutterMethodNotImplemented)
                 }
