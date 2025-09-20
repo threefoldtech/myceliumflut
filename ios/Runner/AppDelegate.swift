@@ -63,6 +63,13 @@ import OSLog
                 case "getPeerStatus":
                     let peerStatus = getPeerStatus()
                     result(peerStatus)
+                case "proxyConnect":
+                    if let args = call.arguments as? [String: Any],
+                        let remote = args["remote"] as? String {
+                        result(["connected_to_\(remote)"])
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect remote string", details: nil))
+                    }
                 default:
                     result(FlutterMethodNotImplemented)
                 }
