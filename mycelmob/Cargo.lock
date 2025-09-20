@@ -1526,10 +1526,10 @@ dependencies = [
 [[package]]
 name = "mobile"
 version = "0.1.0"
-source = "git+http://github.com/threefoldtech/mycelium?tag=v0.6.2#de90821caad51ebe6b353027a0971d496e6cd78e"
 dependencies = [
  "mycelium",
  "once_cell",
+ "serde_json",
  "thiserror 2.0.16",
  "tokio",
  "tracing",
@@ -1541,7 +1541,6 @@ dependencies = [
 [[package]]
 name = "mycelium"
 version = "0.6.2"
-source = "git+http://github.com/threefoldtech/mycelium?tag=v0.6.2#de90821caad51ebe6b353027a0971d496e6cd78e"
 dependencies = [
  "aes-gcm",
  "ahash 0.8.12",

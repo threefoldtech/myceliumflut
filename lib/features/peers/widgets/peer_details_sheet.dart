@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../state/mycelium_providers.dart';
+import '../../../services/ping_service.dart';
 
-class PeerDetailsSheet extends ConsumerWidget {
+class PeerDetailsSheet extends ConsumerStatefulWidget {
   final String ip;
   final String country;
   final String city;
@@ -21,7 +22,46 @@ class PeerDetailsSheet extends ConsumerWidget {
       this.isUserPeer = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PeerDetailsSheet> createState() => _PeerDetailsSheetState();
+}
+
+class _PeerDetailsSheetState extends ConsumerState<PeerDetailsSheet> {
+  PingResult? _pingResult;
+  bool _isPinging = false;
+
+  Future<void> _performPingTest() async {
+    setState(() {
+      _isPinging = true;
+      _pingResult = null;
+    });
+
+    try {
+      final pingService = ref.read(pingServiceProvider);
+      final result = await pingService.ping(widget.ip);
+      
+      if (mounted) {
+        setState(() {
+          _pingResult = result;
+          _isPinging = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _pingResult = PingResult(
+            host: widget.ip,
+            latencyMs: null,
+            success: false,
+            timestamp: DateTime.now(),
+          );
+          _isPinging = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final peersNotifier = ref.read(peersProvider.notifier);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -39,27 +79,74 @@ class PeerDetailsSheet extends ConsumerWidget {
             const CircleAvatar(radius: 16, child: Text('US')),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
-                child: Text(country,
+                child: Text(widget.country,
                     style: Theme.of(context).textTheme.titleMedium,
                     overflow: TextOverflow.ellipsis)),
             const SizedBox(width: AppSpacing.lg),
-            Text(latency, style: Theme.of(context).textTheme.labelMedium),
+            Text(_pingResult?.success == true 
+                ? '${_pingResult!.latencyMs}ms' 
+                : widget.latency, 
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: _pingResult?.success == true 
+                      ? (_pingResult!.latencyMs! < 50 
+                          ? AppColors.success 
+                          : _pingResult!.latencyMs! < 150 
+                              ? Colors.orange 
+                              : AppColors.error)
+                      : null,
+                )),
           ]),
           const SizedBox(height: AppSpacing.lg),
+          if (_pingResult != null) ...[
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: (_pingResult!.success ? AppColors.success : AppColors.error).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _pingResult!.success ? Icons.check_circle : Icons.error,
+                    color: _pingResult!.success ? AppColors.success : AppColors.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _pingResult!.success 
+                          ? 'Ping successful: ${_pingResult!.latencyMs}ms'
+                          : 'Ping failed: Host unreachable',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: _pingResult!.success ? AppColors.success : AppColors.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('Ping Test'),
+                  onPressed: _isPinging ? null : _performPingTest,
+                  child: _isPinging 
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Ping Test'),
                 ),
               ),
-              if (isUserPeer) ...[
+              if (widget.isUserPeer) ...[
                 const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: FilledButton.tonal(
                     onPressed: () async {
-                      await peersNotifier.removePeer(ip);
+                      await peersNotifier.removePeer(widget.ip);
                       if (context.mounted) {
                         Navigator.of(context).pop();
                       }

@@ -16,6 +16,65 @@ final nodeStatusProvider = StreamProvider<NodeStatus>((ref) {
   return ref.watch(myceliumServiceProvider).statusStream;
 });
 
+class UptimeNotifier extends StateNotifier<DateTime?> {
+  Timer? _timer;
+  
+  UptimeNotifier() : super(null);
+
+  void startUptime() {
+    if (state == null) {
+      state = DateTime.now();
+    }
+  }
+
+  void stopUptime() {
+    state = null;
+  }
+
+  Duration? get uptime {
+    if (state == null) return null;
+    return DateTime.now().difference(state!);
+  }
+
+  String get formattedUptime {
+    final duration = uptime;
+    if (duration == null) return '0s';
+    
+    if (duration.inDays > 0) {
+      return '${duration.inDays}d ${duration.inHours % 24}h';
+    } else if (duration.inHours > 0) {
+      return '${duration.inHours}h ${duration.inMinutes % 60}m';
+    } else if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}m ${duration.inSeconds % 60}s';
+    } else {
+      return '${duration.inSeconds}s';
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}
+
+final uptimeProvider = StateNotifierProvider<UptimeNotifier, DateTime?>((ref) {
+  final notifier = UptimeNotifier();
+  
+  // Listen to node status changes
+  ref.listen(nodeStatusProvider, (previous, next) {
+    next.whenData((status) {
+      if (status == NodeStatus.connected) {
+        notifier.startUptime();
+      } else {
+        notifier.stopUptime();
+      }
+    });
+  });
+  
+  return notifier;
+});
+
 class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
   final PeersService _service;
   final PeersRepository _repo;

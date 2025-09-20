@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:myceliumflut/features/home/home_screen.dart';
 import 'app/theme/app_theme.dart';
 import 'app/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,8 +12,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:flutter_window_close/flutter_window_close.dart';
-
 import 'myceliumflut_ffi_binding.dart';
+import 'services/peers_service.dart';
 
 final _logger = Logger('Mycelium');
 
@@ -151,12 +150,9 @@ class _MyAppState extends ConsumerState<MyApp> {
     privKey = await loadOrGeneratePrivKey(platform);
     peers = await loadPeers();
     if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
-      peers = [
-        'tcp://185.69.166.7:9651',
-        'tcp://188.40.132.242:9651',
-        'tcp://209.159.146.190:9651',
-        'tcp://5.223.43.251:9651'
-      ];
+      // Use PeersService to fetch peers from GitHub with fallback
+      final peersService = PeersService();
+      peers = await peersService.fetchPeers();
     }
     textEditController = TextEditingController(text: peers.join('\n'));
 

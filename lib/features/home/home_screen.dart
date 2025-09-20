@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-// import 'package:mycelmob/mycelmob.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/theme/tokens.dart';
+import '../../app/widgets/app_card.dart';
 import '../../app/widgets/app_scaffold.dart';
 import '../../app/widgets/app_button.dart';
-import '../../app/widgets/app_card.dart';
-import '../../app/theme/tokens.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/peer_models.dart' as peer_models;
+import '../../services/peers_service.dart';
 import '../../state/mycelium_providers.dart';
 import '../../services/ffi/mycelium_service.dart';
+import 'widgets/traffic_summary.dart';
+import '../../state/dynamic_traffic_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -15,6 +19,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(nodeStatusProvider);
     final service = ref.read(myceliumServiceProvider);
+    final peersAsync = ref.watch(peersProvider);
     final status = statusAsync.asData?.value ?? NodeStatus.disconnected;
 
     final buttonColor = Theme.of(context).colorScheme.primary;
@@ -51,12 +56,15 @@ class HomeScreen extends ConsumerWidget {
           _HeaderCard(
             status: status,
             onConnect: () async {
-              await service.start([
-                'tcp://185.69.166.7:9651',
-                'tcp://188.40.132.242:9651',
-                'tcp://209.159.146.190:9651',
-                'tcp://5.223.43.251:9651'
-              ]);
+              final peers = peersAsync.asData?.value ?? [];
+              if (peers.isNotEmpty) {
+                await service.start(peers);
+              } else {
+                // Fallback to PeersService if no peers available
+                final peersService = PeersService();
+                final fallbackPeers = await peersService.fetchPeers();
+                await service.start(fallbackPeers);
+              }
             },
             onDisconnect: () async {
               await service.stop();
@@ -65,6 +73,19 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xxl),
           const _StatsRow(),
+          const SizedBox(height: AppSpacing.xxl),
+          Consumer(
+            builder: (context, ref, child) {
+              final trafficStats = ref.watch(dynamicTrafficProvider);
+              
+              return TrafficSummary(
+                totalUpload: trafficStats.totalUploadFormatted,
+                totalDownload: trafficStats.totalDownloadFormatted,
+                peakUpload: trafficStats.peakUploadFormatted,
+                peakDownload: trafficStats.peakDownloadFormatted,
+              );
+            },
+          ),
           const SizedBox(height: AppSpacing.xxxl),
         ],
       ),
@@ -104,6 +125,18 @@ class _HeaderCardState extends State<_HeaderCard> {
 
   Future<void> stopMycelium() async {
     setState(() => _isLoading = true);
+    
+    // Stop proxy first if it's enabled
+    if (_isSocks5Enabled) {
+      try {
+        await widget.service.proxyDisconnect();
+        await widget.service.stopProxyProbe();
+        setState(() => _isSocks5Enabled = false);
+      } catch (e) {
+        print('Error stopping proxy: $e');
+      }
+    }
+    
     await widget.onDisconnect();
     setState(() => _isLoading = false);
   }
@@ -183,71 +216,146 @@ class _HeaderCardState extends State<_HeaderCard> {
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          AppCard(
-            margin: EdgeInsets.zero,
-            child: ExpansionTile(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Flexible(
-                    child: Text('Advanced Options',
-                        overflow: TextOverflow.ellipsis),
+          if (widget.status == NodeStatus.connected) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppCard(
+              margin: EdgeInsets.zero,
+              child: ExpansionTile(
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Flexible(
+                      child: Text('Advanced Options',
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    Icon(Icons.expand_more),
+                  ],
+                ),
+                children: [
+                  ListTile(
+                    title: const Text('Enable SOCKS5 tunneling as VPN'),
+                    trailing: Switch(
+                      value: _isSocks5Enabled,
+                      onChanged: (value) async {
+                        setState(() => _isSocks5Enabled = value);
+                        if (value) {
+                          // First start proxy probing to discover available proxies
+                          await widget.service.startProxyProbe();
+                          // Wait a bit for probes to discover proxies
+                          await Future.delayed(Duration(seconds: 10));
+                          // Then connect to best available proxy
+                          final result = await widget.service.proxyConnect(
+                              '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
+                          debugPrint('Proxy connect result: $result');
+                        } else {
+                          final result = await widget.service.proxyDisconnect();
+                          // Stop proxy probing when disabled
+                          await widget.service.stopProxyProbe();
+                          debugPrint('Proxy disconnect result: $result');
+                        }
+                      },
+                    ),
                   ),
-                  Icon(Icons.expand_more),
                 ],
               ),
-              children: [
-                ListTile(
-                  title: const Text('Enable SOCKS5 tunneling as VPN'),
-                  trailing: Switch(
-                    value: _isSocks5Enabled,
-                    onChanged: (value) async {
-                      setState(() => _isSocks5Enabled = value);
-                      if (value) {
-                        // First start proxy probing to discover available proxies
-                        await widget.service.startProxyProbe();
-                        // Wait a bit for probes to discover proxies
-                        await Future.delayed(Duration(seconds: 10));
-                        // Then connect to best available proxy
-                        final result = await widget.service.proxyConnect(
-                            '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
-                        debugPrint('Proxy connect result: $result');
-                      } else {
-                        final result = await widget.service.proxyDisconnect();
-                        // Stop proxy probing when disabled
-                        await widget.service.stopProxyProbe();
-                        debugPrint('Proxy disconnect result: $result');
-                      }
-                    },
-                  ),
-                ),
-              ],
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _StatsRow extends ConsumerWidget {
+class _StatsRow extends ConsumerStatefulWidget {
   const _StatsRow();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final peersAsync = ref.watch(peersProvider);
-    final peersCount =
-        peersAsync.maybeWhen(data: (list) => list.length, orElse: () => 0);
+  ConsumerState<_StatsRow> createState() => _StatsRowState();
+}
+
+class _StatsRowState extends ConsumerState<_StatsRow> {
+  List<peer_models.PeerStats> peerStatus = [];
+  Timer? _refreshTimer;
+  Timer? _uptimeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPeerStatus();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchPeerStatus();
+    });
+    _uptimeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      // Trigger rebuild to update uptime display
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _uptimeTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchPeerStatus() async {
+    try {
+      final service = MyceliumService();
+      final status = await service.getPeerStatus();
+      setState(() {
+        peerStatus = status;
+      });
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+
+  Map<String, String> _calculateNetworkTraffic() {
+    int totalRx = 0;
+    int totalTx = 0;
+
+    for (final peer in peerStatus) {
+      totalRx += peer.rxBytes;
+      totalTx += peer.txBytes;
+    }
+
+    final totalTraffic = totalRx + totalTx;
+    return {
+      'total': peer_models.PeerStats.formatBytes(totalTraffic),
+      'rx': peer_models.PeerStats.formatBytes(totalRx),
+      'tx': peer_models.PeerStats.formatBytes(totalTx),
+    };
+  }
+
+  int _getConnectedPeersCount() {
+    return peerStatus.where((peer) => 
+      peer.connectionState == peer_models.ConnectionState.connected
+    ).length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uptimeNotifier = ref.read(uptimeProvider.notifier);
+    final connectedPeers = _getConnectedPeersCount();
+    final networkTraffic = _calculateNetworkTraffic();
+    final uptime = uptimeNotifier.formattedUptime;
     Widget tileContent(IconData icon, String title, String value) => Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon),
             const SizedBox(height: AppSpacing.sm),
-            Text(title, style: Theme.of(context).textTheme.labelMedium),
+            Text(
+              title, 
+              style: Theme.of(context).textTheme.labelMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.xs),
-            Text(value, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              value, 
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
           ],
         );
 
@@ -259,7 +367,7 @@ class _StatsRow extends ConsumerWidget {
             child: AppCard(
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.people, 'Peers', '$peersCount'),
+              child: tileContent(Icons.people, 'Connected Peers', '$connectedPeers'),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -267,7 +375,7 @@ class _StatsRow extends ConsumerWidget {
             child: AppCard(
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.podcasts, 'Bandwidth', '2 MB/s'),
+              child: tileContent(Icons.podcasts, 'Total Traffic', networkTraffic['total'] ?? '0 B'),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -275,7 +383,7 @@ class _StatsRow extends ConsumerWidget {
             child: AppCard(
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: tileContent(Icons.access_time, 'Uptime', '2h 34m'),
+              child: tileContent(Icons.access_time, 'Uptime', uptime),
             ),
           ),
         ],

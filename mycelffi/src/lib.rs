@@ -1,4 +1,4 @@
-use mobile::{proxy_connect, proxy_disconnect, generate_secret_key, address_from_secret_key, start_mycelium, stop_mycelium, get_peer_status};
+use mobile::{generate_secret_key, address_from_secret_key, start_mycelium, stop_mycelium, get_peer_status};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
@@ -117,48 +117,5 @@ pub extern "C" fn free_peer_status(ptr: *mut *mut c_char, len: usize) {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn ff_proxy_connect(remote_str: *const c_char, out_ptr: *mut *mut *mut c_char, out_len: *mut usize) {
-    let c_str = unsafe { CStr::from_ptr(remote_str) };
-    let remote_string = c_str.to_string_lossy().into_owned();
-    let result = proxy_connect(remote_string);
-    let len = result.len();
-    
-    // Convert Vec<String> to Vec<*mut c_char>
-    let c_strings: Vec<*mut c_char> = result
-        .into_iter()
-        .map(|s| CString::new(s).unwrap().into_raw())
-        .collect();
-    
-    let ptr = c_strings.as_ptr() as *mut *mut c_char;
-    
-    // Transfer ownership to the caller
-    std::mem::forget(c_strings);
-    
-    unsafe {
-        *out_ptr = ptr;
-        *out_len = len;
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn ff_proxy_disconnect(out_ptr: *mut *mut *mut c_char, out_len: *mut usize) {
-    let result = proxy_disconnect();
-    let len = result.len();
-    
-    // Convert Vec<String> to Vec<*mut c_char>
-    let c_strings: Vec<*mut c_char> = result
-        .into_iter()
-        .map(|s| CString::new(s).unwrap().into_raw())
-        .collect();
-    
-    let ptr = c_strings.as_ptr() as *mut *mut c_char;
-    
-    // Transfer ownership to the caller
-    std::mem::forget(c_strings);
-    
-    unsafe {
-        *out_ptr = ptr;
-        *out_len = len;
-    }
-}
+// Note: Proxy functions are handled through the mobile uniffi bindings instead of FFI
+// These functions would require async runtime setup which is complex for FFI

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/peer_models.dart';
+import 'ffi/mycelium_service.dart';
 
 class PeersService {
   static const _url =
@@ -33,6 +35,27 @@ class PeersService {
     } catch (e) {
       print("error fetching peers: $e. Using fallback peers.");
       return _fallbackPeers;
+    }
+  }
+
+  Future<List<PeerStats>> fetchPeerStats() async {
+    try {
+      final service = MyceliumService();
+      final statusJson = await service.getStatus();
+      
+      if (statusJson == null || statusJson.isEmpty) {
+        return [];
+      }
+
+      final statusData = jsonDecode(statusJson);
+      final peersData = statusData['peers'] as List<dynamic>?;
+      
+      if (peersData == null) return [];
+
+      return peersData.map((peerJson) => PeerStats.fromJson(peerJson)).toList();
+    } catch (e) {
+      print("Error fetching peer stats: $e");
+      return [];
     }
   }
 }

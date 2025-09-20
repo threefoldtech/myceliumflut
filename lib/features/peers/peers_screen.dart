@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../app/widgets/app_scaffold.dart';
 import '../../app/widgets/app_card.dart';
@@ -7,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/mycelium_providers.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/ffi/mycelium_service.dart';
+import '../../models/peer_models.dart' as peer_models;
+import '../../services/ping_service.dart';
 
 class PeersScreen extends ConsumerWidget {
   const PeersScreen({super.key});
@@ -65,13 +68,25 @@ class _PeersDataScreen extends ConsumerStatefulWidget {
 
 class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
   String query = '';
-  List<String> peerStatus = [];
+  List<peer_models.PeerStats> peerStatus = [];
   String? peerStatusError;
+
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchPeerStatus();
+    // Refresh peer status every 5 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchPeerStatus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchPeerStatus() async {
@@ -82,7 +97,15 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
         peerStatus = status;
         peerStatusError = null;
       });
-      print('Peer status: $status');
+      print('Fetched ${status.length} peer statuses:');
+      for (final peer in status) {
+        print(
+            '  - Endpoint: ${peer.endpoint}, State: ${peer.connectionState}, Type: ${peer.peerType}');
+      }
+      print('Current peer list:');
+      for (final peer in widget.peers) {
+        print('  - Peer: $peer');
+      }
     } catch (e) {
       setState(() {
         peerStatusError = e.toString();
@@ -91,15 +114,108 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
     }
   }
 
+  // Calculate peer summary statistics
+  Map<String, int> _calculatePeerSummary() {
+    int connected = 0;
+    int slow = 0;
+    int down = 0;
+
+    for (final peer in peerStatus) {
+      switch (peer.connectionState) {
+        case peer_models.ConnectionState.connected:
+          connected++;
+          break;
+        case peer_models.ConnectionState.connecting:
+          slow++;
+          break;
+        case peer_models.ConnectionState.disconnected:
+        case peer_models.ConnectionState.failed:
+        case peer_models.ConnectionState.unknown:
+          down++;
+          break;
+      }
+    }
+
+    return {
+      'connected': connected,
+      'slow': slow,
+      'down': down,
+    };
+  }
+
+  // Calculate total network traffic
+  Map<String, String> _calculateNetworkTraffic() {
+    int totalRx = 0;
+    int totalTx = 0;
+
+    for (final peer in peerStatus) {
+      totalRx += peer.rxBytes;
+      totalTx += peer.txBytes;
+      print('Peer ${peer.endpoint}: RX=${peer.rxBytes} TX=${peer.txBytes}');
+    }
+
+    print('Total network traffic: RX=$totalRx TX=$totalTx');
+    return {
+      'rx': peer_models.PeerStats.formatBytes(totalRx),
+      'tx': peer_models.PeerStats.formatBytes(totalTx),
+    };
+  }
+
+  // Find peer status for a given peer address
+  peer_models.PeerStats? _findPeerStatus(String peerAddress) {
+    for (final peer in peerStatus) {
+      // Extract IP from peer address (remove tcp:// and port)
+      final peerIp = peerAddress.replaceAll('tcp://', '').split(':')[0];
+
+      // Handle different endpoint formats from Rust
+      String statusIp = peer.endpoint;
+      if (statusIp.contains('://')) {
+        // Format: tcp://ip:port or quic://ip:port
+        statusIp = statusIp.split('://')[1].split(':')[0];
+      } else if (statusIp.contains(':')) {
+        // Format: ip:port
+        statusIp = statusIp.split(':')[0];
+      }
+
+      print(
+          'Matching peer: "$peerIp" vs status: "$statusIp" (full endpoint: ${peer.endpoint}), status: ${peer.connectionState}');
+
+      // Try exact match first
+      if (peerIp == statusIp) {
+        print('✓ Found exact match for $peerAddress');
+        return peer;
+      }
+
+      // Try matching the full peer address with the endpoint
+      if (peerAddress == peer.endpoint) {
+        print('✓ Found full address match for $peerAddress');
+        return peer;
+      }
+    }
+    print(
+        '✗ No match found for peer: $peerAddress in ${peerStatus.length} status entries');
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final peersNotifier = ref.read(peersProvider.notifier);
     final userPeers = peersNotifier.userPeers;
+    final nodeStatusAsync = ref.watch(nodeStatusProvider);
+    final isMyceliumRunning = nodeStatusAsync.when(
+      data: (status) => status == NodeStatus.connected,
+      loading: () => false,
+      error: (_, __) => false,
+    );
+
     final filtered = query.isEmpty
         ? widget.peers
         : widget.peers
             .where((p) => p.toLowerCase().contains(query.toLowerCase()))
             .toList();
+
+    final peerSummary = _calculatePeerSummary();
+    final networkTraffic = _calculateNetworkTraffic();
     return AppScaffold(
       title: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(
@@ -130,6 +246,7 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
           _SearchAddBar(
             onChanged: (v) => setState(() => query = v),
             onAdd: () => _showAddPeerDialog(context, ref),
+            isDisabled: isMyceliumRunning,
           ),
           const SizedBox(height: AppSpacing.md),
           if (filtered.isEmpty)
@@ -144,11 +261,13 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
               itemBuilder: (_, index) {
                 final p = filtered[index];
                 final isUserPeer = userPeers.contains(p);
+                final peerStat = _findPeerStatus(p);
                 return _PeerTile(
                   ip: p,
                   country: "Unknown",
-                  health: 0.8,
                   isUserPeer: isUserPeer,
+                  peerStats: peerStat,
+                  isDisabled: isMyceliumRunning,
                 );
               },
             ),
@@ -170,13 +289,19 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     _SummaryItem(
-                        label: '5', subtitle: 'Usable', color: Colors.green),
+                        label: '${peerSummary['connected']}',
+                        subtitle: 'Connected',
+                        color: Colors.green),
                     _SummaryItem(
-                        label: '2', subtitle: 'Slow', color: Colors.orange),
+                        label: '${peerSummary['slow']}',
+                        subtitle: 'Connecting',
+                        color: Colors.orange),
                     _SummaryItem(
-                        label: '1', subtitle: 'Down', color: Colors.red),
+                        label: '${peerSummary['down']}',
+                        subtitle: 'Down',
+                        color: Colors.red),
                   ],
                 ),
               ],
@@ -184,20 +309,10 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           if (peerStatusError != null)
-            Text('Error getting peer status: $peerStatusError',
-                style: TextStyle(color: Colors.red)),
-          if (peerStatus.isNotEmpty)
             AppCard(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Peer Status:',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.sm),
-                  ...peerStatus.map((status) => Text(status)).toList(),
-                ],
-              ),
+              child: Text('Error getting peer status: $peerStatusError',
+                  style: TextStyle(color: Colors.red)),
             ),
           const SizedBox(height: AppSpacing.md),
           AppCard(
@@ -217,10 +332,13 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    _SummaryItem(label: '10.5 MB/s', subtitle: 'Total Upload'),
+                  children: [
                     _SummaryItem(
-                        label: '20.5 MB/s', subtitle: 'Total Download'),
+                        label: networkTraffic['rx'] ?? '0 B',
+                        subtitle: 'Total Download'),
+                    _SummaryItem(
+                        label: networkTraffic['tx'] ?? '0 B',
+                        subtitle: 'Total Upload'),
                   ],
                 ),
               ],
@@ -235,7 +353,9 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
 class _SearchAddBar extends ConsumerWidget {
   final VoidCallback onAdd;
   final ValueChanged<String>? onChanged;
-  const _SearchAddBar({required this.onAdd, this.onChanged});
+  final bool isDisabled;
+  const _SearchAddBar(
+      {required this.onAdd, this.onChanged, this.isDisabled = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -247,34 +367,164 @@ class _SearchAddBar extends ConsumerWidget {
               hintText: 'Search peers',
               prefixIcon: const Icon(Icons.search),
             ),
-            onChanged: onChanged,
+            onChanged: isDisabled ? null : onChanged,
+            enabled: !isDisabled,
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
         FilledButton.icon(
-          onPressed: () => _showAddPeerDialog(context, ref),
+          onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
           icon: const Icon(Icons.add),
-          label: const Text('Add Peer'),
+          label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
         ),
       ],
     );
   }
 }
 
-class _PeerTile extends StatelessWidget {
+class _PeerTile extends ConsumerStatefulWidget {
   final String ip;
   final String country;
-  final double health;
   final bool isUserPeer;
+  final peer_models.PeerStats? peerStats;
+  final bool isDisabled;
 
   const _PeerTile(
       {required this.ip,
       required this.country,
-      required this.health,
-      required this.isUserPeer});
+      required this.isUserPeer,
+      this.peerStats,
+      this.isDisabled = false});
+
+  @override
+  ConsumerState<_PeerTile> createState() => _PeerTileState();
+}
+
+class _PeerTileState extends ConsumerState<_PeerTile> {
+  PingResult? _pingResult;
+  bool _isPinging = false;
+  Timer? _periodicPingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start periodic ping for connected/connecting peers after a short delay
+    // to ensure widget is fully built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPeriodicPing();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_PeerTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Restart periodic ping if peer status changed
+    if (oldWidget.peerStats?.connectionState != widget.peerStats?.connectionState) {
+      _periodicPingTimer?.cancel();
+      _startPeriodicPing();
+    }
+  }
+
+  @override
+  void dispose() {
+    _periodicPingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicPing() {
+    // Only start periodic ping if peer is connected or connecting
+    if (widget.peerStats != null &&
+        (widget.peerStats!.connectionState == peer_models.ConnectionState.connected ||
+         widget.peerStats!.connectionState == peer_models.ConnectionState.connecting)) {
+      
+      print('Starting periodic ping for ${widget.ip}');
+      
+      // Initial ping after 2 seconds
+      Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          print('Performing initial ping for ${widget.ip}');
+          _performPingTest(isAutomatic: true);
+        }
+      });
+      
+      // Then ping every 30 seconds
+      _periodicPingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        if (mounted) {
+          print('Performing periodic ping for ${widget.ip}');
+          _performPingTest(isAutomatic: true);
+        }
+      });
+    } else {
+      print('Not starting periodic ping for ${widget.ip} - peer stats: ${widget.peerStats?.connectionState}');
+    }
+  }
+
+  Future<void> _performPingTest({bool isAutomatic = false}) async {
+    if (!mounted) return;
+
+    // Don't show loading indicator for automatic pings
+    if (!isAutomatic) {
+      setState(() {
+        _isPinging = true;
+        _pingResult = null;
+      });
+    }
+
+    try {
+      final pingService = ref.read(pingServiceProvider);
+      final pingResult = await pingService.ping(widget.ip);
+
+      if (mounted) {
+        setState(() {
+          _pingResult = pingResult;
+          _isPinging = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _pingResult = PingResult(
+            host: widget.ip,
+            latencyMs: null,
+            success: false,
+            timestamp: DateTime.now(),
+          );
+          _isPinging = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Determine connection status and color
+    Color connectionColor = Colors.grey;
+    String connectionStatus = 'Unknown';
+    if (widget.peerStats != null) {
+      switch (widget.peerStats!.connectionState) {
+        case peer_models.ConnectionState.connected:
+          connectionColor = Colors.green;
+          connectionStatus = 'Connected';
+          break;
+        case peer_models.ConnectionState.connecting:
+          connectionColor = Colors.orange;
+          connectionStatus = 'Connecting';
+          break;
+        case peer_models.ConnectionState.disconnected:
+          connectionColor = Colors.grey;
+          connectionStatus = 'Disconnected';
+          break;
+        case peer_models.ConnectionState.failed:
+          connectionColor = Colors.red;
+          connectionStatus = 'Failed';
+          break;
+        case peer_models.ConnectionState.unknown:
+          connectionColor = Colors.grey;
+          connectionStatus = 'Unknown';
+          break;
+      }
+    }
+
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -282,68 +532,210 @@ class _PeerTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                child: Text(
-                  country.isNotEmpty
-                      ? country.substring(0, 2).toUpperCase()
-                      : "??",
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: connectionColor,
+                  shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ip,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      widget.ip.replaceAll('tcp://', ''),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      country,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Text(
+                          connectionStatus,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: connectionColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
+              // Add ping button when Mycelium is running (enabled for connecting and connected peers)
+              if (widget.peerStats != null &&
+                  (widget.peerStats!.connectionState ==
+                          peer_models.ConnectionState.connected ||
+                      widget.peerStats!.connectionState ==
+                          peer_models.ConnectionState.connecting)) ...[
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.3),
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: _isPinging
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            Icons.speed,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    onPressed: _isPinging ? null : _performPingTest,
+                    tooltip: 'Test ping',
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
               IconButton(
                 icon: const Icon(Icons.more_horiz),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    showDragHandle: true,
-                    builder: (_) => PeerDetailsSheet(
-                      country: country,
-                      ip: ip,
-                      city: "",
-                      latency: "",
-                      status: "",
-                      isUserPeer: isUserPeer,
-                    ),
-                  );
-                },
+                onPressed: widget.isDisabled
+                    ? null
+                    : () {
+                        showModalBottomSheet(
+                          context: context,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          showDragHandle: true,
+                          builder: (_) => PeerDetailsSheet(
+                            country: widget.country,
+                            ip: widget.ip,
+                            city: "",
+                            latency: "",
+                            status: connectionStatus,
+                            isUserPeer: widget.isUserPeer,
+                          ),
+                        );
+                      },
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              minHeight: 6,
-              value: health,
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                health > 0.7
-                    ? Colors.green
-                    : (health > 0.3 ? Colors.orange : Colors.red),
-              ),
+          if (widget.peerStats != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'RX: ${widget.peerStats!.formattedRxBytes}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            'TX: ${widget.peerStats!.formattedTxBytes}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Discovered: ${widget.peerStats!.formattedDiscovered}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          if (widget.peerStats!.lastConnectedSeconds != null)
+                            Text(
+                              'Last Connected: ${widget.peerStats!.formattedLastConnected}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (_pingResult != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _pingResult!.success
+                          ? (_pingResult!.latencyMs! < 50
+                              ? AppColors.success.withOpacity(0.1)
+                              : _pingResult!.latencyMs! < 150
+                                  ? Colors.orange.withOpacity(0.1)
+                                  : AppColors.error.withOpacity(0.1))
+                          : AppColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: _pingResult!.success
+                            ? (_pingResult!.latencyMs! < 50
+                                ? AppColors.success.withOpacity(0.3)
+                                : _pingResult!.latencyMs! < 150
+                                    ? Colors.orange.withOpacity(0.3)
+                                    : AppColors.error.withOpacity(0.3))
+                            : AppColors.error.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _pingResult!.success
+                              ? Icons.check_circle
+                              : Icons.error,
+                          size: 14,
+                          color: _pingResult!.success
+                              ? (_pingResult!.latencyMs! < 50
+                                  ? AppColors.success
+                                  : _pingResult!.latencyMs! < 150
+                                      ? Colors.orange
+                                      : AppColors.error)
+                              : AppColors.error,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          _pingResult!.success
+                              ? 'Ping: ${_pingResult!.latencyMs}ms'
+                              : 'Ping: Failed',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _pingResult!.success
+                                        ? (_pingResult!.latencyMs! < 50
+                                            ? AppColors.success
+                                            : _pingResult!.latencyMs! < 150
+                                                ? Colors.orange
+                                                : AppColors.error)
+                                        : AppColors.error,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
+          ],
         ],
       ),
     );

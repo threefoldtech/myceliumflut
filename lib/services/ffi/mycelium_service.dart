@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../myceliumflut_ffi_binding.dart';
+import '../../models/peer_models.dart';
 
 enum NodeStatus { disconnected, connecting, connected, failed }
 
@@ -89,6 +91,7 @@ class MyceliumService {
 
   Future<bool> start(List<String> peers, {bool socksEnabled = false}) async {
     print('MyceliumService: Starting with peers: $peers, SOCKS: $socksEnabled');
+    print('MyceliumService: Platform check - isUseDylib(): ${isUseDylib()}');
     _socksEnabled = socksEnabled;
     _status = NodeStatus.connecting;
     _statusController.add(_status);
@@ -106,14 +109,22 @@ class MyceliumService {
     print('MyceliumService: Loaded key, starting VPN...');
     try {
       if (isUseDylib()) {
+        print('MyceliumService: Using FFI dylib');
         await myFFStartMycelium(cleaned, key);
       } else {
+        print('MyceliumService: Using platform channel');
         final result = await _platform.invokeMethod<bool>('startVpn', {
           'peers': cleaned,
           'secretKey': key,
           'socksEnabled': socksEnabled,
         });
         print('MyceliumService: startVpn result: $result');
+        if (result != true) {
+          print('MyceliumService: Platform channel returned false');
+          _status = NodeStatus.failed;
+          _statusController.add(_status);
+          return false;
+        }
       }
       _status = NodeStatus.connected;
       _statusController.add(_status);
@@ -149,26 +160,85 @@ class MyceliumService {
     }
   }
 
-  Future<List<String>> getPeerStatus() async {
+  Future<List<PeerStats>> getPeerStatus() async {
     try {
-      List<String> peerStatus;
+      List<String> peerStatusStrings;
       if (isUseDylib()) {
         // Windows platform - use FFI
-        peerStatus = await myFFGetPeerStatus();
+        peerStatusStrings = await myFFGetPeerStatus();
       } else {
         // Android/iOS platform - use platform channel
         final result =
             await _platform.invokeMethod<List<dynamic>>('getPeerStatus');
-        peerStatus = result?.cast<String>() ?? [];
+        peerStatusStrings = result?.cast<String>() ?? [];
       }
+      
       // Filter out the first element if it's "ok" (status indicator)
-      if (peerStatus.isNotEmpty && peerStatus[0] == "ok") {
-        peerStatus = peerStatus.sublist(1);
+      if (peerStatusStrings.isNotEmpty && peerStatusStrings[0] == "ok") {
+        peerStatusStrings = peerStatusStrings.sublist(1);
       }
 
-      return peerStatus;
+      // Parse JSON strings into PeerStats objects
+      List<PeerStats> peerStats = [];
+      for (String jsonString in peerStatusStrings) {
+        try {
+          final Map<String, dynamic> json = jsonDecode(jsonString);
+          peerStats.add(PeerStats.fromJson(json));
+        } catch (e) {
+          print('Failed to parse peer JSON: $jsonString, error: $e');
+          // Skip malformed entries
+        }
+      }
+
+      return peerStats;
     } catch (e) {
       throw Exception("Failed to get peer status: $e");
+    }
+  }
+
+  /// Get peer status as simple strings (backward compatibility)
+  Future<List<String>> getPeerStatusStrings() async {
+    try {
+      final peerStats = await getPeerStatus();
+      return peerStats.map((peer) => peer.toString()).toList();
+    } catch (e) {
+      throw Exception("Failed to get peer status strings: $e");
+    }
+  }
+
+  /// Get node status as JSON string
+  Future<String?> getStatus() async {
+    try {
+      if (isUseDylib()) {
+        // Use existing peer status method for now
+        final peerStats = await getPeerStatus();
+        final statusMap = {
+          'peers': peerStats.map((p) => p.toJson()).toList(),
+          'status': _status.toString(),
+        };
+        return jsonEncode(statusMap);
+      } else {
+        // For mobile platforms, use getPeerStatus as fallback since getStatus isn't implemented
+        try {
+          final peerStats = await getPeerStatus();
+          final statusMap = {
+            'peers': peerStats.map((p) => p.toJson()).toList(),
+            'status': _status.toString(),
+          };
+          return jsonEncode(statusMap);
+        } catch (e) {
+          print("Failed to get peer status for mobile fallback: $e");
+          // Return minimal status if peer status also fails
+          final statusMap = {
+            'peers': <Map<String, dynamic>>[],
+            'status': _status.toString(),
+          };
+          return jsonEncode(statusMap);
+        }
+      }
+    } catch (e) {
+      print("Failed to get status: $e");
+      return null;
     }
   }
 
