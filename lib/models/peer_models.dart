@@ -1,3 +1,5 @@
+import '../services/geolocation_service.dart';
+
 /// Enum representing the type of peer connection
 enum PeerType {
   static,
@@ -97,6 +99,9 @@ class PeerStats {
   
   /// Time since last successful connection (in seconds), null if never connected
   final int? lastConnectedSeconds;
+  
+  /// Location information for this peer (country, city, etc.)
+  final LocationInfo? locationInfo;
 
   const PeerStats({
     required this.protocol,
@@ -107,6 +112,7 @@ class PeerStats {
     required this.txBytes,
     required this.discoveredSeconds,
     this.lastConnectedSeconds,
+    this.locationInfo,
   });
 
   /// Create PeerStats from a JSON map
@@ -134,6 +140,7 @@ class PeerStats {
       'txBytes': txBytes,
       'discoveredSeconds': discoveredSeconds,
       'lastConnectedSeconds': lastConnectedSeconds,
+      // Note: locationInfo is not serialized as it's fetched separately
     };
   }
 

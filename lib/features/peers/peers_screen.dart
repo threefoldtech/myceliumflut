@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../services/ffi/mycelium_service.dart';
 import '../../models/peer_models.dart' as peer_models;
 import '../../services/ping_service.dart';
+import '../../state/geolocation_providers.dart';
 
 class PeersScreen extends ConsumerWidget {
   const PeersScreen({super.key});
@@ -107,10 +108,12 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
         print('  - Peer: $peer');
       }
     } catch (e) {
+      // Don't show error when Mycelium is not running - this is expected
       setState(() {
-        peerStatusError = e.toString();
+        peerStatus = [];
+        peerStatusError = null;
       });
-      print('Error getting peer status: $e');
+      print('Mycelium not running or error getting peer status: $e');
     }
   }
 
@@ -511,7 +514,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
           connectionStatus = 'Connecting';
           break;
         case peer_models.ConnectionState.disconnected:
-          connectionColor = Colors.grey;
+          connectionColor = Colors.red;
           connectionStatus = 'Disconnected';
           break;
         case peer_models.ConnectionState.failed:
@@ -545,12 +548,78 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.ip.replaceAll('tcp://', ''),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.ip.replaceAll('tcp://', ''),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                    // Location info row
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final locationAsync = ref.watch(peerLocationProvider(widget.ip));
+                        
+                        print('Location widget for ${widget.ip}: $locationAsync');
+                        
+                        if (locationAsync != null && locationAsync.country != 'Unknown') {
+                          final geoService = ref.read(geolocationServiceProvider);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Row(
+                              children: [
+                                Text(
+                                  geoService.getFlagEmoji(locationAsync.countryCode),
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    locationAsync.city.isNotEmpty 
+                                        ? '${locationAsync.country} • ${locationAsync.city}'
+                                        : locationAsync.country,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        // Show loading indicator while fetching
+                        if (locationAsync == null) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Row(
+                              children: [
+                                const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Loading location...',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        return const SizedBox.shrink();
+                      },
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Row(
