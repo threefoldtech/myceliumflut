@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'mycelium_providers.dart';
+import '../services/ffi/mycelium_service.dart';
 
 class TrafficStats {
   final int totalUploadBytes;
@@ -66,8 +67,15 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
 
   Future<void> _updateTrafficStats() async {
     try {
-      final peersService = _ref.read(peersServiceProvider);
-      final peerStats = await peersService.fetchPeerStats();
+      // Check if Mycelium is connected before fetching stats
+      final nodeStatusAsync = _ref.read(nodeStatusProvider);
+      final nodeStatus = nodeStatusAsync.asData?.value;
+
+      if (nodeStatus != NodeStatus.connected) return;
+
+      // Use MyceliumService directly to get peer stats like the home screen does
+      final myceliumService = _ref.read(myceliumServiceProvider);
+      final peerStats = await myceliumService.getPeerStatus();
 
       if (peerStats.isEmpty) return;
 
@@ -81,17 +89,22 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
       }
 
       // Calculate rates (bytes per second over 2-second interval)
-      final rxRate = ((totalRx - _previousTotalRx) / 2).round();
-      final txRate = ((totalTx - _previousTotalTx) / 2).round();
+      final rxRate = _previousTotalRx > 0 ? ((totalRx - _previousTotalRx) / 2).round() : 0;
+      final txRate = _previousTotalTx > 0 ? ((totalTx - _previousTotalTx) / 2).round() : 0;
 
       // Update peak rates
       if (rxRate > _maxRxRate) _maxRxRate = rxRate;
       if (txRate > _maxTxRate) _maxTxRate = txRate;
 
-      // Update state
+      // Accumulate total traffic instead of replacing it
+      final currentState = state;
+      final newTotalUpload = currentState.totalUploadBytes + (totalTx - _previousTotalTx).abs();
+      final newTotalDownload = currentState.totalDownloadBytes + (totalRx - _previousTotalRx).abs();
+
+      // Update state with accumulated totals
       state = TrafficStats(
-        totalUploadBytes: totalTx,
-        totalDownloadBytes: totalRx,
+        totalUploadBytes: _previousTotalTx == 0 ? totalTx : newTotalUpload,
+        totalDownloadBytes: _previousTotalRx == 0 ? totalRx : newTotalDownload,
         peakUploadBytesPerSec: _maxTxRate,
         peakDownloadBytesPerSec: _maxRxRate,
         lastUpdated: DateTime.now(),

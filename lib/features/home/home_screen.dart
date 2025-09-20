@@ -87,7 +87,7 @@ class HomeScreen extends ConsumerWidget {
               return Consumer(
                 builder: (context, ref, child) {
                   final trafficStats = ref.watch(dynamicTrafficProvider);
-                  
+
                   return TrafficSummary(
                     totalUpload: trafficStats.totalUploadFormatted,
                     totalDownload: trafficStats.totalDownloadFormatted,
@@ -139,7 +139,7 @@ class _HeaderCardState extends State<_HeaderCard> {
 
   Future<void> stopMycelium() async {
     setState(() => _isLoading = true);
-    
+
     // Stop proxy first if it's enabled
     if (_isSocks5Enabled) {
       try {
@@ -150,7 +150,7 @@ class _HeaderCardState extends State<_HeaderCard> {
         print('Error stopping proxy: $e');
       }
     }
-    
+
     await widget.onDisconnect();
     setState(() => _isLoading = false);
   }
@@ -287,7 +287,7 @@ class _StatsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nodeStatusAsync = ref.watch(nodeStatusProvider);
     final uptimeNotifier = ref.watch(uptimeProvider.notifier);
-    
+
     return nodeStatusAsync.when(
       loading: () => _buildStatsCards(context, [], uptimeNotifier),
       error: (error, stack) => _buildStatsCards(context, [], uptimeNotifier),
@@ -301,19 +301,21 @@ class _StatsRow extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsCards(BuildContext context, List<peer_models.PeerStats> peerStatus, UptimeNotifier uptimeNotifier) {
+  Widget _buildStatsCards(BuildContext context,
+      List<peer_models.PeerStats> peerStatus, UptimeNotifier uptimeNotifier) {
     final networkTraffic = _calculateNetworkTraffic(peerStatus);
-    
+
     return Row(
       children: [
         Expanded(
           child: AppCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Connected Peers',
                   style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -321,6 +323,7 @@ class _StatsRow extends ConsumerWidget {
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -330,11 +333,12 @@ class _StatsRow extends ConsumerWidget {
         Expanded(
           child: AppCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Uptime',
                   style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -342,6 +346,7 @@ class _StatsRow extends ConsumerWidget {
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -351,18 +356,20 @@ class _StatsRow extends ConsumerWidget {
         Expanded(
           child: AppCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Traffic',
                   style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '↓${networkTraffic['rx']} ↑${networkTraffic['tx']}',
+                  networkTraffic['total'] ?? '0 B',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -372,7 +379,8 @@ class _StatsRow extends ConsumerWidget {
     );
   }
 
-  Map<String, String> _calculateNetworkTraffic(List<peer_models.PeerStats> peerStatus) {
+  Map<String, String> _calculateNetworkTraffic(
+      List<peer_models.PeerStats> peerStatus) {
     int totalRx = 0;
     int totalTx = 0;
 
@@ -380,16 +388,18 @@ class _StatsRow extends ConsumerWidget {
       totalRx += peer.rxBytes;
       totalTx += peer.txBytes;
     }
+    final totalTraffic = totalRx + totalTx;
     return {
       'rx': peer_models.PeerStats.formatBytes(totalRx),
       'tx': peer_models.PeerStats.formatBytes(totalTx),
+      'total': peer_models.PeerStats.formatBytes(totalTraffic),
     };
   }
 }
 
 class _ConnectedStatsRow extends ConsumerStatefulWidget {
   final UptimeNotifier uptimeNotifier;
-  
+
   const _ConnectedStatsRow({required this.uptimeNotifier});
 
   @override
@@ -434,26 +444,28 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
   }
 
   int _getConnectedPeersCount() {
-    return peerStatus.where((peer) => 
-      peer.connectionState == peer_models.ConnectionState.connected
-    ).length;
+    return peerStatus
+        .where((peer) =>
+            peer.connectionState == peer_models.ConnectionState.connected)
+        .length;
   }
 
   @override
   Widget build(BuildContext context) {
     final networkTraffic = _calculateNetworkTraffic();
     final connectedCount = _getConnectedPeersCount();
-    
+
     return Row(
       children: [
         Expanded(
           child: AppCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Connected Peers',
                   style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -461,6 +473,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -470,11 +483,12 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
         Expanded(
           child: AppCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Uptime',
                   style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -482,6 +496,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -491,18 +506,20 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
         Expanded(
           child: AppCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Traffic',
                   style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '↓${networkTraffic['rx']} ↑${networkTraffic['tx']}',
+                  networkTraffic['total'] ?? '0 B',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -528,5 +545,4 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
       'tx': peer_models.PeerStats.formatBytes(totalTx),
     };
   }
-
 }
