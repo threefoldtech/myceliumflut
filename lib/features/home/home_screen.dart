@@ -278,6 +278,8 @@ class _HeaderCardState extends State<_HeaderCard>
             label: isConnected ? 'Stop Mycelium' : 'Start Mycelium',
             onPressed: isConnected ? stopMycelium : startMycelium,
             isLoading: isConnecting,
+            backgroundColor: isConnected ? Colors.red : null,
+            foregroundColor: isConnected ? Colors.white : null,
           ),
           const SizedBox(height: AppSpacing.lg),
           Visibility(
@@ -288,7 +290,8 @@ class _HeaderCardState extends State<_HeaderCard>
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.onSurfaceVariant,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
