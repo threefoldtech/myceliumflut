@@ -675,38 +675,25 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                           peer_models.ConnectionState.connected ||
                       widget.peerStats!.connectionState ==
                           peer_models.ConnectionState.connecting)) ...[
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.3),
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: _isPinging
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Icon(
-                            Icons.speed,
-                            size: 18,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    onPressed: _isPinging ? null : _performPingTest,
-                    tooltip: 'Test ping',
-                    constraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 36,
-                    ),
+                IconButton(
+                  icon: _isPinging
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          Icons.speed,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  onPressed: _isPinging ? null : _performPingTest,
+                  tooltip: 'Test ping',
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
               ],
               // Show delete icon only for user-added peers
               if (widget.isUserPeer)
