@@ -545,7 +545,9 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                       children: [
                         Expanded(
                           child: Text(
-                            widget.ip.replaceAll('tcp://', ''),
+                            widget.ip
+                                .replaceAll('tcp://', '')
+                                .replaceAll(':9651', ''),
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -889,34 +891,96 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Add Peer'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(
-          hintText: 'Enter peer IP (e.g. 185.69.166.7)',
-        ),
-        keyboardType: TextInputType.url,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final ip = controller.text.trim();
-            if (ip.isNotEmpty) {
-              final formattedPeer =
-                  ip.startsWith('tcp://') ? ip : 'tcp://$ip:9651';
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        bool isValidIP = _isValidIP(controller.text.trim());
+        String? errorText = controller.text.trim().isNotEmpty && !isValidIP
+            ? 'Please enter a valid IP address'
+            : null;
 
-              await peersNotifier.addPeer(formattedPeer);
-            }
-            Navigator.of(context).pop();
-          },
-          child: const Text('Add'),
-        ),
-      ],
+        return AlertDialog(
+          title: const Text('Add Peer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'Enter peer IP (e.g. 185.69.166.7)',
+                  errorText: errorText,
+                  border: const OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.url,
+                onChanged: (value) => setState(() {}),
+              ),
+              if (errorText == null && controller.text.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Valid IP address',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isValidIP && controller.text.trim().isNotEmpty
+                  ? () async {
+                      final ip = controller.text.trim();
+                      final formattedPeer =
+                          ip.startsWith('tcp://') ? ip : 'tcp://$ip:9651';
+
+                      await peersNotifier.addPeer(formattedPeer);
+                      Navigator.of(context).pop();
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+              child: const Text('Add'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+                foregroundColor:
+                    Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     ),
   );
+}
+
+bool _isValidIP(String ip) {
+  if (ip.isEmpty) return false;
+
+  // IPv4 regex
+  final ipv4Regex = RegExp(
+      r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
+
+  // IPv6 regex (simplified)
+  final ipv6Regex =
+      RegExp(r'^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$');
+
+  return ipv4Regex.hasMatch(ip) || ipv6Regex.hasMatch(ip);
 }
