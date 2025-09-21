@@ -528,15 +528,48 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
         children: [
           Row(
             children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: connectionColor,
-                  shape: BoxShape.circle,
-                ),
+              // Country flag circle or globe for unknown countries
+              Consumer(
+                builder: (context, ref, child) {
+                  final locationAsync =
+                      ref.watch(peerLocationProvider(widget.ip));
+
+                  if (locationAsync != null &&
+                      locationAsync.country != 'Unknown') {
+                    final geoService = ref.read(geolocationServiceProvider);
+                    return Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          geoService.getFlagEmoji(locationAsync.countryCode),
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Show globe icon for unknown countries or while loading
+                  return Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.public,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  );
+                },
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,36 +600,22 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
 
                         if (locationAsync != null &&
                             locationAsync.country != 'Unknown') {
-                          final geoService =
-                              ref.read(geolocationServiceProvider);
                           return Padding(
                             padding: const EdgeInsets.only(top: 4.0),
-                            child: Row(
-                              children: [
-                                Text(
-                                  geoService
-                                      .getFlagEmoji(locationAsync.countryCode),
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    locationAsync.city.isNotEmpty
-                                        ? '${locationAsync.country} • ${locationAsync.city}'
-                                        : locationAsync.country,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.7),
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
+                            child: Text(
+                              locationAsync.city.isNotEmpty
+                                  ? '${locationAsync.country} • ${locationAsync.city}'
+                                  : locationAsync.country,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
                                   ),
-                                ),
-                              ],
+                              overflow: TextOverflow.ellipsis,
                             ),
                           );
                         }
