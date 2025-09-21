@@ -708,27 +708,50 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 ),
                 const SizedBox(width: AppSpacing.sm),
               ],
-              IconButton(
-                icon: const Icon(Icons.more_horiz),
-                onPressed: widget.isDisabled
-                    ? null
-                    : () {
-                        showModalBottomSheet(
-                          context: context,
-                          useSafeArea: true,
-                          isScrollControlled: true,
-                          showDragHandle: true,
-                          builder: (_) => PeerDetailsSheet(
-                            country: widget.country,
-                            ip: widget.ip,
-                            city: "",
-                            latency: "",
-                            status: connectionStatus,
-                            isUserPeer: widget.isUserPeer,
-                          ),
-                        );
-                      },
-              ),
+              // Show delete icon only for user-added peers
+              if (widget.isUserPeer)
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: Colors.red.shade400,
+                  ),
+                  onPressed: widget.isDisabled
+                      ? null
+                      : () async {
+                          // Show confirmation dialog
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Peer'),
+                              content: Text(
+                                'Are you sure you want to delete this peer?\n\n${widget.ip.replaceAll('tcp://', '').replaceAll(':9651', '')}',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed == true) {
+                            final peersNotifier =
+                                ref.read(peersProvider.notifier);
+                            await peersNotifier.removePeer(widget.ip);
+                          }
+                        },
+                  tooltip: 'Delete peer',
+                ),
             ],
           ),
           if (widget.peerStats != null) ...[
