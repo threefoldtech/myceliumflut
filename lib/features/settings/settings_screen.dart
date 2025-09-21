@@ -24,13 +24,10 @@ class SettingsScreen extends ConsumerWidget {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => context.go('/'),
               ),
-              const Spacer(),
               const Text(
                 'Settings',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              const Spacer(),
-              const SizedBox(width: 48),
             ],
           ),
           Divider(
@@ -124,7 +121,11 @@ class SettingsScreen extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6)),
                         ),
                       ],
                     ),
@@ -143,19 +144,21 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               Text(
                 ' 2024 Mycelium Network',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
                 'Decentralized networking for everyone',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -194,7 +197,11 @@ class _InfoRowWithSubtitle extends StatelessWidget {
               Text(title, style: textTheme.bodyMedium),
               Text(
                 subtitle,
-                style: textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                style: textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6)),
               ),
             ],
           ),

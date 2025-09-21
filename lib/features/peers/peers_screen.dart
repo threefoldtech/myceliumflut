@@ -26,12 +26,10 @@ class PeersScreen extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/'),
           ),
-          const Spacer(),
           const Text(
             'Peers',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const Spacer(),
         ],
       ),
       Divider(
@@ -84,7 +82,7 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
     // Only start polling if mounted and Mycelium is connected
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       final nodeStatusAsync = ref.read(nodeStatusProvider);
       nodeStatusAsync.whenData((status) {
         if (mounted && status == NodeStatus.connected) {
@@ -105,7 +103,7 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
 
   Future<void> _fetchPeerStatus() async {
     if (!mounted) return;
-    
+
     try {
       final service = MyceliumService();
       final status = await service.getPeerStatus();
@@ -228,12 +226,10 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go('/'),
             ),
-            const Spacer(),
             const Text(
               'Peers',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const Spacer(),
           ],
         ),
         Divider(
@@ -423,7 +419,8 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
   void didUpdateWidget(_PeerTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Restart periodic ping if peer status changed
-    if (oldWidget.peerStats?.connectionState != widget.peerStats?.connectionState) {
+    if (oldWidget.peerStats?.connectionState !=
+        widget.peerStats?.connectionState) {
       _periodicPingTimer?.cancel();
       _startPeriodicPing();
     }
@@ -438,25 +435,24 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
   void _startPeriodicPing() {
     // Only start periodic ping if peer is connected or connecting
     if (widget.peerStats != null &&
-        (widget.peerStats!.connectionState == peer_models.ConnectionState.connected ||
-         widget.peerStats!.connectionState == peer_models.ConnectionState.connecting)) {
-      
-      
+        (widget.peerStats!.connectionState ==
+                peer_models.ConnectionState.connected ||
+            widget.peerStats!.connectionState ==
+                peer_models.ConnectionState.connecting)) {
       // Initial ping after 2 seconds
       Timer(const Duration(seconds: 2), () {
         if (mounted) {
           _performPingTest(isAutomatic: true);
         }
       });
-      
+
       // Then ping every 30 seconds
       _periodicPingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
         if (mounted) {
           _performPingTest(isAutomatic: true);
         }
       });
-    } else {
-    }
+    } else {}
   }
 
   Future<void> _performPingTest({bool isAutomatic = false}) async {
@@ -550,7 +546,10 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         Expanded(
                           child: Text(
                             widget.ip.replaceAll('tcp://', ''),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                             overflow: TextOverflow.ellipsis,
@@ -561,28 +560,37 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     // Location info row
                     Consumer(
                       builder: (context, ref, child) {
-                        final locationAsync = ref.watch(peerLocationProvider(widget.ip));
-                        
-                        
-                        if (locationAsync != null && locationAsync.country != 'Unknown') {
-                          final geoService = ref.read(geolocationServiceProvider);
+                        final locationAsync =
+                            ref.watch(peerLocationProvider(widget.ip));
+
+                        if (locationAsync != null &&
+                            locationAsync.country != 'Unknown') {
+                          final geoService =
+                              ref.read(geolocationServiceProvider);
                           return Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Row(
                               children: [
                                 Text(
-                                  geoService.getFlagEmoji(locationAsync.countryCode),
+                                  geoService
+                                      .getFlagEmoji(locationAsync.countryCode),
                                   style: const TextStyle(fontSize: 16),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    locationAsync.city.isNotEmpty 
+                                    locationAsync.city.isNotEmpty
                                         ? '${locationAsync.country} • ${locationAsync.city}'
                                         : locationAsync.country,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.7),
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -590,7 +598,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                             ),
                           );
                         }
-                        
+
                         // Show loading indicator while fetching
                         if (locationAsync == null) {
                           return Padding(
@@ -600,20 +608,27 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                                 const SizedBox(
                                   width: 12,
                                   height: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 1.5),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Loading location...',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.5),
+                                      ),
                                 ),
                               ],
                             ),
                           );
                         }
-                        
+
                         return const SizedBox.shrink();
                       },
                     ),
