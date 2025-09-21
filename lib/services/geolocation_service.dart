@@ -61,10 +61,9 @@ class GeolocationService {
       }
 
       final response = await http.get(
-        Uri.parse(_apiUrl),
+        Uri.parse(_apiUrl).replace(queryParameters: {'ip': targetIP}),
         headers: {
           'Accept': 'application/json',
-          'X-Real-IP': targetIP,
         },
       ).timeout(const Duration(seconds: 5));
 
@@ -86,10 +85,10 @@ class GeolocationService {
 
   String getFlagEmoji(String countryCode) {
     if (countryCode.length != 2) return '🏳️';
-    
+
     final codePoints = countryCode.toUpperCase().codeUnits;
     final flag = String.fromCharCode(0x1F1E6 + codePoints[0] - 0x41) +
-                 String.fromCharCode(0x1F1E6 + codePoints[1] - 0x41);
+        String.fromCharCode(0x1F1E6 + codePoints[1] - 0x41);
     return flag;
   }
 
