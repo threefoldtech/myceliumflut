@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:country_flags/country_flags.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class LocationInfo {
@@ -94,5 +97,26 @@ class GeolocationService {
 
   void clearCache() {
     _cache.clear();
+  }
+
+  Widget getFlagWidget(String countryCode) {
+    if (countryCode.length != 2) {
+      return Icon(
+        Icons.public,
+        size: 18,
+      );
+    }
+    if (Platform.isAndroid || Platform.isIOS) {
+      return Text(
+        getFlagEmoji(countryCode),
+        style: const TextStyle(fontSize: 18),
+      );
+    } else {
+      return CountryFlag.fromCountryCode(
+        countryCode,
+        height: 12,
+        width: 18,
+      );
+    }
   }
 }

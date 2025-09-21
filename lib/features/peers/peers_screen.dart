@@ -545,10 +545,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         shape: BoxShape.circle,
                       ),
                       child: Center(
-                        child: Text(
-                          geoService.getFlagEmoji(locationAsync.countryCode),
-                          style: const TextStyle(fontSize: 18),
-                        ),
+                        child: geoService.getFlagWidget(locationAsync.countryCode),
                       ),
                     );
                   }
