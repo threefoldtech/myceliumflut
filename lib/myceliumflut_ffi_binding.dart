@@ -107,10 +107,23 @@ typedef FuncDartStartMycelium = void Function(
     ffi.Pointer<ffi.Pointer<ffi.Int8>>, int, ffi.Pointer<ffi.Uint8>, int);
 
 Future<bool> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
+  // Run the blocking FFI call in a separate isolate to prevent UI freezing
+  final result = compute(_startMyceliumInIsolate, {
+    'peers': peers,
+    'privKey': privKey,
+  });
+  return result;
+}
+
+// Function to run in isolate
+bool _startMyceliumInIsolate(Map<String, dynamic> args) {
+  final List<String> peers = args['peers'];
+  final Uint8List privKey = args['privKey'];
+  
   // Load the dynamic library
   final dylib = loadDll();
 
-// Look up the function
+  // Look up the function
   final FuncDartStartMycelium startMycelium = dylib
       .lookup<ffi.NativeFunction<FuncRustStartMycelium>>('ff_start_mycelium')
       .asFunction();
@@ -129,7 +142,7 @@ Future<bool> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
   nativePrivKey.setAll(0, privKey);
 
   try {
-    // Call the Rust function
+    // Call the Rust function (this is the blocking call)
     startMycelium(peerPtrs, peers.length, privKeyPtr, privKey.length);
     return true;
   } catch (e) {

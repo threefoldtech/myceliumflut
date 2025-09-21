@@ -110,7 +110,7 @@ class MyceliumService {
     try {
       if (isUseDylib()) {
         print('MyceliumService: Using FFI dylib');
-        await myFFStartMycelium(cleaned, key);
+        myFFStartMycelium(cleaned, key);
       } else {
         print('MyceliumService: Using platform channel');
         final result = await _platform.invokeMethod<bool>('startVpn', {
