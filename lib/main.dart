@@ -143,10 +143,10 @@ class _MyAppState extends ConsumerState<MyApp>
         
         // Try different icon paths in order of preference
         final iconPaths = [
-          'assets/images/tray_icon.png', // Smaller, optimized for tray
-          'assets/images/mycelium_top.png', // Alternative smaller icon
+          if (Platform.isWindows) 'assets/images/tray_icon.ico',
+          // 'assets/images/tray_icon.png', // Smaller, optimized for tray
+          // 'assets/images/mycelium_top.png', // Alternative smaller icon
           'assets/images/mycelium_icon.png', // Original large icon
-          if (Platform.isWindows) 'windows/runner/resources/app_icon.ico',
         ];
         
         for (String iconPath in iconPaths) {

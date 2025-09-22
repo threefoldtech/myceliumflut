@@ -85,7 +85,7 @@ flutter:
     - assets/images/mycelium_top.png
     - assets/dll/winmycelium.dll
     - assets/images/mycelium_icon.png
-    - assets/images/tray_icon.png
+    - assets/images/tray_icon.ico
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
