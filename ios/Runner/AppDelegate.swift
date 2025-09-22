@@ -109,6 +109,9 @@ import OSLog
                         debuglog("Error in listProxies: \(error.localizedDescription)")
                         result(FlutterError(code: "LIST_PROXIES_ERROR", message: error.localizedDescription, details: nil))
                     }
+                case "queryStatus":
+                    self.queryStatus()
+                    result(true)
                 default:
                     result(FlutterMethodNotImplemented)
                 }
@@ -125,7 +128,6 @@ import OSLog
     override func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         // Insert code here to handle when the app is about to terminate
-        self.stopMycelium()
         super.applicationWillTerminate(application)
     }
 
@@ -274,6 +276,31 @@ import OSLog
     func stopMycelium() {
         infolog("stopMycelium")
         self.vpnManager?.connection.stopVPNTunnel()
+    }
+
+    func queryStatus() {
+        NETunnelProviderManager.loadAllFromPreferences { (providers: [NETunnelProviderManager]?, error: Error?) in
+            if let error = error {
+                errlog("queryStatus loadAllFromPref failed:" + error.localizedDescription)
+                self.flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
+                return
+            }
+            guard let providers = providers else {
+                self.flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
+                return
+            }
+            let myProvider = providers.first(where: { $0.protocolConfiguration?.serverAddress==self.vpnServerAddress })
+            if let vpnManager = myProvider {
+                switch vpnManager.connection.status {
+                case .connected, .connecting, .reasserting:
+                    self.flutterChannel?.invokeMethod("notifyMyceliumStarted", arguments: nil)
+                default:
+                    self.flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
+                }
+            } else {
+                self.flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
+            }
+        }
     }
 
     /*

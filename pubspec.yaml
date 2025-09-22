@@ -48,6 +48,8 @@ dependencies:
   http: ^1.5.0
   fl_chart: ^0.68.0
   country_flags: ^3.2.0
+  tray_manager: ^0.2.3
+  window_manager: ^0.4.2
 
 dev_dependencies:
   flutter_test:
@@ -82,6 +84,7 @@ flutter:
     - assets/images/mycelium_top.svg
     - assets/images/mycelium_top.png
     - assets/dll/winmycelium.dll
+    - assets/images/mycelium_icon.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

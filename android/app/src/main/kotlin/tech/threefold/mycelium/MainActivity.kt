@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.IntentFilter
 import android.net.VpnService
 import android.os.Build
@@ -34,9 +35,11 @@ class MainActivity: FlutterActivity() {
     private var vpnPermissionSocksEnabled: Boolean = false
 
     private lateinit var channel : MethodChannel
+    private lateinit var prefs: SharedPreferences
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        prefs = getSharedPreferences("mycelium_prefs", MODE_PRIVATE)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
         channel.setMethodCallHandler {
             // This method is invoked on the main thread.
@@ -118,6 +121,16 @@ class MainActivity: FlutterActivity() {
                         Log.e(tag, "Error in listProxies: ${e.message}")
                         result.error("LIST_PROXIES_ERROR", e.message, null)
                     }
+                "queryStatus" -> {
+                    // Immediately report last known state while also querying the service
+                    val running = prefs.getBoolean("mycelium_running", false)
+                    if (running) {
+                        channel.invokeMethod("notifyMyceliumStarted","")
+                    } else {
+                        channel.invokeMethod("notifyMyceliumFinished","")
+                    }
+                    queryStatus()
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }
@@ -131,6 +144,9 @@ class MainActivity: FlutterActivity() {
             when (val event = intent.getStringExtra("event")) {
                 TunService.EVENT_MYCELIUM_FINISHED -> {
                     channel.invokeMethod("notifyMyceliumFinished","")
+                }
+                TunService.EVENT_MYCELIUM_RUNNING -> {
+                    channel.invokeMethod("notifyMyceliumStarted", "")
                 }
                 TunService.EVENT_MYCELIUM_FAILED -> {
                     channel.invokeMethod("notifyMyceliumFailed", "")
@@ -194,6 +210,12 @@ class MainActivity: FlutterActivity() {
         return true
     }
 
+    private fun queryStatus() {
+        val intent = Intent(this, TunService::class.java)
+        intent.action = TunService.ACTION_QUERY
+        startService(intent)
+    }
+
     @SuppressLint("UnspecifiedRegisterReceiverFlag", "WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -242,10 +264,6 @@ class MainActivity: FlutterActivity() {
 
     override fun onDestroy() {
         Log.e(tag, "onDestroy")
-
-        Log.i(tag, "onDestroy:Stopping VPN service")
-        stopVpn()
-
         super.onDestroy()
 
         // Activity is about to be destroyed.

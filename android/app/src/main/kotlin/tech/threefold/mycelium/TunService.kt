@@ -2,6 +2,8 @@ package tech.threefold.mycelium
 
 import android.content.Intent
 import android.net.ProxyInfo
+import android.content.Context
+import android.content.SharedPreferences
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.system.OsConstants
@@ -20,14 +22,17 @@ class TunService : VpnService(), CoroutineScope {
     companion object {
         const val ACTION_START = "tech.threefold.mycelium.TunService.START"
         const val ACTION_STOP = "tech.threefold.mycelium.TunService.STOP"
+        const val ACTION_QUERY = "tech.threefold.mycelium.TunService.QUERY"
         const val EVENT_INTENT = "tech.threefold.mycelium.TunService.EVENT"
         const val EVENT_MYCELIUM_FAILED = "mycelium_failed"
         const val EVENT_MYCELIUM_FINISHED = "mycelium_finished"
+        const val EVENT_MYCELIUM_RUNNING = "mycelium_running"
     }
 
     private var started = AtomicBoolean()
     private var parcel: ParcelFileDescriptor? = null
     private var httpToSocksProxy: HttpToSocksProxy? = null
+    private lateinit var prefs: SharedPreferences
 
     private val job = Job()
 
@@ -37,6 +42,7 @@ class TunService : VpnService(), CoroutineScope {
     override fun onCreate() {
         Log.d(tag, "tun service created")
         super.onCreate()
+        prefs = getSharedPreferences("mycelium_prefs", Context.MODE_PRIVATE)
     }
 
     override fun onDestroy() {
@@ -65,6 +71,14 @@ class TunService : VpnService(), CoroutineScope {
                 start(peers.toList(), secretKey, socksEnabled)
                 START_STICKY
             }
+            ACTION_QUERY -> {
+                if (started.get()) {
+                    sendMyceliumEvent(EVENT_MYCELIUM_RUNNING)
+                } else {
+                    sendMyceliumEvent(EVENT_MYCELIUM_FINISHED)
+                }
+                START_NOT_STICKY
+            }
             else -> {
                 Log.e(tag, "unknown command")
 
@@ -77,6 +91,7 @@ class TunService : VpnService(), CoroutineScope {
         if (!started.compareAndSet(false, true)) {
             return 0
         }
+        prefs.edit().putBoolean("mycelium_running", true).apply()
         val nodeAddress = addressFromSecretKey(secretKey)
         Log.i(tag, "creating TUN device with node address:  $nodeAddress")
 
@@ -169,6 +184,7 @@ class TunService : VpnService(), CoroutineScope {
         httpToSocksProxy = null
         Log.d(tag, "Cleaned up SOCKS proxy resources")
         
+        prefs.edit().putBoolean("mycelium_running", false).apply()
         if (stopMycelium) {
             stopMycelium()
         }
