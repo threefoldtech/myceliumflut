@@ -12,6 +12,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:flutter_window_close/flutter_window_close.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
+
 import 'myceliumflut_ffi_binding.dart';
 import 'services/peers_service.dart';
 
@@ -49,7 +52,8 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp>
+    with TrayListener, WindowListener, WidgetsBindingObserver {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   String _nodeAddr = '';
   var privKey = Uint8List(0);
@@ -63,6 +67,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     textEditController = TextEditingController(text: '');
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     initPlatformState();
     platform.setMethodCallHandler((MethodCall call) async {
       methodHandler(call.method);
@@ -92,15 +97,125 @@ class _MyAppState extends ConsumerState<MyApp> {
       }
     });
 
-    // only for windows because macos already has own handler
-    if (Platform.isWindows) {
-      FlutterWindowClose.setWindowShouldCloseHandler(() async {
-        _logger.info("Window close handler");
-        if (_isStarted) {
-          stopMycelium();
+    // Initialize desktop lifecycle asynchronously to avoid blocking startup
+    Future.delayed(const Duration(seconds: 1), () => _initDesktopLifecycle());
+  }
+
+  Future<void> _initDesktopLifecycle() async {
+    if (!(Platform.isMacOS || Platform.isWindows)) {
+      return;
+    }
+
+    try {
+      _logger.info("Initializing desktop lifecycle...");
+      
+      // Initialize window manager
+      await windowManager.ensureInitialized();
+      _logger.info("Window manager ensureInitialized completed");
+      
+      windowManager.addListener(this);
+      _logger.info("Window manager listener added");
+      
+      await windowManager.setPreventClose(true);
+      _logger.info("Window manager setPreventClose completed");
+      
+      // Configure window properties
+      await windowManager.setTitle('Mycelium');
+      _logger.info("Window manager setTitle completed");
+      
+      await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+      _logger.info("Window manager setTitleBarStyle completed");
+      
+      // Skip setSkipTaskbar as it causes crashes on some Windows versions
+      // The app will show in taskbar by default anyway
+      _logger.info("Skipping setSkipTaskbar to avoid compatibility issues");
+      
+      _logger.info("Window manager initialized successfully");
+
+      // Initialize tray manager with careful error handling
+      try {
+        _logger.info("Starting tray manager initialization...");
+        trayManager.addListener(this);
+        _logger.info("Tray manager listener added successfully");
+        
+        // Set tray icon with multiple fallback options
+        bool iconSet = false;
+        
+        // Try different icon paths in order of preference
+        final iconPaths = [
+          if (Platform.isWindows) 'assets/images/tray_icon.ico',
+          // 'assets/images/tray_icon.png', // Smaller, optimized for tray
+          // 'assets/images/mycelium_top.png', // Alternative smaller icon
+          'assets/images/mycelium_icon.png', // Original large icon
+        ];
+        
+        for (String iconPath in iconPaths) {
+          try {
+            await trayManager.setIcon(iconPath);
+            iconSet = true;
+            _logger.info("Tray icon set successfully using: $iconPath");
+            break;
+          } catch (e) {
+            _logger.warning("Failed to set tray icon from $iconPath: $e");
+          }
         }
-        return true;
-      });
+        
+        // If all paths failed, try to set a simple system icon
+        if (!iconSet) {
+          try {
+            // Try setting without any icon first to see if tray works
+            _logger.info("All icon paths failed, trying to initialize tray without icon");
+          } catch (e) {
+            _logger.warning("Failed to initialize tray: $e");
+          }
+        }
+        
+        if (iconSet) {
+          // Set tray tooltip
+          await trayManager.setToolTip('Mycelium - Click to show/hide window');
+          await _updateTrayMenu();
+          _logger.info("Tray manager initialized successfully");
+        } else {
+          _logger.warning("Tray icon could not be set, but continuing without tray");
+        }
+        
+      } catch (e) {
+        _logger.warning("Failed to initialize tray manager: $e, continuing without tray");
+      }
+
+      // Optional: start minimized to tray when app launches on desktop
+      // await windowManager.hide();
+      
+    } catch (e) {
+      _logger.severe("Failed to initialize desktop lifecycle: $e");
+      // Don't rethrow - allow app to continue without desktop features
+    }
+  }
+
+  Future<void> _updateTrayMenu() async {
+    try {
+      final statusLabel = _isStarted ? 'Mycelium: Running' : 'Mycelium: Stopped';
+      final toggleLabel = _isStarted ? 'Stop Mycelium' : 'Start Mycelium';
+      
+      // Update tray tooltip with current status
+      final tooltipText = _isStarted 
+          ? 'Mycelium - Running (${_connectedPeers.length} peers connected)'
+          : 'Mycelium - Stopped';
+      await trayManager.setToolTip(tooltipText);
+      
+      final items = [
+        MenuItem(key: 'status', label: statusLabel, disabled: true),
+        MenuItem.separator(),
+        MenuItem(key: 'show', label: 'Show Window'),
+        MenuItem(key: 'hide', label: 'Hide Window'),
+        MenuItem.separator(),
+        MenuItem(key: 'toggle', label: toggleLabel),
+        MenuItem.separator(),
+        MenuItem(key: 'quit', label: 'Quit'),
+      ];
+      await trayManager.setContextMenu(Menu(items: items));
+    } catch (e) {
+      _logger.warning("Failed to update tray menu: $e");
     }
   }
 
@@ -174,6 +289,15 @@ class _MyAppState extends ConsumerState<MyApp> {
     setState(() {
       _nodeAddr = nodeAddr;
     });
+
+    // Query native layer for current VPN status to sync UI
+    if (!isUseDylib()) {
+      try {
+        await platform.invokeMethod('queryStatus');
+      } catch (e) {
+        _logger.warning("queryStatus not implemented: $e");
+      }
+    }
   }
 
   // start/stop mycelium button variables
@@ -189,6 +313,11 @@ class _MyAppState extends ConsumerState<MyApp> {
   void dispose() {
     // Clean up the controller when the widget is disposed.
     textEditController.dispose();
+    if (Platform.isMacOS || Platform.isWindows) {
+      windowManager.removeListener(this);
+      trayManager.removeListener(this);
+    }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -202,6 +331,17 @@ class _MyAppState extends ConsumerState<MyApp> {
       themeMode: settings,
       routerConfig: appRouter,
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (!isUseDylib()) {
+        platform.invokeMethod('queryStatus').catchError((e) {
+          _logger.warning("queryStatus on resume failed: $e");
+        });
+      }
+    }
   }
 
   void startMycelium() {
@@ -294,6 +434,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       _myceliumStatusColor = colorMycelRed;
       isRestartVisible = false;
     });
+    _updateTrayMenu();
   }
 
   void setStateStopped() {
@@ -306,6 +447,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       isRestartVisible = false;
       _connectedPeers.clear(); // Clear connected peers when stopped
     });
+    _updateTrayMenu();
   }
 
   void setStateStarted() {
@@ -317,6 +459,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       _myceliumStatusColor = colorDarkBlue;
       isRestartVisible = true;
     });
+    _updateTrayMenu();
     // Start periodic peer status updates
     _startPeerStatusUpdates();
   }
@@ -354,8 +497,109 @@ class _MyAppState extends ConsumerState<MyApp> {
       setState(() {
         _connectedPeers = peerStatus;
       });
+      
+      // Update tray menu to reflect new peer count
+      _updateTrayMenu();
     } catch (e) {
       _logger.warning("Failed to get peer status: $e");
+    }
+  }
+
+  // Window lifecycle handlers
+  @override
+  void onWindowClose() async {
+    // Intercept close to keep app running in tray
+    _logger.info("Window close intercepted - hiding to tray");
+    await windowManager.hide();
+    
+    // Show tray notification that app is still running
+    try {
+      await trayManager.popUpContextMenu();
+    } catch (e) {
+      _logger.warning("Failed to show tray context menu: $e");
+    }
+  }
+
+  @override
+  void onWindowFocus() {
+    // Called when window gains focus
+  }
+
+  @override
+  void onWindowBlur() {
+    // Called when window loses focus
+  }
+
+  @override
+  void onWindowMaximize() {
+    // Called when window is maximized
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    // Called when window is unmaximized
+  }
+
+  @override
+  void onWindowMinimize() {
+    // Called when window is minimized - hide to tray instead
+    windowManager.hide();
+  }
+
+  @override
+  void onWindowRestore() {
+    // Called when window is restored
+  }
+
+  // Tray handlers
+  @override
+  void onTrayIconMouseDown() async {
+    if (await windowManager.isVisible()) {
+      await windowManager.hide();
+    } else {
+      await windowManager.show();
+      await windowManager.focus();
+    }
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) async {
+    switch (menuItem.key) {
+      case 'status':
+        // Status item is disabled, do nothing
+        break;
+      case 'show':
+        await windowManager.show();
+        await windowManager.focus();
+        break;
+      case 'hide':
+        await windowManager.hide();
+        break;
+      case 'toggle':
+        if (!_isStarted) {
+          startMycelium();
+        } else {
+          stopMycelium();
+        }
+        break;
+      case 'quit':
+        if (_isStarted) {
+          stopMycelium();
+        }
+        // Give a brief moment for stop to propagate
+        await Future.delayed(const Duration(milliseconds: 200));
+        // Terminate application
+        if (Platform.isMacOS) {
+          // Use existing plugin to terminate if available
+          try {
+            _flutterDesktopSleepPlugin.terminateApp();
+          } catch (_) {
+            exit(0);
+          }
+        } else {
+          exit(0);
+        }
+        break;
     }
   }
 }
