@@ -121,6 +121,7 @@ class MainActivity: FlutterActivity() {
                         Log.e(tag, "Error in listProxies: ${e.message}")
                         result.error("LIST_PROXIES_ERROR", e.message, null)
                     }
+                }
                 "queryStatus" -> {
                     // Immediately report last known state while also querying the service
                     val running = prefs.getBoolean("mycelium_running", false)
