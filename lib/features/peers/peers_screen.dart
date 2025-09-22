@@ -326,7 +326,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
                       ],
                     );
                   }
-                  
+
                   // Use row layout for wider screens
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -411,7 +411,7 @@ class _SearchAddBar extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Stack buttons vertically on very narrow screens
-        if (constraints.maxWidth < 400) {
+        if (constraints.maxWidth < 330) {
           return Column(
             children: [
               TextField(
@@ -426,7 +426,9 @@ class _SearchAddBar extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
+                  onPressed: isDisabled
+                      ? null
+                      : () => _showAddPeerDialog(context, ref),
                   icon: const Icon(Icons.add),
                   label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
                 ),
@@ -434,7 +436,7 @@ class _SearchAddBar extends ConsumerWidget {
             ],
           );
         }
-        
+
         // Use row layout for wider screens
         return Row(
           children: [
@@ -449,9 +451,10 @@ class _SearchAddBar extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
-            Flexible(
+            IntrinsicWidth(
               child: FilledButton.icon(
-                onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
+                onPressed:
+                    isDisabled ? null : () => _showAddPeerDialog(context, ref),
                 icon: const Icon(Icons.add),
                 label: Text(
                   isDisabled ? 'Mycelium Running' : 'Add Peer',

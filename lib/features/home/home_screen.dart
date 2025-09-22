@@ -89,43 +89,51 @@ class HomeScreen extends ConsumerWidget {
     dynamic service,
     AsyncValue<List<String>> peersAsync,
   ) {
-    return Column(
-      children: [
-        const SizedBox(height: AppSpacing.xxl),
-        _HeaderCard(
-          status: status,
-          onConnect: () async {
-            final peers = peersAsync.asData?.value ?? [];
-            if (peers.isNotEmpty) {
-              await service.start(peers);
-            } else {
-              final peersService = PeersService();
-              final fallbackPeers = await peersService.fetchPeers();
-              await service.start(fallbackPeers);
-            }
-          },
-          onDisconnect: () async {
-            await service.stop();
-          },
-          service: service,
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        const _StatsRow(),
-        const SizedBox(height: AppSpacing.xxl),
-        Consumer(
-          builder: (context, ref, child) {
-            final trafficStats = ref.watch(dynamicTrafficProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Reduce spacing on very small screens
+        final isVerySmall = constraints.maxHeight < 600;
+        final spacing = isVerySmall ? AppSpacing.lg : AppSpacing.xxl;
+        
+        return Column(
+          children: [
+            SizedBox(height: isVerySmall ? AppSpacing.md : AppSpacing.xxl),
+            _HeaderCard(
+              status: status,
+              onConnect: () async {
+                final peers = peersAsync.asData?.value ?? [];
+                if (peers.isNotEmpty) {
+                  await service.start(peers);
+                } else {
+                  final peersService = PeersService();
+                  final fallbackPeers = await peersService.fetchPeers();
+                  await service.start(fallbackPeers);
+                }
+              },
+              onDisconnect: () async {
+                await service.stop();
+              },
+              service: service,
+            ),
+            SizedBox(height: spacing),
+            const _StatsRow(),
+            SizedBox(height: spacing),
+            Consumer(
+              builder: (context, ref, child) {
+                final trafficStats = ref.watch(dynamicTrafficProvider);
 
-            return TrafficSummary(
-              totalUpload: trafficStats.totalUploadFormatted,
-              totalDownload: trafficStats.totalDownloadFormatted,
-              peakUpload: trafficStats.peakUploadFormatted,
-              peakDownload: trafficStats.peakDownloadFormatted,
-            );
-          },
-        ),
-        const SizedBox(height: AppSpacing.xxxl),
-      ],
+                return TrafficSummary(
+                  totalUpload: trafficStats.totalUploadFormatted,
+                  totalDownload: trafficStats.totalDownloadFormatted,
+                  peakUpload: trafficStats.peakUploadFormatted,
+                  peakDownload: trafficStats.peakDownloadFormatted,
+                );
+              },
+            ),
+            SizedBox(height: isVerySmall ? AppSpacing.lg : AppSpacing.xxxl),
+          ],
+        );
+      },
     );
   }
 }
@@ -417,7 +425,7 @@ class _StatsRow extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Use single column layout for very narrow screens
-        if (constraints.maxWidth < 400) {
+        if (constraints.maxWidth < 330) {
           return Column(
             children: [
               AppCard(

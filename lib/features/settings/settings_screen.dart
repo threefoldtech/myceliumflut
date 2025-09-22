@@ -63,221 +63,244 @@ class _SettingsMobileLayout extends ConsumerWidget {
     final appVersionAsync = ref.watch(fullAppVersionProvider);
     final nodeAddressAsync = ref.watch(nodeAddressProvider);
 
-    return Column(
-      children: [
-        const SizedBox(height: AppSpacing.lg),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isVerySmall = constraints.maxHeight < 600;
+        final spacing = isVerySmall ? AppSpacing.md : AppSpacing.xxl;
+        
+        return Column(
+          children: [
+            SizedBox(height: isVerySmall ? AppSpacing.sm : AppSpacing.lg),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Version Information',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _InfoRowWithSubtitle(
-                icon: CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  child: const Text('M',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                title: 'Mycelium Core',
-                subtitle: 'Network Protocol Version',
-                value: 'v0.6.2',
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Consumer(
-                builder: (context, ref, child) {
-                  return appVersionAsync.when(
-                    data: (version) => _InfoRowWithSubtitle(
-                      icon: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        child: const Icon(Icons.phone_android, size: 16),
-                      ),
-                      title: 'Mobile App',
-                      subtitle: 'Application Build Version',
-                      value: version,
-                    ),
-                    loading: () => _InfoRowWithSubtitle(
-                      icon: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        child: const Icon(Icons.phone_android, size: 16),
-                      ),
-                      title: 'Mobile App',
-                      subtitle: 'Application Build Version',
-                      value: 'Loading...',
-                    ),
-                    error: (error, stack) => _InfoRowWithSubtitle(
-                      icon: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        child: const Icon(Icons.phone_android, size: 16),
-                      ),
-                      title: 'Mobile App',
-                      subtitle: 'Application Build Version',
-                      value: 'Error',
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.language, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Network Information',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Consumer(
-                builder: (context, ref, child) {
-                  return nodeAddressAsync.when(
-                    data: (nodeAddress) => _InfoRowWithCopy(
-                      icon: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        child: const Icon(Icons.public, size: 16),
-                      ),
-                      title: 'IP Address',
-                      subtitle: 'Your Mycelium Node Address',
-                      value: nodeAddress.isNotEmpty
-                          ? nodeAddress
-                          : 'Not Available',
-                      copyEnabled: nodeAddress.isNotEmpty,
-                    ),
-                    loading: () => _InfoRowWithCopy(
-                      icon: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        child: const Icon(Icons.public, size: 16),
-                      ),
-                      title: 'IP Address',
-                      subtitle: 'Your Mycelium Node Address',
-                      value: 'Loading...',
-                      copyEnabled: false,
-                    ),
-                    error: (error, stack) => _InfoRowWithCopy(
-                      icon: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        child: const Icon(Icons.public, size: 16),
-                      ),
-                      title: 'IP Address',
-                      subtitle: 'Your Mycelium Node Address',
-                      value: 'Error',
-                      copyEnabled: false,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    child: const Icon(Icons.color_lens, size: 16),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Appearance',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
                     children: [
-                      Text('Dark Mode',
-                          style: Theme.of(context).textTheme.bodyMedium),
-                      Text(
-                        isDark
-                            ? 'Dark theme is enabled'
-                            : 'Light theme is enabled',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.6)),
+                      const Icon(Icons.info_outline, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Version Information',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
-                  Switch(
-                    value: isDark,
-                    onChanged: (v) => settings.toggleDark(v),
+                  SizedBox(height: isVerySmall ? AppSpacing.md : AppSpacing.lg),
+                  _InfoRowWithSubtitle(
+                    icon: CircleAvatar(
+                      radius: 14,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      child: const Text('M',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    title: 'Mycelium Core',
+                    subtitle: 'Network Protocol Version',
+                    value: 'v0.6.2',
+                  ),
+                  SizedBox(height: isVerySmall ? AppSpacing.md : AppSpacing.lg),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      return appVersionAsync.when(
+                        data: (version) => _InfoRowWithSubtitle(
+                          icon: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            child: const Icon(Icons.phone_android, size: 16),
+                          ),
+                          title: 'Mobile App',
+                          subtitle: 'Application Build Version',
+                          value: version,
+                        ),
+                        loading: () => _InfoRowWithSubtitle(
+                          icon: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            child: const Icon(Icons.phone_android, size: 16),
+                          ),
+                          title: 'Mobile App',
+                          subtitle: 'Application Build Version',
+                          value: 'Loading...',
+                        ),
+                        error: (error, stack) => _InfoRowWithSubtitle(
+                          icon: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            child: const Icon(Icons.phone_android, size: 16),
+                          ),
+                          title: 'Mobile App',
+                          subtitle: 'Application Build Version',
+                          value: 'Error',
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxxl),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '© 2024 Mycelium Network',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Decentralized networking for everyone',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-              textAlign: TextAlign.center,
+            SizedBox(height: spacing),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.language, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Network Information',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isVerySmall ? AppSpacing.md : AppSpacing.lg),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      return nodeAddressAsync.when(
+                        data: (nodeAddress) => _InfoRowWithCopy(
+                          icon: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            child: const Icon(Icons.public, size: 16),
+                          ),
+                          title: 'IP Address',
+                          subtitle: 'Your Mycelium Node Address',
+                          value: nodeAddress.isNotEmpty
+                              ? nodeAddress
+                              : 'Not Available',
+                          copyEnabled: nodeAddress.isNotEmpty,
+                        ),
+                        loading: () => _InfoRowWithCopy(
+                          icon: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            child: const Icon(Icons.public, size: 16),
+                          ),
+                          title: 'IP Address',
+                          subtitle: 'Your Mycelium Node Address',
+                          value: 'Loading...',
+                          copyEnabled: false,
+                        ),
+                        error: (error, stack) => _InfoRowWithCopy(
+                          icon: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            child: const Icon(Icons.public, size: 16),
+                          ),
+                          title: 'IP Address',
+                          subtitle: 'Your Mycelium Node Address',
+                          value: 'Error',
+                          copyEnabled: false,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
+            SizedBox(height: spacing),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        child: const Icon(Icons.color_lens, size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Appearance',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isVerySmall ? AppSpacing.sm : AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Dark Mode',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                overflow: TextOverflow.ellipsis),
+                            Text(
+                              isDark
+                                  ? 'Dark theme is enabled'
+                                  : 'Light theme is enabled',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: isDark,
+                        onChanged: (v) => settings.toggleDark(v),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: spacing),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '© 2024 Mycelium Network',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color:
+                          Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (!isVerySmall) const SizedBox(height: 4),
+                if (!isVerySmall)
+                  Text(
+                    'Decentralized networking for everyone',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+            SizedBox(height: isVerySmall ? AppSpacing.sm : AppSpacing.lg),
           ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-      ],
+        );
+      },
     );
   }
 }

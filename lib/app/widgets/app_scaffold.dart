@@ -31,9 +31,18 @@ class AppScaffold extends StatelessWidget {
         title: title,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: child,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                         MediaQuery.of(context).padding.top -
+                         MediaQuery.of(context).padding.bottom -
+                         kToolbarHeight -
+                         80, // approximate bottom nav height
+            ),
+            child: child,
+          ),
         ),
       ),
       bottomNavigationBar: NavigationBar(
