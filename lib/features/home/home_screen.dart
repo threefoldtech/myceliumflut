@@ -5,11 +5,13 @@ import '../../app/theme/tokens.dart';
 import '../../app/widgets/app_card.dart';
 import '../../app/widgets/app_scaffold.dart';
 import '../../app/widgets/app_button.dart';
+import '../../app/widgets/responsive_layout.dart';
 import '../../models/peer_models.dart' as peer_models;
 import '../../services/peers_service.dart';
 import '../../state/mycelium_providers.dart';
 import '../../services/ffi/mycelium_service.dart';
 import 'widgets/traffic_summary.dart';
+import 'widgets/desktop_home_layout.dart';
 import '../../state/dynamic_traffic_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -26,83 +28,118 @@ class HomeScreen extends ConsumerWidget {
     final onButtonColor = Theme.of(context).colorScheme.onPrimary;
 
     return AppScaffold(
-      title: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        color: buttonColor,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/mycelium_icon.png',
-              height: 32,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Mycelium',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: onButtonColor,
-              ),
-            ),
-          ],
-        ),
-      ),
+      title: _buildTitle(context, buttonColor, onButtonColor),
       currentIndex: 0,
       onTabSelected: null,
-      child: ListView.builder(
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          switch (index) {
-            case 0:
-              return const SizedBox(height: AppSpacing.xxl);
-            case 1:
-              return _HeaderCard(
-                status: status,
-                onConnect: () async {
-                  final peers = peersAsync.asData?.value ?? [];
-                  if (peers.isNotEmpty) {
-                    await service.start(peers);
-                  } else {
-                    // Fallback to PeersService if no peers available
-                    final peersService = PeersService();
-                    final fallbackPeers = await peersService.fetchPeers();
-                    await service.start(fallbackPeers);
-                  }
-                },
-                onDisconnect: () async {
-                  await service.stop();
-                },
-                service: service,
-              );
-            case 2:
-              return Column(
-                children: [
-                  const SizedBox(height: AppSpacing.xxl),
-                  const _StatsRow(),
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-              );
-            case 3:
-              return Consumer(
-                builder: (context, ref, child) {
-                  final trafficStats = ref.watch(dynamicTrafficProvider);
-
-                  return TrafficSummary(
-                    totalUpload: trafficStats.totalUploadFormatted,
-                    totalDownload: trafficStats.totalDownloadFormatted,
-                    peakUpload: trafficStats.peakUploadFormatted,
-                    peakDownload: trafficStats.peakDownloadFormatted,
-                  );
-                },
-              );
-            case 4:
-              return const SizedBox(height: AppSpacing.xxxl);
-            default:
-              return const SizedBox.shrink();
-          }
-        },
+      child: ResponsiveLayout(
+        mobile: _buildMobileLayout(context, ref, status, service, peersAsync),
+        desktop: DesktopHomeLayout(
+          status: status,
+          onConnect: () async {
+            final peers = peersAsync.asData?.value ?? [];
+            if (peers.isNotEmpty) {
+              await service.start(peers);
+            } else {
+              final peersService = PeersService();
+              final fallbackPeers = await peersService.fetchPeers();
+              await service.start(fallbackPeers);
+            }
+          },
+          onDisconnect: () async {
+            await service.stop();
+          },
+          service: service,
+        ),
       ),
+    );
+  }
+
+  Widget _buildTitle(
+      BuildContext context, Color buttonColor, Color onButtonColor) {
+    return ResponsiveHelper.isDesktop(context)
+        ? const Text('Home') // Simple title for desktop
+        : Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            color: buttonColor,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/mycelium_icon.png',
+                  height: 32,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Mycelium',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: onButtonColor,
+                  ),
+                ),
+              ],
+            ),
+          );
+  }
+
+  Widget _buildMobileLayout(
+    BuildContext context,
+    WidgetRef ref,
+    NodeStatus status,
+    dynamic service,
+    AsyncValue<List<String>> peersAsync,
+  ) {
+    return ListView.builder(
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        switch (index) {
+          case 0:
+            return const SizedBox(height: AppSpacing.xxl);
+          case 1:
+            return _HeaderCard(
+              status: status,
+              onConnect: () async {
+                final peers = peersAsync.asData?.value ?? [];
+                if (peers.isNotEmpty) {
+                  await service.start(peers);
+                } else {
+                  final peersService = PeersService();
+                  final fallbackPeers = await peersService.fetchPeers();
+                  await service.start(fallbackPeers);
+                }
+              },
+              onDisconnect: () async {
+                await service.stop();
+              },
+              service: service,
+            );
+          case 2:
+            return Column(
+              children: [
+                const SizedBox(height: AppSpacing.xxl),
+                const _StatsRow(),
+                const SizedBox(height: AppSpacing.xxl),
+              ],
+            );
+          case 3:
+            return Consumer(
+              builder: (context, ref, child) {
+                final trafficStats = ref.watch(dynamicTrafficProvider);
+
+                return TrafficSummary(
+                  totalUpload: trafficStats.totalUploadFormatted,
+                  totalDownload: trafficStats.totalDownloadFormatted,
+                  peakUpload: trafficStats.peakUploadFormatted,
+                  peakDownload: trafficStats.peakDownloadFormatted,
+                );
+              },
+            );
+          case 4:
+            return const SizedBox(height: AppSpacing.xxxl);
+          default:
+            return const SizedBox.shrink();
+        }
+      },
     );
   }
 }

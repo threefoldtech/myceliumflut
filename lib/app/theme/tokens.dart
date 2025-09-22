@@ -44,6 +44,7 @@ class AppSpacing {
   static const double xl = 20;
   static const double xxl = 24;
   static const double xxxl = 32;
+  static const double xxxxl = 48; // For desktop layouts
 }
 
 class AppRadii {
@@ -116,5 +117,3 @@ class AppTypography {
     letterSpacing: 0.2,
   );
 }
-
-

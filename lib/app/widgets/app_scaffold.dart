@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import 'package:go_router/go_router.dart';
+import 'responsive_layout.dart';
+import 'desktop_layout.dart';
 
 class AppScaffold extends StatelessWidget {
   final Widget title;
@@ -8,10 +10,22 @@ class AppScaffold extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int>? onTabSelected;
 
-  const AppScaffold({super.key, required this.title, required this.child, this.currentIndex = 0, this.onTabSelected});
+  const AppScaffold(
+      {super.key,
+      required this.title,
+      required this.child,
+      this.currentIndex = 0,
+      this.onTabSelected});
 
   @override
   Widget build(BuildContext context) {
+    return ResponsiveLayout(
+      mobile: _buildMobileLayout(context),
+      desktop: _buildDesktopLayout(context),
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: title,
@@ -24,27 +38,43 @@ class AppScaffold extends StatelessWidget {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
-        onDestinationSelected: onTabSelected ?? (index) {
-          switch (index) {
-            case 0:
-              if (context.mounted) context.go('/');
-              break;
-            case 1:
-              if (context.mounted) context.go('/peers');
-              break;
-            case 2:
-              if (context.mounted) context.go('/settings');
-              break;
-          }
-        },
+        onDestinationSelected: onTabSelected ??
+            (index) {
+              switch (index) {
+                case 0:
+                  if (context.mounted) context.go('/');
+                  break;
+                case 1:
+                  if (context.mounted) context.go('/peers');
+                  break;
+                case 2:
+                  if (context.mounted) context.go('/settings');
+                  break;
+              }
+            },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'Peers'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home'),
+          NavigationDestination(
+              icon: Icon(Icons.hub_outlined),
+              selectedIcon: Icon(Icons.hub),
+              label: 'Peers'),
+          NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings'),
         ],
       ),
     );
   }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return DesktopLayout(
+      title: title,
+      currentIndex: currentIndex,
+      child: child,
+    );
+  }
 }
-
-

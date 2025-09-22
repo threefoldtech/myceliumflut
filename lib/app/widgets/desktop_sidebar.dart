@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../theme/tokens.dart';
+
+class DesktopSidebar extends StatelessWidget {
+  final int currentIndex;
+
+  const DesktopSidebar({
+    super.key,
+    required this.currentIndex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 240,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          right: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(2, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Logo section
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/images/mycelium_icon.png',
+                  height: 32,
+                  width: 32,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  'Mycelium',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+
+          // Navigation items
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                children: [
+                  _SidebarItem(
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: 'Home',
+                    isSelected: currentIndex == 0,
+                    onTap: () => context.go('/'),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SidebarItem(
+                    icon: Icons.hub_outlined,
+                    selectedIcon: Icons.hub,
+                    label: 'Peers',
+                    isSelected: currentIndex == 1,
+                    onTap: () => context.go('/peers'),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SidebarItem(
+                    icon: Icons.settings_outlined,
+                    selectedIcon: Icons.settings,
+                    label: 'Settings',
+                    isSelected: currentIndex == 2,
+                    onTap: () => context.go('/settings'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Footer with version info
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(
+                  color: Theme.of(context).dividerColor.withOpacity(0.3),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  '© 2024 Mycelium Network',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                      ),
+                ),
+                Text(
+                  'v0.10.0',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.4),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SidebarItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: isSelected
+                ? Border.all(
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    width: 1,
+                  )
+                : null,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? selectedIcon : icon,
+                size: 20,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

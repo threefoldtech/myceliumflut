@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../app/widgets/app_scaffold.dart';
 import '../../app/widgets/app_card.dart';
+import '../../app/widgets/responsive_layout.dart';
 import '../../app/theme/tokens.dart';
 import 'widgets/peer_details_sheet.dart';
+import 'widgets/desktop_peers_layout.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/mycelium_providers.dart';
 import 'package:go_router/go_router.dart';
@@ -18,35 +20,16 @@ class PeersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final peersAsync = ref.watch(peersProvider);
-    final title =
-        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/'),
-          ),
-          const Text(
-            'Peers',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-      Divider(
-        height: 1,
-        thickness: 1,
-        color: Theme.of(context).dividerColor,
-      ),
-    ]);
+
     return peersAsync.when(
       loading: () => AppScaffold(
-        title: title,
+        title: _buildTitle(context),
         currentIndex: 1,
         onTabSelected: null,
         child: const Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => AppScaffold(
-        title: title,
+        title: _buildTitle(context),
         currentIndex: 1,
         onTabSelected: null,
         child: Center(child: Text('Error loading peers: $error')),
@@ -54,18 +37,88 @@ class PeersScreen extends ConsumerWidget {
       data: (peers) => _PeersDataScreen(peers: peers),
     );
   }
+
+  Widget _buildTitle(BuildContext context) {
+    return ResponsiveHelper.isDesktop(context)
+        ? const Text('Peers') // Simple title for desktop
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => context.go('/'),
+                  ),
+                  const Text(
+                    'Peers',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Theme.of(context).dividerColor,
+              ),
+            ],
+          );
+  }
 }
 
-class _PeersDataScreen extends ConsumerStatefulWidget {
+class _PeersDataScreen extends ConsumerWidget {
   final List<String> peers;
 
   const _PeersDataScreen({required this.peers});
 
   @override
-  ConsumerState<_PeersDataScreen> createState() => _PeersDataScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppScaffold(
+      title: ResponsiveHelper.isDesktop(context)
+          ? const Text('Peers')
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => context.go('/'),
+                    ),
+                    const Text(
+                      'Peers',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Theme.of(context).dividerColor,
+                ),
+              ],
+            ),
+      currentIndex: 1,
+      onTabSelected: null,
+      child: ResponsiveLayout(
+        mobile: _PeersMobileLayout(peers: peers),
+        desktop: DesktopPeersLayout(peers: peers),
+      ),
+    );
+  }
 }
 
-class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
+class _PeersMobileLayout extends ConsumerStatefulWidget {
+  final List<String> peers;
+
+  const _PeersMobileLayout({required this.peers});
+
+  @override
+  ConsumerState<_PeersMobileLayout> createState() => _PeersMobileLayoutState();
+}
+
+class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
   String query = '';
   List<peer_models.PeerStats> peerStatus = [];
   String? peerStatusError;
@@ -79,7 +132,6 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
   }
 
   void _startConditionalPolling() {
-    // Only start polling if mounted and Mycelium is connected
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
@@ -114,7 +166,6 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
         });
       }
     } catch (e) {
-      // Stop polling on errors to prevent spam
       _refreshTimer?.cancel();
       _refreshTimer = null;
       if (mounted) {
@@ -126,7 +177,6 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
     }
   }
 
-  // Calculate peer summary statistics
   Map<String, int> _calculatePeerSummary() {
     int connected = 0;
     int slow = 0;
@@ -155,7 +205,6 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
     };
   }
 
-  // Calculate total network traffic
   Map<String, String> _calculateNetworkTraffic() {
     int totalRx = 0;
     int totalTx = 0;
@@ -170,28 +219,21 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
     };
   }
 
-  // Find peer status for a given peer address
   peer_models.PeerStats? _findPeerStatus(String peerAddress) {
     for (final peer in peerStatus) {
-      // Extract IP from peer address (remove tcp:// and port)
       final peerIp = peerAddress.replaceAll('tcp://', '').split(':')[0];
 
-      // Handle different endpoint formats from Rust
       String statusIp = peer.endpoint;
       if (statusIp.contains('://')) {
-        // Format: tcp://ip:port or quic://ip:port
         statusIp = statusIp.split('://')[1].split(':')[0];
       } else if (statusIp.contains(':')) {
-        // Format: ip:port
         statusIp = statusIp.split(':')[0];
       }
 
-      // Try exact match first
       if (peerIp == statusIp) {
         return peer;
       }
 
-      // Try matching the full peer address with the endpoint
       if (peerAddress == peer.endpoint) {
         return peer;
       }
@@ -218,134 +260,111 @@ class _PeersDataScreenState extends ConsumerState<_PeersDataScreen> {
 
     final peerSummary = _calculatePeerSummary();
     final networkTraffic = _calculateNetworkTraffic();
-    return AppScaffold(
-      title: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.go('/'),
-            ),
-            const Text(
-              'Peers',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ],
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      children: [
+        _SearchAddBar(
+          onChanged: (v) => setState(() => query = v),
+          onAdd: () => _showAddPeerDialog(context, ref),
+          isDisabled: isMyceliumRunning,
         ),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: Theme.of(context).dividerColor,
-        ),
-      ]),
-      currentIndex: 1,
-      onTabSelected: null,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        children: [
-          _SearchAddBar(
-            onChanged: (v) => setState(() => query = v),
-            onAdd: () => _showAddPeerDialog(context, ref),
-            isDisabled: isMyceliumRunning,
+        const SizedBox(height: AppSpacing.md),
+        if (filtered.isEmpty)
+          _PeersEmptyState()
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filtered.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+            itemBuilder: (_, index) {
+              final p = filtered[index];
+              final isUserPeer = userPeers.contains(p);
+              final peerStat = _findPeerStatus(p);
+              return _PeerTile(
+                ip: p,
+                country: "Unknown",
+                isUserPeer: isUserPeer,
+                peerStats: peerStat,
+                isDisabled: isMyceliumRunning,
+              );
+            },
           ),
-          const SizedBox(height: AppSpacing.md),
-          if (filtered.isEmpty)
-            _PeersEmptyState()
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filtered.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (_, index) {
-                final p = filtered[index];
-                final isUserPeer = userPeers.contains(p);
-                final peerStat = _findPeerStatus(p);
-                return _PeerTile(
-                  ip: p,
-                  country: "Unknown",
-                  isUserPeer: isUserPeer,
-                  peerStats: peerStat,
-                  isDisabled: isMyceliumRunning,
-                );
-              },
-            ),
-          const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.md),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.public,
+                      size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text('Peer Summary',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _SummaryItem(
+                      label: '${peerSummary['connected']}',
+                      subtitle: 'Connected',
+                      color: Colors.green),
+                  _SummaryItem(
+                      label: '${peerSummary['slow']}',
+                      subtitle: 'Connecting',
+                      color: Colors.orange),
+                  _SummaryItem(
+                      label: '${peerSummary['down']}',
+                      subtitle: 'Down',
+                      color: Colors.red),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (peerStatusError != null)
           AppCard(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.public,
-                        size: 20, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 6),
-                    Text('Peer Summary',
-                        style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _SummaryItem(
-                        label: '${peerSummary['connected']}',
-                        subtitle: 'Connected',
-                        color: Colors.green),
-                    _SummaryItem(
-                        label: '${peerSummary['slow']}',
-                        subtitle: 'Connecting',
-                        color: Colors.orange),
-                    _SummaryItem(
-                        label: '${peerSummary['down']}',
-                        subtitle: 'Down',
-                        color: Colors.red),
-                  ],
-                ),
-              ],
-            ),
+            child: Text('Error getting peer status: $peerStatusError',
+                style: TextStyle(color: Colors.red)),
           ),
-          const SizedBox(height: AppSpacing.md),
-          if (peerStatusError != null)
-            AppCard(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text('Error getting peer status: $peerStatusError',
-                  style: TextStyle(color: Colors.red)),
-            ),
-          const SizedBox(height: AppSpacing.md),
-          AppCard(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.podcasts,
-                        size: 20, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 6),
-                    Text('Network Traffic',
-                        style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _SummaryItem(
-                        label: networkTraffic['rx'] ?? '0 B',
-                        subtitle: 'Total Download'),
-                    _SummaryItem(
-                        label: networkTraffic['tx'] ?? '0 B',
-                        subtitle: 'Total Upload'),
-                  ],
-                ),
-              ],
-            ),
+        const SizedBox(height: AppSpacing.md),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.podcasts,
+                      size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text('Network Traffic',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _SummaryItem(
+                      label: networkTraffic['rx'] ?? '0 B',
+                      subtitle: 'Total Download'),
+                  _SummaryItem(
+                      label: networkTraffic['tx'] ?? '0 B',
+                      subtitle: 'Total Upload'),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -545,7 +564,8 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         shape: BoxShape.circle,
                       ),
                       child: Center(
-                        child: geoService.getFlagWidget(locationAsync.countryCode),
+                        child:
+                            geoService.getFlagWidget(locationAsync.countryCode),
                       ),
                     );
                   }
