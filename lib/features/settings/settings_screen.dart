@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myceliumflut/app/theme/tokens.dart';
 import 'package:myceliumflut/app/widgets/app_card.dart';
 import 'package:myceliumflut/app/widgets/app_scaffold.dart';
 import 'package:myceliumflut/state/app_settings.dart';
+import 'package:myceliumflut/state/app_info_providers.dart';
+import 'package:myceliumflut/state/node_address_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -13,6 +16,8 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
     final isDark = settings.themeMode == ThemeMode.dark;
+    final appVersionAsync = ref.watch(fullAppVersionProvider);
+    final nodeAddressAsync = ref.watch(nodeAddressProvider);
 
     return AppScaffold(
       title: Column(
@@ -71,16 +76,119 @@ class SettingsScreen extends ConsumerWidget {
                   value: 'v0.6.2',
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                _InfoRowWithSubtitle(
-                  icon: CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    child: const Icon(Icons.phone_android, size: 16),
-                  ),
-                  title: 'Mobile App',
-                  subtitle: 'Application Build Version',
-                  value: 'v1.0.12',
+                Consumer(
+                  builder: (context, ref, child) {
+                    return appVersionAsync.when(
+                      data: (version) => _InfoRowWithSubtitle(
+                        icon: CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          child: const Icon(Icons.phone_android, size: 16),
+                        ),
+                        title: 'Mobile App',
+                        subtitle: 'Application Build Version',
+                        value: version,
+                      ),
+                      loading: () => _InfoRowWithSubtitle(
+                        icon: CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          child: const Icon(Icons.phone_android, size: 16),
+                        ),
+                        title: 'Mobile App',
+                        subtitle: 'Application Build Version',
+                        value: 'Loading...',
+                      ),
+                      error: (error, stack) => _InfoRowWithSubtitle(
+                        icon: CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          child: const Icon(Icons.phone_android, size: 16),
+                        ),
+                        title: 'Mobile App',
+                        subtitle: 'Application Build Version',
+                        value: 'Error',
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.language, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Network Information',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Consumer(
+                  builder: (context, ref, child) {
+                    return nodeAddressAsync.when(
+                      data: (nodeAddress) => _InfoRowWithCopy(
+                        icon: CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          child: const Icon(Icons.public, size: 16),
+                        ),
+                        title: 'IP Address',
+                        subtitle: 'Your Mycelium Node Address',
+                        value: nodeAddress.isNotEmpty
+                            ? nodeAddress
+                            : 'Not Available',
+                        copyEnabled: nodeAddress.isNotEmpty,
+                      ),
+                      loading: () => _InfoRowWithCopy(
+                        icon: CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          child: const Icon(Icons.public, size: 16),
+                        ),
+                        title: 'IP Address',
+                        subtitle: 'Your Mycelium Node Address',
+                        value: 'Loading...',
+                        copyEnabled: false,
+                      ),
+                      error: (error, stack) => _InfoRowWithCopy(
+                        icon: CircleAvatar(
+                          radius: 14,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          child: const Icon(Icons.public, size: 16),
+                        ),
+                        title: 'IP Address',
+                        subtitle: 'Your Mycelium Node Address',
+                        value: 'Error',
+                        copyEnabled: false,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -213,6 +321,101 @@ class _InfoRowWithSubtitle extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           child: Text(value, style: textTheme.labelMedium),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoRowWithCopy extends StatelessWidget {
+  final Widget icon;
+  final String title;
+  final String subtitle;
+  final String value;
+  final bool copyEnabled;
+
+  const _InfoRowWithCopy({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.copyEnabled,
+  });
+
+  void _copyToClipboard(BuildContext context, String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('IP Address copied to clipboard'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            icon,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: textTheme.bodyMedium),
+                  Text(
+                    subtitle,
+                    style: textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Text(
+                  value,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            if (copyEnabled) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18),
+                onPressed: () => _copyToClipboard(context, value),
+                tooltip: 'Copy IP Address',
+                style: IconButton.styleFrom(
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  minimumSize: const Size(40, 40),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
