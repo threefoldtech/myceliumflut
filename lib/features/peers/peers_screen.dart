@@ -261,9 +261,9 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
     final peerSummary = _calculatePeerSummary();
     final networkTraffic = _calculateNetworkTraffic();
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    return Column(
       children: [
+        const SizedBox(height: AppSpacing.sm),
         _SearchAddBar(
           onChanged: (v) => setState(() => query = v),
           onAdd: () => _showAddPeerDialog(context, ref),
@@ -273,24 +273,20 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
         if (filtered.isEmpty)
           _PeersEmptyState()
         else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filtered.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (_, index) {
-              final p = filtered[index];
-              final isUserPeer = userPeers.contains(p);
-              final peerStat = _findPeerStatus(p);
-              return _PeerTile(
+          ...filtered.map((p) {
+            final isUserPeer = userPeers.contains(p);
+            final peerStat = _findPeerStatus(p);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: _PeerTile(
                 ip: p,
                 country: "Unknown",
                 isUserPeer: isUserPeer,
                 peerStats: peerStat,
                 isDisabled: isMyceliumRunning,
-              );
-            },
-          ),
+              ),
+            );
+          }).toList(),
         const SizedBox(height: AppSpacing.md),
         AppCard(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -307,22 +303,55 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _SummaryItem(
-                      label: '${peerSummary['connected']}',
-                      subtitle: 'Connected',
-                      color: Colors.green),
-                  _SummaryItem(
-                      label: '${peerSummary['slow']}',
-                      subtitle: 'Connecting',
-                      color: Colors.orange),
-                  _SummaryItem(
-                      label: '${peerSummary['down']}',
-                      subtitle: 'Down',
-                      color: Colors.red),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < 300) {
+                    // Stack vertically for very narrow screens
+                    return Column(
+                      children: [
+                        _SummaryItem(
+                            label: '${peerSummary['connected']}',
+                            subtitle: 'Connected',
+                            color: Colors.green),
+                        const SizedBox(height: AppSpacing.sm),
+                        _SummaryItem(
+                            label: '${peerSummary['slow']}',
+                            subtitle: 'Connecting',
+                            color: Colors.orange),
+                        const SizedBox(height: AppSpacing.sm),
+                        _SummaryItem(
+                            label: '${peerSummary['down']}',
+                            subtitle: 'Down',
+                            color: Colors.red),
+                      ],
+                    );
+                  }
+                  
+                  // Use row layout for wider screens
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: _SummaryItem(
+                            label: '${peerSummary['connected']}',
+                            subtitle: 'Connected',
+                            color: Colors.green),
+                      ),
+                      Expanded(
+                        child: _SummaryItem(
+                            label: '${peerSummary['slow']}',
+                            subtitle: 'Connecting',
+                            color: Colors.orange),
+                      ),
+                      Expanded(
+                        child: _SummaryItem(
+                            label: '${peerSummary['down']}',
+                            subtitle: 'Down',
+                            color: Colors.red),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -364,6 +393,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
             ],
           ),
         ),
+        const SizedBox(height: AppSpacing.sm),
       ],
     );
   }
@@ -378,25 +408,60 @@ class _SearchAddBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search peers',
-              prefixIcon: const Icon(Icons.search),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Stack buttons vertically on very narrow screens
+        if (constraints.maxWidth < 400) {
+          return Column(
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search peers',
+                  prefixIcon: const Icon(Icons.search),
+                ),
+                onChanged: isDisabled ? null : onChanged,
+                enabled: !isDisabled,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
+                ),
+              ),
+            ],
+          );
+        }
+        
+        // Use row layout for wider screens
+        return Row(
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search peers',
+                  prefixIcon: const Icon(Icons.search),
+                ),
+                onChanged: isDisabled ? null : onChanged,
+                enabled: !isDisabled,
+              ),
             ),
-            onChanged: isDisabled ? null : onChanged,
-            enabled: !isDisabled,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        FilledButton.icon(
-          onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
-          icon: const Icon(Icons.add),
-          label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
-        ),
-      ],
+            const SizedBox(width: AppSpacing.lg),
+            Flexible(
+              child: FilledButton.icon(
+                onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
+                icon: const Icon(Icons.add),
+                label: Text(
+                  isDisabled ? 'Mycelium Running' : 'Add Peer',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -633,6 +698,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                                         .withOpacity(0.7),
                                   ),
                               overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           );
                         }

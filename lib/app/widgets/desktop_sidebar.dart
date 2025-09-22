@@ -44,12 +44,15 @@ class DesktopSidebar extends StatelessWidget {
                   width: 32,
                 ),
                 const SizedBox(width: AppSpacing.md),
-                Text(
-                  'Mycelium',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                Expanded(
+                  child: Text(
+                    'Mycelium',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -107,6 +110,7 @@ class DesktopSidebar extends StatelessWidget {
                             .onSurface
                             .withOpacity(0.6),
                       ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   'v0.10.0',
@@ -176,15 +180,18 @@ class _SidebarItem extends StatelessWidget {
                     : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
               const SizedBox(width: AppSpacing.md),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
-                    ),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

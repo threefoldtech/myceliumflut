@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Responsive breakpoints following common desktop design patterns
 class ResponsiveBreakpoints {
-  static const double mobile = 768;
-  static const double tablet = 1024;
+  static const double mobile = 600;
+  static const double tablet = 900;
   static const double desktop = 1200;
   static const double largeDesktop = 1440;
 }

@@ -26,7 +26,7 @@ class DesktopLayout extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                // Header bar (optional, can be used for breadcrumbs or actions)
+                // Header bar
                 Container(
                   height: 64,
                   decoration: BoxDecoration(
@@ -39,11 +39,10 @@ class DesktopLayout extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                     child: Row(
                       children: [
-                        title,
+                        Expanded(child: title),
                       ],
                     ),
                   ),
@@ -53,6 +52,7 @@ class DesktopLayout extends StatelessWidget {
                 Expanded(
                   child: Container(
                     color: Theme.of(context).colorScheme.background,
+                    width: double.infinity,
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(AppSpacing.xxl),
                       child: child,

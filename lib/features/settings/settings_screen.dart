@@ -63,7 +63,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
     final appVersionAsync = ref.watch(fullAppVersionProvider);
     final nodeAddressAsync = ref.watch(nodeAddressProvider);
 
-    return ListView(
+    return Column(
       children: [
         const SizedBox(height: AppSpacing.lg),
         AppCard(
@@ -260,7 +260,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              ' 2024 Mycelium Network',
+              '© 2024 Mycelium Network',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color:
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
@@ -276,6 +276,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }

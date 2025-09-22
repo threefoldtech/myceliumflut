@@ -89,57 +89,43 @@ class HomeScreen extends ConsumerWidget {
     dynamic service,
     AsyncValue<List<String>> peersAsync,
   ) {
-    return ListView.builder(
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        switch (index) {
-          case 0:
-            return const SizedBox(height: AppSpacing.xxl);
-          case 1:
-            return _HeaderCard(
-              status: status,
-              onConnect: () async {
-                final peers = peersAsync.asData?.value ?? [];
-                if (peers.isNotEmpty) {
-                  await service.start(peers);
-                } else {
-                  final peersService = PeersService();
-                  final fallbackPeers = await peersService.fetchPeers();
-                  await service.start(fallbackPeers);
-                }
-              },
-              onDisconnect: () async {
-                await service.stop();
-              },
-              service: service,
-            );
-          case 2:
-            return Column(
-              children: [
-                const SizedBox(height: AppSpacing.xxl),
-                const _StatsRow(),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
-            );
-          case 3:
-            return Consumer(
-              builder: (context, ref, child) {
-                final trafficStats = ref.watch(dynamicTrafficProvider);
+    return Column(
+      children: [
+        const SizedBox(height: AppSpacing.xxl),
+        _HeaderCard(
+          status: status,
+          onConnect: () async {
+            final peers = peersAsync.asData?.value ?? [];
+            if (peers.isNotEmpty) {
+              await service.start(peers);
+            } else {
+              final peersService = PeersService();
+              final fallbackPeers = await peersService.fetchPeers();
+              await service.start(fallbackPeers);
+            }
+          },
+          onDisconnect: () async {
+            await service.stop();
+          },
+          service: service,
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        const _StatsRow(),
+        const SizedBox(height: AppSpacing.xxl),
+        Consumer(
+          builder: (context, ref, child) {
+            final trafficStats = ref.watch(dynamicTrafficProvider);
 
-                return TrafficSummary(
-                  totalUpload: trafficStats.totalUploadFormatted,
-                  totalDownload: trafficStats.totalDownloadFormatted,
-                  peakUpload: trafficStats.peakUploadFormatted,
-                  peakDownload: trafficStats.peakDownloadFormatted,
-                );
-              },
+            return TrafficSummary(
+              totalUpload: trafficStats.totalUploadFormatted,
+              totalDownload: trafficStats.totalDownloadFormatted,
+              peakUpload: trafficStats.peakUploadFormatted,
+              peakDownload: trafficStats.peakDownloadFormatted,
             );
-          case 4:
-            return const SizedBox(height: AppSpacing.xxxl);
-          default:
-            return const SizedBox.shrink();
-        }
-      },
+          },
+        ),
+        const SizedBox(height: AppSpacing.xxxl),
+      ],
     );
   }
 }
@@ -428,77 +414,160 @@ class _StatsRow extends ConsumerWidget {
       List<peer_models.PeerStats> peerStatus, UptimeNotifier uptimeNotifier) {
     final networkTraffic = _calculateNetworkTraffic(peerStatus);
 
-    return Row(
-      children: [
-        Expanded(
-          child: AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Connected Peers',
-                  style: Theme.of(context).textTheme.titleSmall,
-                  textAlign: TextAlign.center,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use single column layout for very narrow screens
+        if (constraints.maxWidth < 400) {
+          return Column(
+            children: [
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Connected Peers',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${peerStatus.length}',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${peerStatus.length}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Uptime',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      uptimeNotifier.formattedUptime,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Traffic',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      networkTraffic['total'] ?? '0 B',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+        
+        // Use row layout for wider screens
+        return Row(
+          children: [
+            Expanded(
+              child: AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Connected Peers',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${peerStatus.length}',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Uptime',
-                  style: Theme.of(context).textTheme.titleSmall,
-                  textAlign: TextAlign.center,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Uptime',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      uptimeNotifier.formattedUptime,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  uptimeNotifier.formattedUptime,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Traffic',
-                  style: Theme.of(context).textTheme.titleSmall,
-                  textAlign: TextAlign.center,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Traffic',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      networkTraffic['total'] ?? '0 B',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  networkTraffic['total'] ?? '0 B',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
