@@ -71,11 +71,36 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
-        // Add code here to handle the message.
-        errlog("handleAppMessage handler")
-
-        if let handler = completionHandler {
-            handler(messageData)
+        // Handle messages from the main app
+        infolog("handleAppMessage called")
+        
+        guard let messageString = String(data: messageData, encoding: .utf8) else {
+            errlog("Failed to decode message data")
+            completionHandler?(nil)
+            return
+        }
+        
+        infolog("Received message: \(messageString)")
+        
+        if messageString == "getPeerStatus" {
+            // Get peer status from mycelium node running in this tunnel
+            do {
+                let peerStatus = getPeerStatus()
+                let responseData = try JSONSerialization.data(withJSONObject: peerStatus, options: [])
+                infolog("Returning peer status: \(peerStatus)")
+                completionHandler?(responseData)
+            } catch {
+                errlog("Error getting peer status: \(error.localizedDescription)")
+                let errorResponse = ["err_peer_status_error"]
+                if let errorData = try? JSONSerialization.data(withJSONObject: errorResponse, options: []) {
+                    completionHandler?(errorData)
+                } else {
+                    completionHandler?(nil)
+                }
+            }
+        } else {
+            errlog("Unknown message: \(messageString)")
+            completionHandler?(nil)
         }
     }
 
