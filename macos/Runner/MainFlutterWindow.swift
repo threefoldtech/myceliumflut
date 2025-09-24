@@ -33,7 +33,7 @@ class MainFlutterWindow: NSWindow {
                                                   binaryMessenger: flutterViewController.engine.binaryMessenger)
         
         flutterChannel?.setMethodCallHandler({
-            (call: FlutterMethodCall, result: FlutterResult) -> Void in
+            (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
             // This method is invoked on the UI thread.
             switch call.method {
             case "generateSecretKey":
@@ -62,30 +62,17 @@ class MainFlutterWindow: NSWindow {
                 self.stopMycelium()
                 result(true)
             case "getPeerStatus":
-                do {
-                    let peerStatus = getPeerStatus()
-                    result(peerStatus)
-                } catch {
-                    debuglog("Error getting peer status: \(error.localizedDescription)")
-                    result(FlutterError(code: "PEER_STATUS_ERROR", message: error.localizedDescription, details: nil))
-                }
+                self.getPeerStatusFromService(result: result)
             case "proxyConnect":
-                do {
-                    let remote = call.arguments as? String ?? ""
-                    let proxyResult = proxyConnect(remote: remote)
-                    result(proxyResult)
-                } catch {
-                    debuglog("Error in proxyConnect: \(error.localizedDescription)")
-                    result(FlutterError(code: "PROXY_CONNECT_ERROR", message: error.localizedDescription, details: nil))
-                }
+                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
             case "proxyDisconnect":
-                do {
-                    let proxyResult = proxyDisconnect()
-                    result(proxyResult)
-                } catch {
-                    debuglog("Error in proxyDisconnect: \(error.localizedDescription)")
-                    result(FlutterError(code: "PROXY_DISCONNECT_ERROR", message: error.localizedDescription, details: nil))
-                }
+                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+            case "startProxyProbe":
+                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+            case "stopProxyProbe":
+                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+            case "listProxies":
+                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -238,6 +225,108 @@ class MainFlutterWindow: NSWindow {
     func stopMycelium() {
         infolog("stopMycelium")
         self.vpnManager?.connection.stopVPNTunnel()
+    }
+    
+    // MARK: - Peer Status Methods
+    
+    // Tunnel-based getPeerStatus - communicates directly with tunnel extension (like iOS)
+    private var cachedPeerStatus: [String]? = nil
+    private var lastPeerStatusCall: Date = Date.distantPast
+    private let peerStatusThrottleInterval: TimeInterval = 2.0
+    
+    private func getPeerStatusFromService(result: @escaping FlutterResult) {
+        let now = Date()
+        
+        // Throttle requests to prevent excessive calls
+        if now.timeIntervalSince(lastPeerStatusCall) < peerStatusThrottleInterval {
+            if let cached = cachedPeerStatus {
+                debuglog("Returning cached peer status (throttled)")
+                result(cached)
+                return
+            }
+        }
+        
+        lastPeerStatusCall = now
+        
+        guard let vpnManager = self.vpnManager else {
+            debuglog("VPN manager not available, returning cached result or error")
+            if let cached = cachedPeerStatus {
+                result(cached)
+            } else {
+                result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
+            }
+            return
+        }
+        
+        guard let session = vpnManager.connection as? NETunnelProviderSession else {
+            debuglog("Tunnel session not available, returning cached result or error")
+            if let cached = cachedPeerStatus {
+                result(cached)
+            } else {
+                result(FlutterError(code: "NO_TUNNEL_SESSION", message: "Tunnel session not available", details: nil))
+            }
+            return
+        }
+        
+        // Check if tunnel is connected
+        guard session.status == .connected else {
+            debuglog("Tunnel not connected (status: \(session.status.rawValue)), returning cached result or error")
+            if let cached = cachedPeerStatus {
+                result(cached)
+            } else {
+                result(["err_tunnel_not_connected"])
+            }
+            return
+        }
+        
+        let messageData = "getPeerStatus".data(using: .utf8)!
+        
+        do {
+            try session.sendProviderMessage(messageData) { [weak self] responseData in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    
+                    guard let responseData = responseData else {
+                        debuglog("No response data from tunnel, returning cached result or error")
+                        if let cached = self.cachedPeerStatus {
+                            result(cached)
+                        } else {
+                            result(["err_no_tunnel_response"])
+                        }
+                        return
+                    }
+                    
+                    do {
+                        if let peerStatus = try JSONSerialization.jsonObject(with: responseData, options: []) as? [String] {
+                            debuglog("Received peer status from tunnel: \(peerStatus)")
+                            self.cachedPeerStatus = peerStatus
+                            result(peerStatus)
+                        } else {
+                            debuglog("Invalid peer status format from tunnel, returning cached result or error")
+                            if let cached = self.cachedPeerStatus {
+                                result(cached)
+                            } else {
+                                result(["err_invalid_tunnel_response"])
+                            }
+                        }
+                    } catch {
+                        debuglog("Error parsing tunnel response: \(error.localizedDescription)")
+                        if let cached = self.cachedPeerStatus {
+                            result(cached)
+                        } else {
+                            result(["err_tunnel_parse_error"])
+                        }
+                    }
+                }
+            }
+        } catch {
+            debuglog("Error sending message to tunnel: \(error.localizedDescription)")
+            if let cached = cachedPeerStatus {
+                result(cached)
+            } else {
+                result(FlutterError(code: "TUNNEL_MESSAGE_ERROR", message: error.localizedDescription, details: nil))
+            }
+        }
     }
 
     func observeVPNStatus() {
