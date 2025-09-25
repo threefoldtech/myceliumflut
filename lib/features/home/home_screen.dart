@@ -347,7 +347,7 @@ class _HeaderCardState extends State<_HeaderCard>
               ),
             ),
           ),
-          if (widget.status == NodeStatus.connected) ...[
+          if (widget.status == NodeStatus.connected && false) ...[
             const SizedBox(height: AppSpacing.lg),
             AppCard(
               margin: EdgeInsets.zero,

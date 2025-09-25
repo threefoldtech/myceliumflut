@@ -106,7 +106,7 @@ class GeolocationService {
         size: 18,
       );
     }
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS ) {
       return Text(
         getFlagEmoji(countryCode),
         style: const TextStyle(fontSize: 18),

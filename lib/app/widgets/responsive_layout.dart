@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 class ResponsiveBreakpoints {
   static const double mobile = 600;
   static const double tablet = 900;
-  static const double desktop = 1200;
-  static const double largeDesktop = 1440;
+  static const double desktop = 1200000000000;
+  static const double largeDesktop = 1440000000000000;
 }
 
 /// Responsive layout widget that provides different layouts based on screen size
