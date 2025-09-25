@@ -67,7 +67,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
       builder: (context, constraints) {
         final isVerySmall = constraints.maxHeight < 600;
         final spacing = isVerySmall ? AppSpacing.md : AppSpacing.xxl;
-        
+
         return Column(
           children: [
             SizedBox(height: isVerySmall ? AppSpacing.sm : AppSpacing.lg),
@@ -108,7 +108,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         data: (version) => _InfoRowWithSubtitle(
                           icon: CircleAvatar(
                             radius: 14,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             child: const Icon(Icons.phone_android, size: 16),
@@ -120,7 +121,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         loading: () => _InfoRowWithSubtitle(
                           icon: CircleAvatar(
                             radius: 14,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             child: const Icon(Icons.phone_android, size: 16),
@@ -132,7 +134,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         error: (error, stack) => _InfoRowWithSubtitle(
                           icon: CircleAvatar(
                             radius: 14,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             child: const Icon(Icons.phone_android, size: 16),
@@ -172,7 +175,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         data: (nodeAddress) => _InfoRowWithCopy(
                           icon: CircleAvatar(
                             radius: 14,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             child: const Icon(Icons.public, size: 16),
@@ -187,7 +191,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         loading: () => _InfoRowWithCopy(
                           icon: CircleAvatar(
                             radius: 14,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             child: const Icon(Icons.public, size: 16),
@@ -200,7 +205,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         error: (error, stack) => _InfoRowWithCopy(
                           icon: CircleAvatar(
                             radius: 14,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
                             child: const Icon(Icons.public, size: 16),
@@ -226,7 +232,8 @@ class _SettingsMobileLayout extends ConsumerWidget {
                       CircleAvatar(
                         radius: 14,
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         child: const Icon(Icons.color_lens, size: 16),
                       ),
                       const SizedBox(width: 10),
@@ -254,17 +261,22 @@ class _SettingsMobileLayout extends ConsumerWidget {
                               isDark
                                   ? 'Dark theme is enabled'
                                   : 'Light theme is enabled',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.6)),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6)),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
                       Switch(
+                        inactiveThumbColor:
+                            Theme.of(context).colorScheme.primary,
                         value: isDark,
                         onChanged: (v) => settings.toggleDark(v),
                       ),
@@ -280,8 +292,10 @@ class _SettingsMobileLayout extends ConsumerWidget {
                 Text(
                   '© 2024 Mycelium Network',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6)),
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -290,8 +304,10 @@ class _SettingsMobileLayout extends ConsumerWidget {
                   Text(
                     'Decentralized networking for everyone',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6)),
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                   ),
