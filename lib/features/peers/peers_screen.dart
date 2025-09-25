@@ -782,7 +782,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 ),
               ],
               // Show delete icon only for user-added peers
-              if (widget.isUserPeer)
+              if (widget.isUserPeer && widget.peerStats == null)
                 IconButton(
                   icon: Icon(
                     Icons.delete_outline,
