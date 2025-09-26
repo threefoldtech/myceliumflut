@@ -12,8 +12,6 @@ import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'myceliumflut_ffi_binding.dart';
-
 import 'services/ffi/mycelium_service.dart';
 
 final _logger = Logger('Mycelium');
@@ -39,13 +37,11 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
-  late TextEditingController textEditController;
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
   final MyceliumService _myceliumService = MyceliumService();
 
   @override
   void initState() {
-    textEditController = TextEditingController(text: '');
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     platform.setMethodCallHandler((MethodCall call) async {});
@@ -78,60 +74,28 @@ class _MyAppState extends ConsumerState<MyApp>
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
       _logger.info("Window manager setTitleBarStyle completed");
 
-      // Skip setSkipTaskbar as it causes crashes on some Windows versions
-      // The app will show in taskbar by default anyway
-      _logger.info("Skipping setSkipTaskbar to avoid compatibility issues");
-
-      _logger.info("Window manager initialized successfully");
-
       // Initialize tray manager with careful error handling
       try {
         _logger.info("Starting tray manager initialization...");
         trayManager.addListener(this);
         _logger.info("Tray manager listener added successfully");
 
-        // Set tray icon with multiple fallback options
-        bool iconSet = false;
-
         // Try different icon paths in order of preference
-        final iconPaths = [
-          if (Platform.isWindows) 'assets/images/tray_icon.ico',
-          // 'assets/images/tray_icon.png', // Smaller, optimized for tray
-          // 'assets/images/mycelium_top.png', // Alternative smaller icon
-          'assets/images/mycelium_icon.png', // Original large icon
-        ];
+        final iconPath = Platform.isWindows
+            ? 'assets/images/tray_icon.ico'
+            : 'assets/images/mycelium_icon.png';
 
-        for (String iconPath in iconPaths) {
-          try {
-            await trayManager.setIcon(iconPath);
-            iconSet = true;
-            _logger.info("Tray icon set successfully using: $iconPath");
-            break;
-          } catch (e) {
-            _logger.warning("Failed to set tray icon from $iconPath: $e");
-          }
+        try {
+          await trayManager.setIcon(iconPath);
+          _logger.info("Tray icon set successfully using: $iconPath");
+        } catch (e) {
+          _logger.warning("Failed to set tray icon from $iconPath: $e");
         }
 
-        // If all paths failed, try to set a simple system icon
-        if (!iconSet) {
-          try {
-            // Try setting without any icon first to see if tray works
-            _logger.info(
-                "All icon paths failed, trying to initialize tray without icon");
-          } catch (e) {
-            _logger.warning("Failed to initialize tray: $e");
-          }
-        }
-
-        if (iconSet) {
-          // Set tray tooltip
-          await trayManager.setToolTip('Mycelium - Click to show/hide window');
-          await _updateTrayMenu();
-          _logger.info("Tray manager initialized successfully");
-        } else {
-          _logger.warning(
-              "Tray icon could not be set, but continuing without tray");
-        }
+        // Set tray tooltip
+        await trayManager.setToolTip('Mycelium - Click to show/hide window');
+        await _updateTrayMenu();
+        _logger.info("Tray manager initialized successfully");
       } catch (e) {
         _logger.warning(
             "Failed to initialize tray manager: $e, continuing without tray");
@@ -163,7 +127,6 @@ class _MyAppState extends ConsumerState<MyApp>
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
-    textEditController.dispose();
     if (Platform.isMacOS || Platform.isWindows) {
       windowManager.removeListener(this);
       trayManager.removeListener(this);
@@ -182,17 +145,6 @@ class _MyAppState extends ConsumerState<MyApp>
       themeMode: settings,
       routerConfig: appRouter,
     );
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      if (!isUseDylib()) {
-        platform.invokeMethod('queryStatus').catchError((e) {
-          _logger.warning("queryStatus on resume failed: $e");
-        });
-      }
-    }
   }
 
   // Window lifecycle handlers
