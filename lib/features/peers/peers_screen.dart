@@ -4,7 +4,6 @@ import '../../app/widgets/app_scaffold.dart';
 import '../../app/widgets/app_card.dart';
 import '../../app/widgets/responsive_layout.dart';
 import '../../app/theme/tokens.dart';
-import 'widgets/peer_details_sheet.dart';
 import 'widgets/desktop_peers_layout.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/mycelium_providers.dart';

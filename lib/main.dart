@@ -5,34 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'state/app_settings.dart';
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
-import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'myceliumflut_ffi_binding.dart';
-import 'services/peers_service.dart';
+
+import 'services/ffi/mycelium_service.dart';
 
 final _logger = Logger('Mycelium');
-
-const String startMyceliumText = 'Start Mycelium';
-const String stopMyceliumText = 'Stop Mycelium';
-
-const String myceliumStatusStarted = 'Mycelium Started';
-const String myceliumStatusStopped = 'Mycelium Stopped';
-const String myceliumStatusRestarted = 'Mycelium Restarted';
-const String myceliumStatusFailedStart = 'Mycelium failed to start';
-
-const Color colorDarkBlue = Color(0xFF025996);
-const Color colorLimeGreen = Color(0xFF0D9C9E);
-const Color colorMycelRed = Color(0xFFEC3F09);
-
-const sizedBoxHeight = 40.0;
 
 Future<void> main() async {
   // Logger configuration
@@ -55,48 +39,16 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
-  String _nodeAddr = '';
-  var privKey = Uint8List(0);
-  List<String> peers = [];
-  List<String> _connectedPeers = [];
   late TextEditingController textEditController;
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
-  final ScrollController _scrollController = ScrollController();
+  final MyceliumService _myceliumService = MyceliumService();
 
   @override
   void initState() {
     textEditController = TextEditingController(text: '');
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    initPlatformState();
-    platform.setMethodCallHandler((MethodCall call) async {
-      methodHandler(call.method);
-    });
-    // flutter desktop sleep plugin only works on macos and windows
-    _flutterDesktopSleepPlugin.setWindowSleepHandler((String? s) async {
-      if (s != null) {
-        if (s == 'woke_up') {
-          if (_isStarted) {
-            restartMyceliumOnWakeup();
-          }
-        } else if (s == 'terminate_app') {
-          // only for macos because:
-          // 1. it supposed to work on Windows as well, but it doesn't
-          // 2. to make it clear that it's only for macos
-          if (Platform.isMacOS) {
-            _logger.info("TERMINATE_APP");
-            if (_isStarted) {
-              stopMycelium();
-            }
-            _flutterDesktopSleepPlugin.terminateApp();
-          }
-        } else {
-          _logger
-              .info("[flutter_desktop_sleep handler]Unknown event handler: $s");
-        }
-      }
-    });
-
+    platform.setMethodCallHandler((MethodCall call) async {});
     // Initialize desktop lifecycle asynchronously to avoid blocking startup
     Future.delayed(const Duration(seconds: 1), () => _initDesktopLifecycle());
   }
@@ -108,28 +60,28 @@ class _MyAppState extends ConsumerState<MyApp>
 
     try {
       _logger.info("Initializing desktop lifecycle...");
-      
+
       // Initialize window manager
       await windowManager.ensureInitialized();
       _logger.info("Window manager ensureInitialized completed");
-      
+
       windowManager.addListener(this);
       _logger.info("Window manager listener added");
-      
+
       await windowManager.setPreventClose(true);
       _logger.info("Window manager setPreventClose completed");
-      
+
       // Configure window properties
       await windowManager.setTitle('Mycelium');
       _logger.info("Window manager setTitle completed");
-      
+
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
       _logger.info("Window manager setTitleBarStyle completed");
-      
+
       // Skip setSkipTaskbar as it causes crashes on some Windows versions
       // The app will show in taskbar by default anyway
       _logger.info("Skipping setSkipTaskbar to avoid compatibility issues");
-      
+
       _logger.info("Window manager initialized successfully");
 
       // Initialize tray manager with careful error handling
@@ -137,10 +89,10 @@ class _MyAppState extends ConsumerState<MyApp>
         _logger.info("Starting tray manager initialization...");
         trayManager.addListener(this);
         _logger.info("Tray manager listener added successfully");
-        
+
         // Set tray icon with multiple fallback options
         bool iconSet = false;
-        
+
         // Try different icon paths in order of preference
         final iconPaths = [
           if (Platform.isWindows) 'assets/images/tray_icon.ico',
@@ -148,7 +100,7 @@ class _MyAppState extends ConsumerState<MyApp>
           // 'assets/images/mycelium_top.png', // Alternative smaller icon
           'assets/images/mycelium_icon.png', // Original large icon
         ];
-        
+
         for (String iconPath in iconPaths) {
           try {
             await trayManager.setIcon(iconPath);
@@ -159,33 +111,34 @@ class _MyAppState extends ConsumerState<MyApp>
             _logger.warning("Failed to set tray icon from $iconPath: $e");
           }
         }
-        
+
         // If all paths failed, try to set a simple system icon
         if (!iconSet) {
           try {
             // Try setting without any icon first to see if tray works
-            _logger.info("All icon paths failed, trying to initialize tray without icon");
+            _logger.info(
+                "All icon paths failed, trying to initialize tray without icon");
           } catch (e) {
             _logger.warning("Failed to initialize tray: $e");
           }
         }
-        
+
         if (iconSet) {
           // Set tray tooltip
           await trayManager.setToolTip('Mycelium - Click to show/hide window');
           await _updateTrayMenu();
           _logger.info("Tray manager initialized successfully");
         } else {
-          _logger.warning("Tray icon could not be set, but continuing without tray");
+          _logger.warning(
+              "Tray icon could not be set, but continuing without tray");
         }
-        
       } catch (e) {
-        _logger.warning("Failed to initialize tray manager: $e, continuing without tray");
+        _logger.warning(
+            "Failed to initialize tray manager: $e, continuing without tray");
       }
 
       // Optional: start minimized to tray when app launches on desktop
       // await windowManager.hide();
-      
     } catch (e) {
       _logger.severe("Failed to initialize desktop lifecycle: $e");
       // Don't rethrow - allow app to continue without desktop features
@@ -194,22 +147,10 @@ class _MyAppState extends ConsumerState<MyApp>
 
   Future<void> _updateTrayMenu() async {
     try {
-      final statusLabel = _isStarted ? 'Mycelium: Running' : 'Mycelium: Stopped';
-      final toggleLabel = _isStarted ? 'Stop Mycelium' : 'Start Mycelium';
-      
-      // Update tray tooltip with current status
-      final tooltipText = _isStarted 
-          ? 'Mycelium - Running (${_connectedPeers.length} peers connected)'
-          : 'Mycelium - Stopped';
-      await trayManager.setToolTip(tooltipText);
-      
       final items = [
-        MenuItem(key: 'status', label: statusLabel, disabled: true),
-        MenuItem.separator(),
         MenuItem(key: 'show', label: 'Show Window'),
         MenuItem(key: 'hide', label: 'Hide Window'),
         MenuItem.separator(),
-        MenuItem(key: 'toggle', label: toggleLabel),
         MenuItem.separator(),
         MenuItem(key: 'quit', label: 'Quit'),
       ];
@@ -218,96 +159,6 @@ class _MyAppState extends ConsumerState<MyApp>
       _logger.warning("Failed to update tray menu: $e");
     }
   }
-
-  void methodHandler(String methodName) {
-    switch (methodName) {
-      case 'notifyMyceliumFailed':
-        // mycelium failed to start
-        _logger.warning("Mycelium failed to start");
-        setStateFailedStart();
-        break;
-      case 'notifyMyceliumFinished':
-        // mycelium finished (user triggered)
-        _logger.info("Mycelium finished");
-        setStateStopped();
-        break;
-      case 'notifyMyceliumStarted':
-        // mycelium started successfully
-        _logger.info("Mycelium started");
-        setStateStarted();
-        break;
-      case 'notifyAppWakeup':
-        // the app woke up, after sleep
-        if (_isStarted) {
-          _logger.info("App woke up");
-          restartMyceliumOnWakeup();
-        }
-      default:
-        _logger.warning("Unknown method call: $methodName");
-        throw MissingPluginException();
-    }
-  }
-
-  void restartMyceliumOnWakeup() async {
-    _logger.info("[wake up handler]stopping mycelium");
-    stopMycelium();
-    // Wait for isStarted to become false, but no more than 3 seconds
-    final timeout = DateTime.now().add(const Duration(seconds: 3));
-    while (_isStarted && DateTime.now().isBefore(timeout)) {
-      await Future.delayed(const Duration(milliseconds: 20));
-    }
-    _logger.info("[wake up handler]starting mycelium");
-    startMycelium();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    privKey = await loadOrGeneratePrivKey(platform);
-    peers = await loadPeers();
-    if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
-      // Use PeersService to fetch peers from GitHub with fallback
-      final peersService = PeersService();
-      peers = await peersService.fetchPeers();
-    }
-    textEditController = TextEditingController(text: peers.join('\n'));
-
-    String nodeAddr;
-    if (isUseDylib()) {
-      nodeAddr = myFFAddressFromSecretKey(privKey);
-    } else {
-      nodeAddr = (await platform.invokeMethod<String>(
-          'addressFromSecretKey', privKey)) as String;
-    }
-
-    _logger.info("nodeAddr: $nodeAddr");
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _nodeAddr = nodeAddr;
-    });
-
-    // Query native layer for current VPN status to sync UI
-    if (!isUseDylib()) {
-      try {
-        await platform.invokeMethod('queryStatus');
-      } catch (e) {
-        _logger.warning("queryStatus not implemented: $e");
-      }
-    }
-  }
-
-  // start/stop mycelium button variables
-  bool _isStarted = false;
-  bool isRestartVisible = false;
-  String _textButton = startMyceliumText;
-  String _myceliumStatus = '';
-  String _peerValidity = '';
-  Color _myceliumStatusColor = Colors.white;
-  Color _startStopButtonColor = colorDarkBlue;
 
   @override
   void dispose() {
@@ -344,230 +195,23 @@ class _MyAppState extends ConsumerState<MyApp>
     }
   }
 
-  void startMycelium() {
-    if (_isStarted) {
-      _logger.warning("Mycelium already started");
-      return;
-    }
-    _peerValidity = '';
-    var peers = getPeers(textEditController.text);
-    peers = preprocessPeers(peers);
-
-    // verify the peers
-    String? peerError = isValidPeers(peers);
-    if (peerError != null) {
-      setState(() {
-        _peerValidity = peerError;
-      });
-      return;
-    }
-    // store the peers if verified
-    storePeers(peers);
-    textEditController.text = peers.join('\n');
-    try {
-      if (!isUseDylib()) {
-        startVpn(platform, peers, privKey);
-        // the startVpn result will be send in async way by Kotlin/Swift
-        setStateStarted();
-      } else {
-        final receivePort = ReceivePort();
-
-        // Create a Map to hold the arguments
-        final args = {
-          'sendPort': receivePort.sendPort,
-          'peers': peers,
-          'privKey': privKey,
-        };
-
-        // Spawn the isolate
-        Isolate.spawn(startMyceliumIsolate, args);
-
-        // the startVpn result will be send in async way by Kotlin/Swift
-        setStateStarted();
-        methodHandler('notifyMyceliumStarted');
-        // Handle the isolate completion using a StreamSubscription
-        receivePort.listen((message) {
-          if (message == 'done') {
-            _logger.info("mycelStartMycelium task completed");
-            receivePort.close();
-            methodHandler('notifyMyceliumFinished');
-          } else {
-            _logger.warning("mycelStartMycelium task finished, but not done");
-            methodHandler('notifyMyceliumFinished');
-          }
-        });
-      }
-    } on Exception {
-      _logger.warning("Start VPN failed");
-      setStateFailedStart();
-    }
-  }
-
-  static void startMyceliumIsolate(Map<String, dynamic> args) {
-    final SendPort sendPort = args['sendPort'];
-    final List<String> peers = args['peers'];
-    final Uint8List privKey = args['privKey'];
-
-    // Perform the mycelStartMycelium task
-    myFFStartMycelium(peers, privKey);
-
-    // Notify the main thread that the task is complete
-    sendPort.send('done');
-  }
-
-  void stopMycelium() {
-    try {
-      stopVpn(platform);
-      // stopVpn result will be send in async way by Kotlin/Swift
-      // the message will be received by the setMethodCallHandler with the method 'notifyMyceliumFinished'
-    } on Exception {
-      _logger.warning("stopping VPN failed");
-    }
-  }
-
-  void setStateFailedStart() {
-    setState(() {
-      _isStarted = false;
-      _textButton = startMyceliumText;
-      _myceliumStatus = myceliumStatusFailedStart;
-      _startStopButtonColor = colorDarkBlue;
-      _myceliumStatusColor = colorMycelRed;
-      isRestartVisible = false;
-    });
-    _updateTrayMenu();
-  }
-
-  void setStateStopped() {
-    setState(() {
-      _isStarted = false;
-      _textButton = startMyceliumText;
-      _myceliumStatus = myceliumStatusStopped;
-      _startStopButtonColor = colorDarkBlue;
-      _myceliumStatusColor = colorMycelRed;
-      isRestartVisible = false;
-      _connectedPeers.clear(); // Clear connected peers when stopped
-    });
-    _updateTrayMenu();
-  }
-
-  void setStateStarted() {
-    setState(() {
-      _isStarted = true;
-      _textButton = stopMyceliumText;
-      _myceliumStatus = myceliumStatusStarted;
-      _startStopButtonColor = colorMycelRed;
-      _myceliumStatusColor = colorDarkBlue;
-      isRestartVisible = true;
-    });
-    _updateTrayMenu();
-    // Start periodic peer status updates
-    _startPeerStatusUpdates();
-  }
-
-  void _startPeerStatusUpdates() {
-    Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!_isStarted) {
-        timer.cancel();
-        return;
-      }
-      _updatePeerStatus();
-    });
-  }
-
-  void _updatePeerStatus() async {
-    if (!_isStarted) return;
-
-    try {
-      List<String> peerStatus;
-      if (isUseDylib()) {
-        // Windows platform - use FFI
-        peerStatus = await myFFGetPeerStatus();
-      } else {
-        // Android/iOS platform - use platform channel
-        final result =
-            await platform.invokeMethod<List<dynamic>>('getPeerStatus');
-        peerStatus = result?.cast<String>() ?? [];
-      }
-
-      // Filter out the first element if it's "ok" (status indicator)
-      if (peerStatus.isNotEmpty && peerStatus[0] == "ok") {
-        peerStatus = peerStatus.sublist(1);
-      }
-
-      setState(() {
-        _connectedPeers = peerStatus;
-      });
-      
-      // Update tray menu to reflect new peer count
-      _updateTrayMenu();
-    } catch (e) {
-      _logger.warning("Failed to get peer status: $e");
-    }
-  }
-
   // Window lifecycle handlers
   @override
   void onWindowClose() async {
     // Intercept close to keep app running in tray
     _logger.info("Window close intercepted - hiding to tray");
     await windowManager.hide();
-    
-    // Show tray notification that app is still running
-    try {
-      await trayManager.popUpContextMenu();
-    } catch (e) {
-      _logger.warning("Failed to show tray context menu: $e");
-    }
-  }
-
-  @override
-  void onWindowFocus() {
-    // Called when window gains focus
-  }
-
-  @override
-  void onWindowBlur() {
-    // Called when window loses focus
-  }
-
-  @override
-  void onWindowMaximize() {
-    // Called when window is maximized
-  }
-
-  @override
-  void onWindowUnmaximize() {
-    // Called when window is unmaximized
-  }
-
-  @override
-  void onWindowMinimize() {
-    // Called when window is minimized - hide to tray instead
-    windowManager.hide();
-  }
-
-  @override
-  void onWindowRestore() {
-    // Called when window is restored
   }
 
   // Tray handlers
   @override
   void onTrayIconMouseDown() async {
-    if (await windowManager.isVisible()) {
-      await windowManager.hide();
-    } else {
-      await windowManager.show();
-      await windowManager.focus();
-    }
+    await trayManager.popUpContextMenu();
   }
 
   @override
   void onTrayMenuItemClick(MenuItem menuItem) async {
     switch (menuItem.key) {
-      case 'status':
-        // Status item is disabled, do nothing
-        break;
       case 'show':
         await windowManager.show();
         await windowManager.focus();
@@ -575,17 +219,8 @@ class _MyAppState extends ConsumerState<MyApp>
       case 'hide':
         await windowManager.hide();
         break;
-      case 'toggle':
-        if (!_isStarted) {
-          startMycelium();
-        } else {
-          stopMycelium();
-        }
-        break;
       case 'quit':
-        if (_isStarted) {
-          stopMycelium();
-        }
+        _myceliumService.stop();
         // Give a brief moment for stop to propagate
         await Future.delayed(const Duration(milliseconds: 200));
         // Terminate application
@@ -602,122 +237,4 @@ class _MyAppState extends ConsumerState<MyApp>
         break;
     }
   }
-}
-
-double physicalPxToLogicalPx(BuildContext context, double physicalPx) {
-  return physicalPx; //x * MediaQuery.of(context).devicePixelRatio;
-}
-
-List<String> getPeers(String texts) {
-  return texts.split('\n').map((e) => e.trim()).toList();
-}
-
-Future<void> storePeers(List<String> peers) async {
-  final dir = await getApplicationDocumentsDirectory();
-  final file = File('${dir.path}/peers.txt');
-  await file.writeAsString(peers.join('\n'));
-}
-
-Future<List<String>> loadPeers() async {
-  final dir = await getApplicationDocumentsDirectory();
-  final file = File('${dir.path}/peers.txt');
-  if (await file.exists()) {
-    String contents = await file.readAsString();
-    return contents.split('\n');
-  } else {
-    return [];
-  }
-}
-
-Future<Uint8List> loadOrGeneratePrivKey(MethodChannel platform) async {
-  // get dir
-  final dir = await getApplicationDocumentsDirectory();
-
-  final file = File('${dir.path}/priv_key.bin');
-  if (file.existsSync()) {
-    return await file.readAsBytes();
-  }
-  // create new secret key if not exists
-  Uint8List privKey = Uint8List(0);
-  if (isUseDylib()) {
-    privKey = myFFGenerateSecretKey();
-  } else {
-    privKey = (await platform.invokeMethod<Uint8List>('generateSecretKey'))
-        as Uint8List;
-  }
-  //}
-  await file.writeAsBytes(privKey);
-  return privKey;
-}
-
-Future<bool?> startVpn(
-    MethodChannel platform, List<String> peers, Uint8List privKey) async {
-  if (isUseDylib()) {
-    return myFFStartMycelium(peers, privKey);
-  } else {
-    return platform.invokeMethod<bool>('startVpn', {
-      'peers': peers,
-      'secretKey': privKey,
-    });
-  }
-}
-
-Future<bool> stopVpn(MethodChannel platform) async {
-  // check if VPN is started is done on Kotlin / Swift side
-  var stopped = false;
-  if (isUseDylib()) {
-    stopped = await myFFStopMycelium();
-  } else {
-    stopped = await platform.invokeMethod<bool>('stopVpn') ?? false;
-  }
-
-  _logger.info("stop vpn : $stopped");
-  return stopped;
-}
-
-List<String> preprocessPeers(List<String> peers) {
-  // Remove empty elements
-  peers.removeWhere((peer) => peer.isEmpty);
-
-  // Remove duplicated elements
-  return peers.toSet().toList();
-}
-
-String? isValidPeers(List<String> peers) {
-  if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
-    return "peers can't be empty";
-  }
-
-  for (var peer in peers) {
-    String? error = isValidPeer(peer);
-    if (error != null) {
-      return 'invalid peer:`$peer` $error';
-    }
-  }
-  return null;
-}
-
-// check if a peer is a valid peer
-String? isValidPeer(String peer) {
-  final prefixRegex = RegExp(r'^tcp://');
-  final ipv4Regex = RegExp(
-      r'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
-  final ipv6Regex = RegExp(
-      r'\[(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))\]');
-  final portRegex = RegExp(r':9651$');
-
-  if (!prefixRegex.hasMatch(peer)) {
-    return 'peer must start with tcp://';
-  }
-
-  String ipPortPart = peer.substring(peer.indexOf('://') + 3);
-  if (!ipv4Regex.hasMatch(ipPortPart) && !ipv6Regex.hasMatch(ipPortPart)) {
-    return 'peer must contain a valid IPv4 or IPv6 address';
-  }
-
-  if (!portRegex.hasMatch(ipPortPart)) {
-    return 'peer must end with :9651';
-  }
-
-  return null;
 }
