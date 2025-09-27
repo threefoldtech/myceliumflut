@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,6 +110,8 @@ class DesktopSettingsLayout extends ConsumerWidget {
                             ),
                           ),
                           Switch(
+                            inactiveThumbColor:
+                                Theme.of(context).colorScheme.primary,
                             value: isDark,
                             onChanged: (v) => settings.toggleDark(v),
                           ),
@@ -335,7 +338,7 @@ class DesktopSettingsLayout extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.lg),
                     OutlinedButton.icon(
                       onPressed: () {
-                        // Could open a URL to the website
+                        _openGitHubLink(context);
                       },
                       icon: const Icon(Icons.open_in_new, size: 16),
                       label: const Text('Learn More'),
@@ -351,6 +354,31 @@ class DesktopSettingsLayout extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  void _openGitHubLink(BuildContext context) async {
+    const gitHubUrl = 'https://github.com/threefoldtech/mycelium';
+
+    try {
+      if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'start', gitHubUrl]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [gitHubUrl]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', [gitHubUrl]);
+      }
+    } catch (e) {
+      // Fallback: copy to clipboard if opening fails
+      Clipboard.setData(const ClipboardData(text: gitHubUrl));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Link copied to clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }
 
