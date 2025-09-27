@@ -161,139 +161,133 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
     final peerSummary = _calculatePeerSummary();
     final networkTraffic = _calculateNetworkTraffic();
 
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: AppSpacing.sm),
-        _SearchAddBar(
-          onChanged: (v) => setState(() => query = v),
-          onAdd: () => _showAddPeerDialog(context, ref),
-          isDisabled: isMyceliumRunning,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        if (filtered.isEmpty)
-          _PeersEmptyState()
-        else
-          ...filtered.map((p) {
-            final isUserPeer = userPeers.contains(p);
-            final peerStat = _findPeerStatus(p);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _PeerTile(
-                ip: p,
-                country: "Unknown",
-                isUserPeer: isUserPeer,
-                peerStats: peerStat,
+        // Left side - Peers list
+        Expanded(
+          flex: 2,
+          child: Column(
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              _SearchAddBar(
+                onChanged: (v) => setState(() => query = v),
+                onAdd: () => _showAddPeerDialog(context, ref),
                 isDisabled: isMyceliumRunning,
               ),
-            );
-          }).toList(),
-        const SizedBox(height: AppSpacing.md),
-        AppCard(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.public,
-                      size: 20, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text('Peer Summary',
-                      style: Theme.of(context).textTheme.titleMedium),
-                ],
-              ),
               const SizedBox(height: AppSpacing.md),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 300) {
-                    // Stack vertically for very narrow screens
-                    return Column(
-                      children: [
-                        _SummaryItem(
-                            label: '${peerSummary['connected']}',
-                            subtitle: 'Connected',
-                            color: Colors.green),
-                        const SizedBox(height: AppSpacing.sm),
-                        _SummaryItem(
-                            label: '${peerSummary['slow']}',
-                            subtitle: 'Connecting',
-                            color: Colors.orange),
-                        const SizedBox(height: AppSpacing.sm),
-                        _SummaryItem(
-                            label: '${peerSummary['down']}',
-                            subtitle: 'Down',
-                            color: Colors.red),
-                      ],
-                    );
-                  }
-
-                  // Use row layout for wider screens
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: _SummaryItem(
-                            label: '${peerSummary['connected']}',
-                            subtitle: 'Connected',
-                            color: Colors.green),
-                      ),
-                      Expanded(
-                        child: _SummaryItem(
-                            label: '${peerSummary['slow']}',
-                            subtitle: 'Connecting',
-                            color: Colors.orange),
-                      ),
-                      Expanded(
-                        child: _SummaryItem(
-                            label: '${peerSummary['down']}',
-                            subtitle: 'Down',
-                            color: Colors.red),
-                      ),
-                    ],
+              if (filtered.isEmpty)
+                _PeersEmptyState()
+              else
+                ...filtered.map((p) {
+                  final isUserPeer = userPeers.contains(p);
+                  final peerStat = _findPeerStatus(p);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _PeerTile(
+                      ip: p,
+                      country: "Unknown",
+                      isUserPeer: isUserPeer,
+                      peerStats: peerStat,
+                      isDisabled: isMyceliumRunning,
+                    ),
                   );
-                },
-              ),
+                }).toList(),
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        if (peerStatusError != null)
-          AppCard(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Text('Error getting peer status: $peerStatusError',
-                style: TextStyle(color: Colors.red)),
-          ),
-        const SizedBox(height: AppSpacing.md),
-        AppCard(
-          padding: const EdgeInsets.all(AppSpacing.md),
+        
+        const SizedBox(width: AppSpacing.lg),
+        
+        // Right side - Summary cards
+        Expanded(
+          flex: 1,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.podcasts,
-                      size: 20, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text('Network Traffic',
-                      style: Theme.of(context).textTheme.titleMedium),
-                ],
+              const SizedBox(height: AppSpacing.sm),
+              AppCard(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.public,
+                            size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text('Peer Summary',
+                            style: Theme.of(context).textTheme.titleMedium),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _SummaryItem(
+                              label: '${peerSummary['connected']}',
+                              subtitle: 'Connected',
+                              color: Colors.green),
+                          const SizedBox(height: AppSpacing.sm),
+                          _SummaryItem(
+                              label: '${peerSummary['slow']}',
+                              subtitle: 'Connecting',
+                              color: Colors.orange),
+                          const SizedBox(height: AppSpacing.sm),
+                          _SummaryItem(
+                              label: '${peerSummary['down']}',
+                              subtitle: 'Down',
+                              color: Colors.red),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _SummaryItem(
-                      label: networkTraffic['rx'] ?? '0 B',
-                      subtitle: 'Total Download'),
-                  _SummaryItem(
-                      label: networkTraffic['tx'] ?? '0 B',
-                      subtitle: 'Total Upload'),
-                ],
+              AppCard(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.podcasts,
+                            size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text('Network Traffic',
+                            style: Theme.of(context).textTheme.titleMedium),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _SummaryItem(
+                              label: networkTraffic['rx'] ?? '0 B',
+                              subtitle: 'Total Download'),
+                          const SizedBox(height: AppSpacing.sm),
+                          _SummaryItem(
+                              label: networkTraffic['tx'] ?? '0 B',
+                              subtitle: 'Total Upload'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              if (peerStatusError != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                AppCard(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Text('Error getting peer status: $peerStatusError',
+                      style: TextStyle(color: Colors.red)),
+                ),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
       ],
     );
   }
@@ -308,63 +302,25 @@ class _SearchAddBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Stack buttons vertically on very narrow screens
-        if (constraints.maxWidth < 330) {
-          return Column(
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search peers',
-                  prefixIcon: const Icon(Icons.search),
-                ),
-                onChanged: isDisabled ? null : onChanged,
-                enabled: !isDisabled,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: isDisabled
-                      ? null
-                      : () => _showAddPeerDialog(context, ref),
-                  icon: const Icon(Icons.add),
-                  label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
-                ),
-              ),
-            ],
-          );
-        }
-
-        // Use row layout for wider screens
-        return Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search peers',
-                  prefixIcon: const Icon(Icons.search),
-                ),
-                onChanged: isDisabled ? null : onChanged,
-                enabled: !isDisabled,
-              ),
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search peers',
+              prefixIcon: const Icon(Icons.search),
             ),
-            const SizedBox(width: AppSpacing.lg),
-            IntrinsicWidth(
-              child: FilledButton.icon(
-                onPressed:
-                    isDisabled ? null : () => _showAddPeerDialog(context, ref),
-                icon: const Icon(Icons.add),
-                label: Text(
-                  isDisabled ? 'Mycelium Running' : 'Add Peer',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+            onChanged: isDisabled ? null : onChanged,
+            enabled: !isDisabled,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.lg),
+        FilledButton.icon(
+          onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
+          icon: const Icon(Icons.add),
+          label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
+        ),
+      ],
     );
   }
 }
