@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/tokens.dart';
 import '../../../app/widgets/app_card.dart';
 import '../../../app/widgets/app_button.dart';
 import '../../../models/peer_models.dart' as peer_models;
-import '../../../services/peers_service.dart';
 import '../../../state/mycelium_providers.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import 'traffic_summary.dart';
@@ -37,7 +37,7 @@ class DesktopHomeLayout extends ConsumerWidget {
             children: [
               // Dashboard title
               Text(
-                'Dashboard',
+                'Home',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -79,7 +79,6 @@ class DesktopHomeLayout extends ConsumerWidget {
             children: [
               _DesktopStatsCards(),
               const SizedBox(height: AppSpacing.xl),
-              _NetworkInfoCard(),
             ],
           ),
         ),
@@ -288,7 +287,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
             SizedBox(
               width: 200,
               child: AppButton(
-                label: isConnected ? 'Disconnect' : 'Connect',
+                label: isConnected ? 'Disconnect Mycelium' : 'Start Mycelium',
                 onPressed: isConnected ? stopMycelium : startMycelium,
                 isLoading: isConnecting,
                 backgroundColor:
@@ -307,13 +306,13 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                     await startMycelium();
                   },
                   icon: const Icon(Icons.restart_alt_rounded),
-                  label: const Text('Restart'),
+                  label: const Text('Restart Mycelium'),
                 ),
               ),
             ],
 
             // Advanced options for desktop
-            if (isConnected) ...[
+            if (isConnected && false) ...[
               const SizedBox(height: AppSpacing.xxl),
               ExpansionTile(
                 title: const Text('Advanced Options'),
@@ -352,15 +351,54 @@ class _DesktopStatsCards extends ConsumerStatefulWidget {
 
 class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
   List<peer_models.PeerStats> peerStatus = [];
+  Timer? _peerStatusTimer;
+  Timer? _uptimeRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchPeerStatus();
+    _startPeriodicUpdates();
+  }
+
+  @override
+  void dispose() {
+    _peerStatusTimer?.cancel();
+    _uptimeRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicUpdates() {
+    // Update peer status every 5 seconds
+    _peerStatusTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchPeerStatus();
+    });
+
+    // Refresh uptime display every second
+    _uptimeRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild to update the uptime display
+        });
+      }
+    });
   }
 
   Future<void> _fetchPeerStatus() async {
     try {
+      final nodeStatusAsync = ref.read(nodeStatusProvider);
+      final nodeStatus = nodeStatusAsync.asData?.value;
+      
+      // Only fetch peer status if connected
+      if (nodeStatus != NodeStatus.connected) {
+        if (mounted) {
+          setState(() {
+            peerStatus = [];
+          });
+        }
+        return;
+      }
+
       final service = MyceliumService();
       final status = await service.getPeerStatus();
       if (mounted) {
@@ -382,6 +420,14 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
         .where((peer) =>
             peer.connectionState == peer_models.ConnectionState.connected)
         .length;
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   @override
@@ -423,35 +469,53 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
           ),
         ),
 
-        // Bandwidth Card
-        AppCard(
-          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-          child: Column(
-            children: [
-              Row(
+        // Traffic Card
+        Consumer(
+          builder: (context, ref, child) {
+            final trafficStats = ref.watch(dynamicTrafficProvider);
+            
+            // Use total accumulated traffic instead of peak rates
+            final totalUploadBytes = trafficStats.totalUploadBytes;
+            final totalDownloadBytes = trafficStats.totalDownloadBytes;
+            final totalTrafficBytes = totalUploadBytes + totalDownloadBytes;
+            
+            String trafficDisplay;
+            if (totalTrafficBytes > 0) {
+              trafficDisplay = _formatBytes(totalTrafficBytes);
+            } else {
+              trafficDisplay = '0 B';
+            }
+            
+            return AppCard(
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: Column(
                 children: [
-                  Icon(
-                    Icons.speed,
-                    color: AppColors.brandAccent,
-                    size: 20,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.speed,
+                        color: AppColors.brandAccent,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Total Traffic',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Bandwidth',
-                    style: Theme.of(context).textTheme.titleSmall,
+                    trafficDisplay,
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.brandAccent,
+                        ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                '2.4 MB/s',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.brandAccent,
-                    ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
 
         // Uptime Card
@@ -485,52 +549,6 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _NetworkInfoCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      margin: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                'Network Info',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _InfoRow(
-            label: 'Protocol',
-            value: 'Mycelium v0.6.2',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _InfoRow(
-            label: 'Network',
-            value: 'MainNet',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _InfoRow(
-            label: 'Status',
-            value: 'Healthy',
-            valueColor: AppColors.success,
-          ),
-        ],
-      ),
     );
   }
 }

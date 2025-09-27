@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/peers_service.dart';
-import 'mycelium_providers.dart';
 import '../features/home/widgets/traffic_chart.dart';
 import '../models/peer_models.dart';
 

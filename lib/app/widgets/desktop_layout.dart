@@ -16,53 +16,60 @@ class DesktopLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Scaffold(
-      body: Row(
-        children: [
-          // Sidebar
-          DesktopSidebar(currentIndex: currentIndex),
+      body: SizedBox(
+        width: screenWidth,
+        height: screenHeight,
+        child: Row(
+          children: [
+            // Sidebar
+            DesktopSidebar(currentIndex: currentIndex),
 
-          // Main content area
-          Expanded(
-            child: Column(
-              children: [
-                // Header bar
-                Container(
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).dividerColor.withOpacity(0.3),
-                        width: 1,
+            // Main content area
+            Expanded(
+              child: SizedBox(
+                height: screenHeight,
+                child: Column(
+                  children: [
+                    // Header bar
+                    Container(
+                      height: 64,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Theme.of(context).dividerColor.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                      alignment: Alignment.centerLeft,
+                      child: title,
+                    ),
+
+                    // Main content with proper padding
+                    Expanded(
+                      child: Material(
+                        color: Theme.of(context).colorScheme.background,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xxl),
+                          child: SingleChildScrollView(
+                            child: child,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                    child: Row(
-                      children: [
-                        Expanded(child: title),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-
-                // Main content with proper padding
-                Expanded(
-                  child: Container(
-                    color: Theme.of(context).colorScheme.background,
-                    width: double.infinity,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
-                      child: child,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

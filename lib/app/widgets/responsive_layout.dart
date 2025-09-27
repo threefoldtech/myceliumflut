@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 class ResponsiveBreakpoints {
   static const double mobile = 600;
   static const double tablet = 900;
-  static const double desktop = 1200000000000;
-  static const double largeDesktop = 1440000000000000;
+  static const double desktop = 1000;
 }
 
 /// Responsive layout widget that provides different layouts based on screen size
@@ -23,18 +22,11 @@ class ResponsiveLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= ResponsiveBreakpoints.desktop) {
-          return desktop;
-        } else if (constraints.maxWidth >= ResponsiveBreakpoints.mobile &&
-            tablet != null) {
-          return tablet!;
-        } else {
-          return mobile;
-        }
-      },
-    );
+    return MediaQuery.of(context).size.width >= ResponsiveBreakpoints.desktop
+        ? desktop
+        : MediaQuery.of(context).size.width >= ResponsiveBreakpoints.mobile && tablet != null
+            ? tablet!
+            : mobile;
   }
 }
 
@@ -49,9 +41,6 @@ class ResponsiveHelper {
 
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width >= ResponsiveBreakpoints.desktop;
-
-  static bool isLargeDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= ResponsiveBreakpoints.largeDesktop;
 
   /// Get responsive value based on screen size
   static T getResponsiveValue<T>(
