@@ -1008,15 +1008,25 @@ class _SummaryItem extends StatelessWidget {
 void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
   final controller = TextEditingController();
   final peersNotifier = ref.read(peersProvider.notifier);
+  final currentPeers = ref.read(peersProvider).value ?? [];
 
   showDialog(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) {
-        bool isValidIP = _isValidIP(controller.text.trim());
-        String? errorText = controller.text.trim().isNotEmpty && !isValidIP
-            ? 'Please enter a valid IP address'
-            : null;
+        final inputText = controller.text.trim();
+        bool isValidIP = _isValidIP(inputText);
+        
+        // Check if peer already exists
+        final formattedPeer = inputText.startsWith('tcp://') ? inputText : 'tcp://$inputText:9651';
+        bool peerExists = currentPeers.contains(formattedPeer);
+        
+        String? errorText;
+        if (inputText.isNotEmpty && !isValidIP) {
+          errorText = 'Please enter a valid IP address';
+        } else if (inputText.isNotEmpty && peerExists) {
+          errorText = 'This peer is already in your list';
+        }
 
         return AlertDialog(
           title: const Text('Add Peer'),
@@ -1033,7 +1043,7 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
                 keyboardType: TextInputType.url,
                 onChanged: (value) => setState(() {}),
               ),
-              if (errorText == null && controller.text.trim().isNotEmpty)
+              if (errorText == null && inputText.isNotEmpty && isValidIP && !peerExists)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
@@ -1058,12 +1068,8 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
           ),
           actions: [
             TextButton(
-              onPressed: isValidIP && controller.text.trim().isNotEmpty
+              onPressed: isValidIP && inputText.isNotEmpty && !peerExists
                   ? () async {
-                      final ip = controller.text.trim();
-                      final formattedPeer =
-                          ip.startsWith('tcp://') ? ip : 'tcp://$ip:9651';
-
                       await peersNotifier.addPeer(formattedPeer);
                       Navigator.of(context).pop();
                     }
