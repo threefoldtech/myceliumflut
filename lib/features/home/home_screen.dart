@@ -614,7 +614,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
   void initState() {
     super.initState();
     _fetchPeerStatus();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _fetchPeerStatus();
     });
   }

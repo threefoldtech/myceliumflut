@@ -138,7 +138,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
       nodeStatusAsync.whenData((status) {
         if (mounted && status == NodeStatus.connected) {
           _fetchPeerStatus();
-          _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+          _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
             if (mounted) _fetchPeerStatus();
           });
         }
@@ -532,8 +532,8 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
         }
       });
 
-      // Then ping every 30 seconds
-      _periodicPingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      // Then ping every 5 seconds
+      _periodicPingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
         if (mounted) {
           _performPingTest(isAutomatic: true);
         }

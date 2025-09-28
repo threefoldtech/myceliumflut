@@ -59,8 +59,8 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
   }
 
   void _startPeriodicUpdate() {
-    // Update every 2 seconds
-    _timer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // Update every 5 seconds
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       _updateTrafficStats();
     });
   }
@@ -88,9 +88,9 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
         totalTx += peer.txBytes;
       }
 
-      // Calculate rates (bytes per second over 2-second interval)
-      final rxRate = _previousTotalRx > 0 ? ((totalRx - _previousTotalRx) / 2).round() : 0;
-      final txRate = _previousTotalTx > 0 ? ((totalTx - _previousTotalTx) / 2).round() : 0;
+      // Calculate rates (bytes per second over 5-second interval)
+      final rxRate = _previousTotalRx > 0 ? ((totalRx - _previousTotalRx) / 5).round() : 0;
+      final txRate = _previousTotalTx > 0 ? ((totalTx - _previousTotalTx) / 5).round() : 0;
 
       // Update peak rates
       if (rxRate > _maxRxRate) _maxRxRate = rxRate;

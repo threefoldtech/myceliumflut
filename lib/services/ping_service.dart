@@ -105,8 +105,8 @@ class LatencyNotifier extends StateNotifier<int?> {
     // Initial ping
     _updateLatency();
 
-    // Ping every 30 seconds
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+    // Ping every 5 seconds
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       _updateLatency();
     });
   }

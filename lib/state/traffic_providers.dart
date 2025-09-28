@@ -85,7 +85,7 @@ class TrafficHistoryNotifier extends StateNotifier<List<TrafficDataPoint>> {
   }
 
   void _startPeriodicUpdates() {
-    _timer = Timer.periodic(const Duration(minutes: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _updateWithCurrentTraffic();
     });
   }
