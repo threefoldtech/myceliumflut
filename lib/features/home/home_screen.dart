@@ -93,11 +93,11 @@ class HomeScreen extends ConsumerWidget {
       builder: (context, constraints) {
         // Reduce spacing on very small screens
         final isVerySmall = constraints.maxHeight < 600;
-        final spacing = isVerySmall ? AppSpacing.lg : AppSpacing.xxl;
+        final spacing = isVerySmall ? AppSpacing.sm : AppSpacing.xxl;
 
         return Column(
           children: [
-            SizedBox(height: isVerySmall ? AppSpacing.md : AppSpacing.xxl),
+            SizedBox(height: isVerySmall ? AppSpacing.sm : AppSpacing.xxl),
             _HeaderCard(
               status: status,
               onConnect: () async {
@@ -130,7 +130,7 @@ class HomeScreen extends ConsumerWidget {
                 );
               },
             ),
-            SizedBox(height: isVerySmall ? AppSpacing.lg : AppSpacing.xxxl),
+            SizedBox(height: isVerySmall ? AppSpacing.sm : AppSpacing.xxxl),
           ],
         );
       },
@@ -566,10 +566,14 @@ class _StatsRow extends ConsumerWidget {
                           size: 18,
                         ),
                         const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Connected Peers',
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.center,
+                        Flexible(
+                          child: Text(
+                            'Connected Peers',
+                            style: Theme.of(context).textTheme.titleSmall,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ],
                     ),
@@ -678,10 +682,14 @@ class _StatsRow extends ConsumerWidget {
                           size: 18,
                         ),
                         const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Connected Peers',
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.center,
+                        Flexible(
+                          child: Text(
+                            'Connected Peers',
+                            style: Theme.of(context).textTheme.titleSmall,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ],
                     ),
@@ -883,10 +891,14 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                       size: 18,
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      'Connected Peers',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Flexible(
+                      child: Text(
+                        'Connected Peers',
+                        style: Theme.of(context).textTheme.titleSmall,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
                   ],
                 ),
@@ -903,7 +915,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: AppCard(
             child: Column(
