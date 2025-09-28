@@ -609,6 +609,7 @@ class _ConnectedStatsRow extends ConsumerStatefulWidget {
 class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
   List<peer_models.PeerStats> peerStatus = [];
   Timer? _refreshTimer;
+  Timer? _uptimeRefreshTimer;
 
   @override
   void initState() {
@@ -617,11 +618,21 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _fetchPeerStatus();
     });
+    
+    // Refresh uptime display every second (mobile)
+    _uptimeRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild to update the uptime display
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _uptimeRefreshTimer?.cancel();
     super.dispose();
   }
 
