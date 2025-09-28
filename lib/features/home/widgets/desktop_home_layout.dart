@@ -105,18 +105,18 @@ class _DesktopConnectionCard extends StatefulWidget {
 }
 
 class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _isLoading = false;
   bool _isSocks5Enabled = false;
-  late AnimationController _pulseController;
+  late AnimationController _fadeController;
   late AnimationController _rotationController;
-  late Animation<double> _pulseAnimation;
+  late Animation<double> _fadeAnimation;
   late Animation<double> _rotationAnimation;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _fadeController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
@@ -124,11 +124,11 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(
-      begin: 0.9,
-      end: 1.1,
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _pulseController,
+      parent: _fadeController,
       curve: Curves.easeInOut,
     ));
     _rotationAnimation = Tween<double>(
@@ -139,11 +139,13 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
       curve: Curves.easeInOut,
     ));
     _updateAnimations();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _fadeController.dispose();
     _rotationController.dispose();
     super.dispose();
   }
@@ -156,19 +158,27 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
     }
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Restart animation when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      _updateAnimations();
+    }
+  }
+
   void _updateAnimations() {
     final isConnected = widget.status == NodeStatus.connected;
     final isConnecting = _isLoading || widget.status == NodeStatus.connecting;
 
     if (isConnecting) {
       _rotationController.repeat();
-      _pulseController.stop();
+      _fadeController.stop();
     } else if (isConnected) {
       _rotationController.stop();
-      _pulseController.repeat(reverse: true);
+      _fadeController.repeat(reverse: true);
     } else {
       _rotationController.stop();
-      _pulseController.stop();
+      _fadeController.stop();
     }
   }
 
@@ -213,37 +223,161 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
             // Large status icon
             AnimatedBuilder(
               animation:
-                  Listenable.merge([_pulseController, _rotationController]),
+                  Listenable.merge([_fadeController, _rotationController]),
               builder: (context, child) {
-                return Transform.scale(
-                  scale: isConnected ? _pulseAnimation.value : 1.0,
-                  child: Transform.rotate(
-                    angle: isConnecting
-                        ? _rotationAnimation.value * 2 * 3.14159
-                        : 0.0,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isConnected
-                            ? AppColors.success.withOpacity(0.1)
-                            : AppColors.neutral200,
-                        border: Border.all(
-                          color: isConnected
-                              ? AppColors.success
-                              : AppColors.neutral400,
-                          width: 3,
+                return SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Wave animation (only when connected)
+                      if (isConnected) ...[
+                        // Wave 1 - starts completely outside main circle
+                        Container(
+                          width: 130 + (50 * _fadeAnimation.value),
+                          height: 130 + (50 * _fadeAnimation.value),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(
+                                  (1.0 - _fadeAnimation.value) * 0.3,
+                                ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.transparent,
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 124, // Main circle size + border
+                                height: 124,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Theme.of(context).colorScheme.surface,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Wave 2 - delayed wave
+                        Container(
+                          width: 130 +
+                              (35 *
+                                  ((_fadeAnimation.value - 0.3)
+                                      .clamp(0.0, 1.0))),
+                          height: 130 +
+                              (35 *
+                                  ((_fadeAnimation.value - 0.3)
+                                      .clamp(0.0, 1.0))),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(
+                                  (1.0 -
+                                          (_fadeAnimation.value - 0.3)
+                                              .clamp(0.0, 1.0)) *
+                                      0.2,
+                                ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.transparent,
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 124,
+                                height: 124,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Theme.of(context).colorScheme.surface,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Wave 3 - most delayed wave
+                        Container(
+                          width: 130 +
+                              (25 *
+                                  ((_fadeAnimation.value - 0.6)
+                                      .clamp(0.0, 1.0))),
+                          height: 130 +
+                              (25 *
+                                  ((_fadeAnimation.value - 0.6)
+                                      .clamp(0.0, 1.0))),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(
+                                  (1.0 -
+                                          (_fadeAnimation.value - 0.6)
+                                              .clamp(0.0, 1.0)) *
+                                      0.1,
+                                ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.transparent,
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 124,
+                                height: 124,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color:
+                                      Theme.of(context).scaffoldBackgroundColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      // Fixed-size main icon
+                      Transform.rotate(
+                        angle: isConnecting
+                            ? _rotationAnimation.value * 2 * 3.14159
+                            : 0.0,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isConnected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : isConnecting
+                                      ? AppColors.warning
+                                      : Colors.grey,
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            isConnected
+                                ? Icons.wifi
+                                : isConnecting
+                                    ? Icons.sync
+                                    : Icons.wifi_off,
+                            size: 60,
+                            color: isConnected
+                                ? Theme.of(context).colorScheme.primary
+                                : isConnecting
+                                    ? AppColors.warning
+                                    : Colors.grey,
+                          ),
                         ),
                       ),
-                      child: Icon(
-                        isConnected ? Icons.wifi : Icons.wifi_off,
-                        size: 48,
-                        color: isConnected
-                            ? AppColors.success
-                            : AppColors.neutral600,
-                      ),
-                    ),
+                    ],
                   ),
                 );
               },
@@ -388,7 +522,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
     try {
       final nodeStatusAsync = ref.read(nodeStatusProvider);
       final nodeStatus = nodeStatusAsync.asData?.value;
-      
+
       // Only fetch peer status if connected
       if (nodeStatus != NodeStatus.connected) {
         if (mounted) {
@@ -473,19 +607,19 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
         Consumer(
           builder: (context, ref, child) {
             final trafficStats = ref.watch(dynamicTrafficProvider);
-            
+
             // Use total accumulated traffic instead of peak rates
             final totalUploadBytes = trafficStats.totalUploadBytes;
             final totalDownloadBytes = trafficStats.totalDownloadBytes;
             final totalTrafficBytes = totalUploadBytes + totalDownloadBytes;
-            
+
             String trafficDisplay;
             if (totalTrafficBytes > 0) {
               trafficDisplay = _formatBytes(totalTrafficBytes);
             } else {
               trafficDisplay = '0 B';
             }
-            
+
             return AppCard(
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               child: Column(

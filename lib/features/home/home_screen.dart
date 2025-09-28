@@ -94,7 +94,7 @@ class HomeScreen extends ConsumerWidget {
         // Reduce spacing on very small screens
         final isVerySmall = constraints.maxHeight < 600;
         final spacing = isVerySmall ? AppSpacing.lg : AppSpacing.xxl;
-        
+
         return Column(
           children: [
             SizedBox(height: isVerySmall ? AppSpacing.md : AppSpacing.xxl),
@@ -156,18 +156,18 @@ class _HeaderCard extends StatefulWidget {
 }
 
 class _HeaderCardState extends State<_HeaderCard>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _isLoading = false;
   bool _isSocks5Enabled = false;
-  late AnimationController _pulseController;
+  late AnimationController _fadeController;
   late AnimationController _rotationController;
-  late Animation<double> _pulseAnimation;
+  late Animation<double> _fadeAnimation;
   late Animation<double> _rotationAnimation;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _fadeController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
@@ -175,11 +175,11 @@ class _HeaderCardState extends State<_HeaderCard>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _pulseController,
+      parent: _fadeController,
       curve: Curves.easeInOut,
     ));
     _rotationAnimation = Tween<double>(
@@ -189,13 +189,24 @@ class _HeaderCardState extends State<_HeaderCard>
       parent: _rotationController,
       curve: Curves.easeInOut,
     ));
+    _updateAnimations();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _fadeController.dispose();
     _rotationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Restart animation when app comes back to foreground or when switching tabs
+    if (state == AppLifecycleState.resumed) {
+      _updateAnimations();
+    }
   }
 
   @override
@@ -212,13 +223,13 @@ class _HeaderCardState extends State<_HeaderCard>
 
     if (isConnecting) {
       _rotationController.repeat();
-      _pulseController.stop();
+      _fadeController.stop();
     } else if (isConnected) {
       _rotationController.stop();
-      _pulseController.repeat(reverse: true);
+      _fadeController.repeat(reverse: true);
     } else {
       _rotationController.stop();
-      _pulseController.stop();
+      _fadeController.stop();
     }
   }
 
@@ -263,39 +274,153 @@ class _HeaderCardState extends State<_HeaderCard>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           AnimatedBuilder(
-            animation:
-                Listenable.merge([_pulseController, _rotationController]),
+            animation: Listenable.merge([_fadeController, _rotationController]),
             builder: (context, child) {
-              return Transform.scale(
-                scale: isConnected ? _pulseAnimation.value : 1.0,
-                child: Transform.rotate(
-                  angle: isConnecting
-                      ? _rotationAnimation.value * 2 * 3.14159
-                      : 0.0,
-                  child: CircleAvatar(
-                    radius: 28,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: Icon(
-                      isConnected ? Icons.wifi : Icons.wifi_off,
-                      size: 32,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+              return SizedBox(
+                width: 130,
+                height: 130,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Wave animation (only when connected)
+                    if (isConnected) ...[
+                      // Wave 1 - starts completely outside main circle
+                      Container(
+                        width: 100 + (30 * _fadeAnimation.value),
+                        height: 100 + (30 * _fadeAnimation.value),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              Theme.of(context).colorScheme.primary.withOpacity(
+                                    (1.0 - _fadeAnimation.value) * 0.3,
+                                  ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.transparent,
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 94, // Main circle size + border
+                              height: 94,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Wave 2 - delayed wave
+                      Container(
+                        width: 100 +
+                            (25 *
+                                ((_fadeAnimation.value - 0.3).clamp(0.0, 1.0))),
+                        height: 100 +
+                            (25 *
+                                ((_fadeAnimation.value - 0.3).clamp(0.0, 1.0))),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              Theme.of(context).colorScheme.primary.withOpacity(
+                                    (1.0 -
+                                            (_fadeAnimation.value - 0.3)
+                                                .clamp(0.0, 1.0)) *
+                                        0.2,
+                                  ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.transparent,
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 94,
+                              height: 94,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Wave 3 - most delayed wave
+                      Container(
+                        width: 100 +
+                            (20 *
+                                ((_fadeAnimation.value - 0.6).clamp(0.0, 1.0))),
+                        height: 100 +
+                            (20 *
+                                ((_fadeAnimation.value - 0.6).clamp(0.0, 1.0))),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              Theme.of(context).colorScheme.primary.withOpacity(
+                                    (1.0 -
+                                            (_fadeAnimation.value - 0.6)
+                                                .clamp(0.0, 1.0)) *
+                                        0.1,
+                                  ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.transparent,
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 94,
+                              height: 94,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    // Fixed-size main icon
+                    Transform.rotate(
+                      angle: isConnecting
+                          ? _rotationAnimation.value * 2 * 3.14159
+                          : 0.0,
+                      child: Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isConnected
+                                ? Theme.of(context).colorScheme.primary
+                                : isConnecting
+                                    ? AppColors.warning
+                                    : Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          isConnected
+                              ? Icons.wifi
+                              : isConnecting
+                                  ? Icons.sync
+                                  : Icons.wifi_off,
+                          size: 45,
+                          color: isConnected
+                              ? Theme.of(context).colorScheme.primary
+                              : isConnecting
+                                  ? AppColors.warning
+                                  : Colors.grey,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               );
             },
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            isConnected
-                ? 'Mycelium Started'
-                : isConnecting
-                    ? 'Starting Mycelium...'
-                    : widget.status == NodeStatus.failed
-                        ? 'Start Failed'
-                        : 'Mycelium Stopped',
-            style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -440,9 +565,10 @@ class _StatsRow extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       '${peerStatus.length}',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -461,9 +587,10 @@ class _StatsRow extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       uptimeNotifier.formattedUptime,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -497,7 +624,7 @@ class _StatsRow extends ConsumerWidget {
             ],
           );
         }
-        
+
         // Use row layout for wider screens
         return Row(
           children: [
@@ -514,9 +641,10 @@ class _StatsRow extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       '${peerStatus.length}',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -537,9 +665,10 @@ class _StatsRow extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       uptimeNotifier.formattedUptime,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -618,7 +747,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _fetchPeerStatus();
     });
-    
+
     // Refresh uptime display every second (mobile)
     _uptimeRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
