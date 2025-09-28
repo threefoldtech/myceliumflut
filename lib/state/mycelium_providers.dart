@@ -78,12 +78,13 @@ final uptimeProvider = StateNotifierProvider<UptimeNotifier, DateTime?>((ref) {
 class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
   final PeersService _service;
   final PeersRepository _repo;
+  final MyceliumService _myceliumService;
 
   List<String> _userPeers = [];
 
   List<String> get userPeers => _userPeers;
 
-  PeersNotifier(this._service, this._repo) : super(const AsyncLoading()) {
+  PeersNotifier(this._service, this._repo, this._myceliumService) : super(const AsyncLoading()) {
     _fetchPeers();
   }
 
@@ -106,6 +107,9 @@ class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
     if (!current.contains(peer)) {
       state = AsyncData([...current, peer]);
     }
+    
+    // Restart Mycelium if it's currently running
+    await _restartMyceliumIfRunning();
   }
 
   Future<void> removePeer(String peer) async {
@@ -113,6 +117,33 @@ class PeersNotifier extends StateNotifier<AsyncValue<List<String>>> {
     _userPeers.remove(peer); 
     final current = state.value ?? [];
     state = AsyncData(current.where((p) => p != peer).toList());
+    
+    // Restart Mycelium if it's currently running
+    await _restartMyceliumIfRunning();
+  }
+
+  Future<void> _restartMyceliumIfRunning() async {
+    if (_myceliumService.status == NodeStatus.connected) {
+      print('PeersNotifier: Restarting Mycelium after peer change...');
+      
+      // Stop the service
+      await _myceliumService.stop();
+      
+      // Wait a moment for the stop to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Get the updated peer list and restart
+      final peers = state.value ?? [];
+      if (peers.isNotEmpty) {
+        await _myceliumService.start(peers);
+      } else {
+        // If no peers, use fallback peers
+        final fallbackPeers = await _service.fetchPeers();
+        await _myceliumService.start(fallbackPeers);
+      }
+      
+      print('PeersNotifier: Mycelium restart completed');
+    }
   }
 }
 
@@ -123,6 +154,7 @@ final peersProvider =
     StateNotifierProvider<PeersNotifier, AsyncValue<List<String>>>((ref) {
   final service = ref.watch(peersServiceProvider);
   final repo = ref.watch(peersRepositoryProvider);
+  final myceliumService = ref.watch(myceliumServiceProvider);
 
-  return PeersNotifier(service, repo);
+  return PeersNotifier(service, repo, myceliumService);
 });

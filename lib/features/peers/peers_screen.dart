@@ -266,7 +266,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
         _SearchAddBar(
           onChanged: (v) => setState(() => query = v),
           onAdd: () => _showAddPeerDialog(context, ref),
-          isDisabled: isMyceliumRunning,
+          isDisabled: false,
         ),
         const SizedBox(height: AppSpacing.md),
         if (filtered.isEmpty)
@@ -295,8 +295,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.public,
-                      size: 20, color: AppColors.dataPeers),
+                  Icon(Icons.public, size: 20, color: AppColors.dataPeers),
                   const SizedBox(width: 6),
                   Text('Peer Summary',
                       style: Theme.of(context).textTheme.titleMedium),
@@ -371,8 +370,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.podcasts,
-                      size: 20, color: AppColors.dataTraffic),
+                  Icon(Icons.podcasts, size: 20, color: AppColors.dataTraffic),
                   const SizedBox(width: 6),
                   Text('Network Traffic',
                       style: Theme.of(context).textTheme.titleMedium),
@@ -428,11 +426,9 @@ class _SearchAddBar extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: isDisabled
-                      ? null
-                      : () => _showAddPeerDialog(context, ref),
+                  onPressed: () => _showAddPeerDialog(context, ref),
                   icon: const Icon(Icons.add),
-                  label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
+                  label: const Text('Add Peer'),
                 ),
               ),
             ],
@@ -455,11 +451,10 @@ class _SearchAddBar extends ConsumerWidget {
             const SizedBox(width: AppSpacing.lg),
             IntrinsicWidth(
               child: FilledButton.icon(
-                onPressed:
-                    isDisabled ? null : () => _showAddPeerDialog(context, ref),
+                onPressed: () => _showAddPeerDialog(context, ref),
                 icon: const Icon(Icons.add),
                 label: Text(
-                  isDisabled ? 'Mycelium Running' : 'Add Peer',
+                  'Add Peer',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -745,9 +740,10 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     // Only show status when Mycelium is running or status is not unknown
-                    if (widget.isMyceliumRunning || 
-                        (widget.peerStats != null && 
-                         widget.peerStats!.connectionState != peer_models.ConnectionState.unknown))
+                    if (widget.isMyceliumRunning ||
+                        (widget.peerStats != null &&
+                            widget.peerStats!.connectionState !=
+                                peer_models.ConnectionState.unknown))
                       Row(
                         children: [
                           Text(
@@ -790,47 +786,42 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 ),
               ],
               // Show delete icon only for user-added peers
-              if (widget.isUserPeer && widget.peerStats == null)
+              if (widget.isUserPeer)
                 IconButton(
                   icon: Icon(
                     Icons.delete_outline,
                     color: AppColors.error,
                   ),
-                  onPressed: widget.isDisabled
-                      ? null
-                      : () async {
-                          // Show confirmation dialog
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Delete Peer'),
-                              content: Text(
-                                'Are you sure you want to delete this peer?\n\n${widget.ip.replaceAll('tcp://', '').replaceAll(':9651', '')}',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(false),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(true),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                  ),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
+                  onPressed: () async {
+                    // Show confirmation dialog
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete Peer'),
+                        content: Text(
+                          'Are you sure you want to delete this peer?\n\n${widget.ip.replaceAll('tcp://', '').replaceAll(':9651', '')}',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
                             ),
-                          );
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
 
-                          if (confirmed == true) {
-                            final peersNotifier =
-                                ref.read(peersProvider.notifier);
-                            await peersNotifier.removePeer(widget.ip);
-                          }
-                        },
+                    if (confirmed == true) {
+                      final peersNotifier = ref.read(peersProvider.notifier);
+                      await peersNotifier.removePeer(widget.ip);
+                    }
+                  },
                   tooltip: 'Delete peer',
                 ),
             ],
@@ -848,15 +839,17 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         children: [
                           Text(
                             'RX: ${widget.peerStats!.formattedRxBytes}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.dataDownload,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.dataDownload,
+                                    ),
                           ),
                           Text(
                             'TX: ${widget.peerStats!.formattedTxBytes}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.dataUpload,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.dataUpload,
+                                    ),
                           ),
                         ],
                       ),

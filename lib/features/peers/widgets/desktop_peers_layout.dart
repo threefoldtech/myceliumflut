@@ -173,7 +173,7 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
               _SearchAddBar(
                 onChanged: (v) => setState(() => query = v),
                 onAdd: () => _showAddPeerDialog(context, ref),
-                isDisabled: isMyceliumRunning,
+                isDisabled: false,
               ),
               const SizedBox(height: AppSpacing.md),
               if (filtered.isEmpty)
@@ -319,9 +319,9 @@ class _SearchAddBar extends ConsumerWidget {
         ),
         const SizedBox(width: AppSpacing.lg),
         FilledButton.icon(
-          onPressed: isDisabled ? null : () => _showAddPeerDialog(context, ref),
+          onPressed: () => _showAddPeerDialog(context, ref),
           icon: const Icon(Icons.add),
-          label: Text(isDisabled ? 'Mycelium Running' : 'Add Peer'),
+          label: const Text('Add Peer'),
         ),
       ],
     );
@@ -647,15 +647,13 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 ),
               ],
               // Show delete icon only for user-added peers
-              if (widget.isUserPeer && widget.peerStats == null)
+              if (widget.isUserPeer)
                 IconButton(
                   icon: Icon(
                     Icons.delete_outline,
                     color: AppColors.error,
                   ),
-                  onPressed: widget.isDisabled
-                      ? null
-                      : () async {
+                  onPressed: () async {
                           // Show confirmation dialog
                           final confirmed = await showDialog<bool>(
                             context: context,
