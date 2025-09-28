@@ -190,6 +190,7 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                       isUserPeer: isUserPeer,
                       peerStats: peerStat,
                       isDisabled: isMyceliumRunning,
+                      isMyceliumRunning: isMyceliumRunning,
                     ),
                   );
                 }).toList(),
@@ -333,13 +334,15 @@ class _PeerTile extends ConsumerStatefulWidget {
   final bool isUserPeer;
   final peer_models.PeerStats? peerStats;
   final bool isDisabled;
+  final bool isMyceliumRunning;
 
   const _PeerTile(
       {required this.ip,
       required this.country,
       required this.isUserPeer,
       this.peerStats,
-      this.isDisabled = false});
+      this.isDisabled = false,
+      this.isMyceliumRunning = false});
 
   @override
   ConsumerState<_PeerTile> createState() => _PeerTileState();
@@ -598,18 +601,22 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                       },
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Text(
-                          connectionStatus,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: connectionColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                        ),
-                      ],
-                    ),
+                    // Only show status when Mycelium is running or status is not unknown
+                    if (widget.isMyceliumRunning || 
+                        (widget.peerStats != null && 
+                         widget.peerStats!.connectionState != peer_models.ConnectionState.unknown))
+                      Row(
+                        children: [
+                          Text(
+                            connectionStatus,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: connectionColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
