@@ -213,7 +213,7 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                     Row(
                       children: [
                         Icon(Icons.public,
-                            size: 20, color: Theme.of(context).colorScheme.primary),
+                            size: 20, color: AppColors.dataPeers),
                         const SizedBox(width: 6),
                         Text('Peer Summary',
                             style: Theme.of(context).textTheme.titleMedium),
@@ -227,17 +227,17 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                           _SummaryItem(
                               label: '${peerSummary['connected']}',
                               subtitle: 'Connected',
-                              color: Colors.green),
+                              color: AppColors.success),
                           const SizedBox(height: AppSpacing.sm),
                           _SummaryItem(
                               label: '${peerSummary['slow']}',
                               subtitle: 'Connecting',
-                              color: Colors.orange),
+                              color: AppColors.warning),
                           const SizedBox(height: AppSpacing.sm),
                           _SummaryItem(
                               label: '${peerSummary['down']}',
                               subtitle: 'Down',
-                              color: Colors.red),
+                              color: AppColors.error),
                         ],
                       ),
                     ),
@@ -253,7 +253,7 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                     Row(
                       children: [
                         Icon(Icons.podcasts,
-                            size: 20, color: Theme.of(context).colorScheme.primary),
+                            size: 20, color: AppColors.dataTraffic),
                         const SizedBox(width: 6),
                         Text('Network Traffic',
                             style: Theme.of(context).textTheme.titleMedium),
@@ -266,11 +266,13 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                         children: [
                           _SummaryItem(
                               label: networkTraffic['rx'] ?? '0 B',
-                              subtitle: 'Total Download'),
+                              subtitle: 'Total Download',
+                              color: AppColors.dataDownload),
                           const SizedBox(height: AppSpacing.sm),
                           _SummaryItem(
                               label: networkTraffic['tx'] ?? '0 B',
-                              subtitle: 'Total Upload'),
+                              subtitle: 'Total Upload',
+                              color: AppColors.dataUpload),
                         ],
                       ),
                     ),
@@ -282,7 +284,7 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                 AppCard(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Text('Error getting peer status: $peerStatusError',
-                      style: TextStyle(color: Colors.red)),
+                      style: TextStyle(color: AppColors.error)),
                 ),
               ],
             ],
@@ -627,7 +629,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                       : Icon(
                           Icons.speed,
                           size: 18,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: AppColors.dataTraffic,
                         ),
                   onPressed: _isPinging ? null : _performPingTest,
                   tooltip: 'Test ping',
@@ -642,7 +644,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 IconButton(
                   icon: Icon(
                     Icons.delete_outline,
-                    color: Colors.red.shade400,
+                    color: AppColors.error,
                   ),
                   onPressed: widget.isDisabled
                       ? null
@@ -696,11 +698,15 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         children: [
                           Text(
                             'RX: ${widget.peerStats!.formattedRxBytes}',
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.dataDownload,
+                            ),
                           ),
                           Text(
                             'TX: ${widget.peerStats!.formattedTxBytes}',
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.dataUpload,
+                            ),
                           ),
                         ],
                       ),

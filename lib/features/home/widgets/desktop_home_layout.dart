@@ -580,7 +580,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                 children: [
                   Icon(
                     Icons.hub,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.dataPeers,
                     size: 20,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -595,7 +595,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                 '$connectedCount',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: AppColors.dataPeers,
                     ),
               ),
             ],
@@ -627,7 +627,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                     children: [
                       Icon(
                         Icons.speed,
-                        color: AppColors.brandAccent,
+                        color: AppColors.dataTraffic,
                         size: 20,
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -642,7 +642,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                     trafficDisplay,
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.brandAccent,
+                          color: AppColors.dataTraffic,
                         ),
                   ),
                 ],
@@ -660,7 +660,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                 children: [
                   Icon(
                     Icons.access_time,
-                    color: AppColors.success,
+                    color: AppColors.dataUptime,
                     size: 20,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -675,7 +675,7 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                 uptimeNotifier.formattedUptime,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.success,
+                      color: AppColors.dataUptime,
                     ),
               ),
             ],

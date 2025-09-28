@@ -557,10 +557,21 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Connected Peers',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.hub,
+                          color: AppColors.dataPeers,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Connected Peers',
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -568,6 +579,7 @@ class _StatsRow extends ConsumerWidget {
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.dataPeers,
                               ),
                       textAlign: TextAlign.center,
                     ),
@@ -579,10 +591,21 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Uptime',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: AppColors.dataUptime,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Uptime',
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -590,6 +613,7 @@ class _StatsRow extends ConsumerWidget {
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.dataUptime,
                               ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
@@ -603,16 +627,28 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Traffic',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.speed,
+                          color: AppColors.dataTraffic,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Traffic',
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       networkTraffic['total'] ?? '0 B',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: AppColors.dataTraffic,
                           ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
@@ -633,10 +669,21 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Connected Peers',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.hub,
+                          color: AppColors.dataPeers,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Connected Peers',
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -644,6 +691,7 @@ class _StatsRow extends ConsumerWidget {
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.dataPeers,
                               ),
                       textAlign: TextAlign.center,
                     ),
@@ -657,10 +705,21 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Uptime',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: AppColors.dataUptime,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Uptime',
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -668,6 +727,7 @@ class _StatsRow extends ConsumerWidget {
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.dataUptime,
                               ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
@@ -683,16 +743,28 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Traffic',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      textAlign: TextAlign.center,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.speed,
+                          color: AppColors.dataTraffic,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Traffic',
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       networkTraffic['total'] ?? '0 B',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: AppColors.dataTraffic,
                           ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
@@ -802,16 +874,28 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  'Connected Peers',
-                  style: Theme.of(context).textTheme.titleSmall,
-                  textAlign: TextAlign.center,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.hub,
+                      color: AppColors.dataPeers,
+                      size: 18,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Connected Peers',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '$connectedCount',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.dataPeers,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -835,6 +919,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                   widget.uptimeNotifier.formattedUptime,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.dataUptime,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -858,6 +943,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                   networkTraffic['total'] ?? '0 B',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.dataTraffic,
                       ),
                   textAlign: TextAlign.center,
                 ),

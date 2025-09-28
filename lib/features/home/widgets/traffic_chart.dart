@@ -146,8 +146,8 @@ class TrafficChart extends StatelessWidget {
                           isCurved: true,
                           gradient: LinearGradient(
                             colors: [
-                              AppColors.success.withOpacity(0.8),
-                              AppColors.success.withOpacity(0.3),
+                              AppColors.dataDownload.withOpacity(0.8),
+                              AppColors.dataDownload.withOpacity(0.3),
                             ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
@@ -159,8 +159,8 @@ class TrafficChart extends StatelessWidget {
                             show: true,
                             gradient: LinearGradient(
                               colors: [
-                                AppColors.success.withOpacity(0.4),
-                                AppColors.success.withOpacity(0.1),
+                                AppColors.dataDownload.withOpacity(0.4),
+                                AppColors.dataDownload.withOpacity(0.1),
                               ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
@@ -175,8 +175,8 @@ class TrafficChart extends StatelessWidget {
                           isCurved: true,
                           gradient: LinearGradient(
                             colors: [
-                              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                              Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              AppColors.dataUpload.withOpacity(0.8),
+                              AppColors.dataUpload.withOpacity(0.3),
                             ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
@@ -188,8 +188,8 @@ class TrafficChart extends StatelessWidget {
                             show: true,
                             gradient: LinearGradient(
                               colors: [
-                                Theme.of(context).colorScheme.primary.withOpacity(0.4),
-                                Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                AppColors.dataUpload.withOpacity(0.4),
+                                AppColors.dataUpload.withOpacity(0.1),
                               ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
@@ -206,12 +206,12 @@ class TrafficChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _LegendItem(
-                color: AppColors.success,
+                color: AppColors.dataDownload,
                 label: 'Download',
               ),
               const SizedBox(width: AppSpacing.md),
               _LegendItem(
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.dataUpload,
                 label: 'Upload',
               ),
             ],
@@ -237,9 +237,9 @@ class TrafficChart extends StatelessWidget {
   }
 
   String _formatBytes(double bytes) {
-    if (bytes < 1024) return '${bytes.toInt()}B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}K';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}M';
+    if (bytes < 1024) return '${bytes.toInt()} B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} K';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} M';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}G';
   }
 }

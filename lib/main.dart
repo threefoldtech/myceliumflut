@@ -74,9 +74,10 @@ class _MyAppState extends ConsumerState<MyApp>
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
       _logger.info("Window manager setTitleBarStyle completed");
 
-      // Maximize the window on startup
-      await windowManager.maximize();
-      _logger.info("Window manager maximize completed");
+      // Set window size to 1200px width with appropriate height
+      await windowManager.setSize(const Size(1200, 800));
+      await windowManager.center();
+      _logger.info("Window manager setSize and center completed");
 
       // Initialize tray manager with careful error handling
       try {
