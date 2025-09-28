@@ -28,7 +28,15 @@ class AppScaffold extends StatelessWidget {
   Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: title,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        title: Image.asset(
+          Theme.of(context).brightness == Brightness.light
+              ? 'assets/images/mycelium_white.png'
+              : 'assets/images/mycelium_color.png',
+          height: 32,
+          fit: BoxFit.contain,
+        ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

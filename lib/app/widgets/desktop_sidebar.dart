@@ -34,29 +34,23 @@ class DesktopSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Logo section
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/images/mycelium_icon.png',
-                  height: 32,
-                  width: 32,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'Mycelium',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Center(
+              child: Image.asset(
+                Theme.of(context).brightness == Brightness.light
+                    ? 'assets/images/mycelium_white.png'
+                    : 'assets/images/mycelium_color.png',
+                height: 40,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
+
+          const SizedBox(height: AppSpacing.lg),
 
           // Navigation items
           Expanded(
