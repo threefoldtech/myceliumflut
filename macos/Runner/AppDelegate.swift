@@ -47,6 +47,10 @@ class AppDelegate: FlutterAppDelegate {
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
+    
+    override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+        return true
+    }
     override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let controller : FlutterViewController = mainFlutterWindow?.contentViewController as! FlutterViewController
         return _windowManager.applicationShouldTerminate(controller);

@@ -83,13 +83,24 @@ class _MyAppState extends ConsumerState<MyApp>
         // Try different icon paths in order of preference
         final iconPath = Platform.isWindows
             ? 'assets/images/tray_icon.ico'
-            : 'assets/images/mycelium_icon.png';
+            : Platform.isMacOS
+                ? 'assets/images/tray_icon_macos.png'
+                : 'assets/images/mycelium_icon.png';
 
         try {
           await trayManager.setIcon(iconPath);
           _logger.info("Tray icon set successfully using: $iconPath");
         } catch (e) {
           _logger.warning("Failed to set tray icon from $iconPath: $e");
+          // Try fallback icon for macOS
+          if (Platform.isMacOS) {
+            try {
+              await trayManager.setIcon('assets/images/mycelium_icon.png');
+              _logger.info("Tray icon set using fallback: mycelium_icon.png");
+            } catch (fallbackError) {
+              _logger.severe("Failed to set fallback tray icon: $fallbackError");
+            }
+          }
         }
 
         // Set tray tooltip
@@ -114,7 +125,6 @@ class _MyAppState extends ConsumerState<MyApp>
       final items = [
         MenuItem(key: 'show', label: 'Show Window'),
         MenuItem(key: 'hide', label: 'Hide Window'),
-        MenuItem.separator(),
         MenuItem.separator(),
         MenuItem(key: 'quit', label: 'Quit'),
       ];
@@ -158,6 +168,23 @@ class _MyAppState extends ConsumerState<MyApp>
   // Tray handlers
   @override
   void onTrayIconMouseDown() async {
+    // On macOS, single click should toggle window visibility
+    if (Platform.isMacOS) {
+      final isVisible = await windowManager.isVisible();
+      if (isVisible) {
+        await windowManager.hide();
+      } else {
+        await windowManager.show();
+        await windowManager.focus();
+      }
+    } else {
+      await trayManager.popUpContextMenu();
+    }
+  }
+
+  @override
+  void onTrayIconRightMouseDown() async {
+    // Right click always shows context menu
     await trayManager.popUpContextMenu();
   }
 
