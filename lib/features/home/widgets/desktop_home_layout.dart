@@ -335,8 +335,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                                 height: 124,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color:
-                                      Theme.of(context).scaffoldBackgroundColor,
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                               ),
                             ),

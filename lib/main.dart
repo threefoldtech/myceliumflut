@@ -74,6 +74,10 @@ class _MyAppState extends ConsumerState<MyApp>
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
       _logger.info("Window manager setTitleBarStyle completed");
 
+      // Maximize the window on startup
+      await windowManager.maximize();
+      _logger.info("Window manager maximize completed");
+
       // Initialize tray manager with careful error handling
       try {
         _logger.info("Starting tray manager initialization...");
