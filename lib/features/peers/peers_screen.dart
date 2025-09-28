@@ -355,14 +355,14 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.sm),
         if (peerStatusError != null)
           AppCard(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Text('Error getting peer status: $peerStatusError',
                 style: TextStyle(color: AppColors.error)),
           ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.sm),
         AppCard(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(

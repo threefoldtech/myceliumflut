@@ -586,7 +586,7 @@ class _StatsRow extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -622,7 +622,7 @@ class _StatsRow extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -631,7 +631,7 @@ class _StatsRow extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.speed,
+                          Icons.podcasts,
                           color: AppColors.dataTraffic,
                           size: 18,
                         ),
