@@ -557,25 +557,18 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.hub,
-                          color: AppColors.dataPeers,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            'Connected Peers',
-                            style: Theme.of(context).textTheme.titleSmall,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.hub,
+                      color: AppColors.dataPeers,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Peers',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -595,21 +588,16 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          color: AppColors.dataUptime,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Uptime',
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    Icon(
+                      Icons.access_time,
+                      color: AppColors.dataUptime,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Uptime',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -631,21 +619,16 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.podcasts,
-                          color: AppColors.dataTraffic,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Traffic',
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    Icon(
+                      Icons.podcasts,
+                      color: AppColors.dataTraffic,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Traffic',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -673,25 +656,16 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.hub,
-                          color: AppColors.dataPeers,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            'Connected Peers',
-                            style: Theme.of(context).textTheme.titleSmall,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.hub,
+                      color: AppColors.dataPeers,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Peers',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -713,21 +687,16 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          color: AppColors.dataUptime,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Uptime',
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    Icon(
+                      Icons.access_time,
+                      color: AppColors.dataUptime,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Uptime',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -751,21 +720,16 @@ class _StatsRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.speed,
-                          color: AppColors.dataTraffic,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Traffic',
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    Icon(
+                      Icons.podcasts,
+                      color: AppColors.dataTraffic,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Traffic',
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -882,25 +846,16 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.hub,
-                      color: AppColors.dataPeers,
-                      size: 18,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Flexible(
-                      child: Text(
-                        'Connected Peers',
-                        style: Theme.of(context).textTheme.titleSmall,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.hub,
+                  color: AppColors.dataPeers,
+                  size: 24,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Peers',
+                  style: Theme.of(context).textTheme.titleSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -921,6 +876,12 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Icon(
+                  Icons.access_time,
+                  color: AppColors.dataUptime,
+                  size: 24,
+                ),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Uptime',
                   style: Theme.of(context).textTheme.titleSmall,
@@ -945,6 +906,12 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Icon(
+                  Icons.podcasts,
+                  color: AppColors.dataTraffic,
+                  size: 24,
+                ),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Traffic',
                   style: Theme.of(context).textTheme.titleSmall,

@@ -74,7 +74,7 @@ class DesktopHomeLayout extends ConsumerWidget {
 
         // Statistics sidebar
         SizedBox(
-          width: 300,
+          width: 350,
           child: Column(
             children: [
               _DesktopStatsCards(),
@@ -572,33 +572,36 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
     return Column(
       children: [
         // Connected Peers Card
-        AppCard(
-          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.hub,
-                    color: AppColors.dataPeers,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    'Connected Peers',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ],
+        SizedBox(
+          width: double.infinity,
+          child: AppCard(
+            margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+              Icon(
+                Icons.hub,
+                size: 32,
+                color: AppColors.dataPeers,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Connected Peers',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 '$connectedCount',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.dataPeers,
                     ),
+                textAlign: TextAlign.center,
               ),
             ],
+            ),
           ),
         ),
 
@@ -619,66 +622,72 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
               trafficDisplay = '0 B';
             }
 
-            return AppCard(
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: Column(
+            return SizedBox(
+              width: double.infinity,
+              child: AppCard(
+                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.speed,
-                        color: AppColors.dataTraffic,
-                        size: 20,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        'Total Traffic',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                    ],
+                  Icon(
+                    Icons.podcasts,
+                    size: 32,
+                    color: AppColors.dataTraffic,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Network Traffic',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     trafficDisplay,
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.dataTraffic,
                         ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
+                ),
               ),
             );
           },
         ),
 
         // Uptime Card
-        AppCard(
-          margin: EdgeInsets.zero,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    color: AppColors.dataUptime,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    'Uptime',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ],
+        SizedBox(
+          width: double.infinity,
+          child: AppCard(
+            margin: EdgeInsets.zero,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+              Icon(
+                Icons.access_time,
+                size: 32,
+                color: AppColors.dataUptime,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Uptime',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 uptimeNotifier.formattedUptime,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.dataUptime,
                     ),
+                textAlign: TextAlign.center,
               ),
             ],
+            ),
           ),
         ),
       ],
