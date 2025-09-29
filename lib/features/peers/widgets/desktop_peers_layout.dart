@@ -12,7 +12,7 @@ import '../../../state/geolocation_providers.dart';
 class DesktopPeersLayout extends ConsumerStatefulWidget {
   final List<String> peers;
 
-  const DesktopPeersLayout({required this.peers});
+  const DesktopPeersLayout({super.key, required this.peers});
 
   @override
   ConsumerState<DesktopPeersLayout> createState() => DesktopPeersLayoutState();
@@ -193,13 +193,13 @@ class DesktopPeersLayoutState extends ConsumerState<DesktopPeersLayout> {
                       isMyceliumRunning: isMyceliumRunning,
                     ),
                   );
-                }).toList(),
+                }),
             ],
           ),
         ),
-        
+
         const SizedBox(width: AppSpacing.lg),
-        
+
         // Right side - Summary cards
         Expanded(
           flex: 1,
@@ -504,7 +504,8 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -559,7 +560,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurface
-                                        .withOpacity(0.7),
+                                        .withValues(alpha: 0.7),
                                   ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -589,7 +590,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onSurface
-                                            .withOpacity(0.5),
+                                            .withValues(alpha: 0.5),
                                       ),
                                 ),
                               ],
@@ -602,9 +603,10 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     // Only show status when Mycelium is running or status is not unknown
-                    if (widget.isMyceliumRunning || 
-                        (widget.peerStats != null && 
-                         widget.peerStats!.connectionState != peer_models.ConnectionState.unknown))
+                    if (widget.isMyceliumRunning ||
+                        (widget.peerStats != null &&
+                            widget.peerStats!.connectionState !=
+                                peer_models.ConnectionState.unknown))
                       Row(
                         children: [
                           Text(
@@ -654,38 +656,35 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     color: AppColors.error,
                   ),
                   onPressed: () async {
-                          // Show confirmation dialog
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Delete Peer'),
-                              content: Text(
-                                'Are you sure you want to delete this peer?\n\n${widget.ip.replaceAll('tcp://', '').replaceAll(':9651', '')}',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(false),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(true),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                  ),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
+                    // Show confirmation dialog
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete Peer'),
+                        content: Text(
+                          'Are you sure you want to delete this peer?\n\n${widget.ip.replaceAll('tcp://', '').replaceAll(':9651', '')}',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
                             ),
-                          );
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
 
-                          if (confirmed == true) {
-                            final peersNotifier =
-                                ref.read(peersProvider.notifier);
-                            await peersNotifier.removePeer(widget.ip);
-                          }
-                        },
+                    if (confirmed == true) {
+                      final peersNotifier = ref.read(peersProvider.notifier);
+                      await peersNotifier.removePeer(widget.ip);
+                    }
+                  },
                   tooltip: 'Delete peer',
                 ),
             ],
@@ -703,15 +702,17 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         children: [
                           Text(
                             'RX: ${widget.peerStats!.formattedRxBytes}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.dataDownload,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.dataDownload,
+                                    ),
                           ),
                           Text(
                             'TX: ${widget.peerStats!.formattedTxBytes}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.dataUpload,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.dataUpload,
+                                    ),
                           ),
                         ],
                       ),
@@ -744,20 +745,20 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     decoration: BoxDecoration(
                       color: _pingResult!.success
                           ? (_pingResult!.latencyMs! < 50
-                              ? AppColors.success.withOpacity(0.1)
+                              ? AppColors.success.withValues(alpha: 0.1)
                               : _pingResult!.latencyMs! < 150
-                                  ? Colors.orange.withOpacity(0.1)
-                                  : AppColors.error.withOpacity(0.1))
-                          : AppColors.error.withOpacity(0.1),
+                                  ? Colors.orange.withValues(alpha: 0.1)
+                                  : AppColors.error.withValues(alpha: 0.1))
+                          : AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: _pingResult!.success
                             ? (_pingResult!.latencyMs! < 50
-                                ? AppColors.success.withOpacity(0.3)
+                                ? AppColors.success.withValues(alpha: 0.3)
                                 : _pingResult!.latencyMs! < 150
-                                    ? Colors.orange.withOpacity(0.3)
-                                    : AppColors.error.withOpacity(0.3))
-                            : AppColors.error.withOpacity(0.3),
+                                    ? Colors.orange.withValues(alpha: 0.3)
+                                    : AppColors.error.withValues(alpha: 0.3))
+                            : AppColors.error.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -820,7 +821,7 @@ class _PeersEmptyState extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
         const SizedBox(height: AppSpacing.xxl),
         FilledButton.icon(
           onPressed: () => _showAddPeerDialog(context, ref),
@@ -878,11 +879,13 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
       builder: (context, setState) {
         final inputText = controller.text.trim();
         bool isValidIP = _isValidIP(inputText);
-        
+
         // Check if peer already exists
-        final formattedPeer = inputText.startsWith('tcp://') ? inputText : 'tcp://$inputText:9651';
+        final formattedPeer = inputText.startsWith('tcp://')
+            ? inputText
+            : 'tcp://$inputText:9651';
         bool peerExists = currentPeers.contains(formattedPeer);
-        
+
         String? errorText;
         if (inputText.isNotEmpty && !isValidIP) {
           errorText = 'Please enter a valid IP address';
@@ -905,7 +908,10 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
                 keyboardType: TextInputType.url,
                 onChanged: (value) => setState(() {}),
               ),
-              if (errorText == null && inputText.isNotEmpty && isValidIP && !peerExists)
+              if (errorText == null &&
+                  inputText.isNotEmpty &&
+                  isValidIP &&
+                  !peerExists)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
@@ -933,7 +939,9 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
               onPressed: isValidIP && inputText.isNotEmpty && !peerExists
                   ? () async {
                       await peersNotifier.addPeer(formattedPeer);
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   : null,
               style: ElevatedButton.styleFrom(

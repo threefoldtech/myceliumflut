@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/geolocation_service.dart';
 
@@ -7,15 +8,19 @@ final geolocationServiceProvider = Provider<GeolocationService>((ref) {
 });
 
 // Provider for peer location cache
-final peerLocationProvider = StateNotifierProvider.family<PeerLocationNotifier, LocationInfo?, String>((ref, peerAddress) {
-  return PeerLocationNotifier(ref.read(geolocationServiceProvider), peerAddress);
+final peerLocationProvider =
+    StateNotifierProvider.family<PeerLocationNotifier, LocationInfo?, String>(
+        (ref, peerAddress) {
+  return PeerLocationNotifier(
+      ref.read(geolocationServiceProvider), peerAddress);
 });
 
 class PeerLocationNotifier extends StateNotifier<LocationInfo?> {
   final GeolocationService _geolocationService;
   final String _peerAddress;
 
-  PeerLocationNotifier(this._geolocationService, this._peerAddress) : super(null) {
+  PeerLocationNotifier(this._geolocationService, this._peerAddress)
+      : super(null) {
     _fetchLocation();
   }
 
@@ -26,14 +31,14 @@ class PeerLocationNotifier extends StateNotifier<LocationInfo?> {
       if (cleanIP.contains(':')) {
         cleanIP = cleanIP.split(':')[0]; // Remove port if present
       }
-      
+
       final location = await _geolocationService.getLocationForIP(cleanIP);
-      
+
       if (mounted) {
         state = location;
       }
     } catch (e) {
-      print('Error fetching location for $_peerAddress: $e');
+      debugPrint('Error fetching location for $_peerAddress: $e');
       if (mounted) {
         state = LocationInfo.unknown();
       }

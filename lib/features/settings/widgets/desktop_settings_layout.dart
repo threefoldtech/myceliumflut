@@ -68,12 +68,12 @@ class DesktopSettingsLayout extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: Theme.of(context)
                             .colorScheme
-                            .surfaceVariant
-                            .withOpacity(0.3),
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(AppRadii.md),
                         border: Border.all(
                           color:
-                              Theme.of(context).dividerColor.withOpacity(0.3),
+                              Theme.of(context).dividerColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -103,7 +103,7 @@ class DesktopSettingsLayout extends ConsumerWidget {
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onSurface
-                                            .withOpacity(0.7),
+                                            .withValues(alpha: 0.7),
                                       ),
                                 ),
                               ],
@@ -320,7 +320,7 @@ class DesktopSettingsLayout extends ConsumerWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.8),
+                                .withValues(alpha: 0.8),
                             fontWeight: FontWeight.w500,
                           ),
                     ),
@@ -331,7 +331,7 @@ class DesktopSettingsLayout extends ConsumerWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.7),
+                                .withValues(alpha: 0.7),
                             height: 1.5,
                           ),
                     ),
@@ -418,7 +418,7 @@ class _VersionInfoRow extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.6),
+                          .withValues(alpha: 0.6),
                     ),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -476,10 +476,13 @@ class _NetworkInfoRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadii.md),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.3),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -509,7 +512,7 @@ class _NetworkInfoRow extends StatelessWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.7),
+                                .withValues(alpha: 0.7),
                           ),
                     ),
                   ],
@@ -526,7 +529,7 @@ class _NetworkInfoRow extends StatelessWidget {
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Theme.of(context).dividerColor.withOpacity(0.3),
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
                     ),
                   ),
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -548,7 +551,7 @@ class _NetworkInfoRow extends StatelessWidget {
                   tooltip: 'Copy Node Address',
                   style: IconButton.styleFrom(
                     backgroundColor:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                     foregroundColor: Theme.of(context).colorScheme.primary,
                     minimumSize: const Size(40, 40),
                   ),

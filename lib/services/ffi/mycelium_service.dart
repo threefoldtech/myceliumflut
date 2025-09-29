@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -71,15 +72,17 @@ class MyceliumService {
     final portRegex = RegExp(r':9651$');
     if (!prefixRegex.hasMatch(peer)) return 'peer must start with tcp://';
     final ipPortPart = peer.substring(peer.indexOf('://') + 3);
-    if (!ipv4Regex.hasMatch(ipPortPart) && !ipv6Regex.hasMatch(ipPortPart))
+    if (!ipv4Regex.hasMatch(ipPortPart) && !ipv6Regex.hasMatch(ipPortPart)) {
       return 'peer must contain a valid IPv4 or IPv6 address';
+    }
     if (!portRegex.hasMatch(ipPortPart)) return 'peer must end with :9651';
     return null;
   }
 
   String? validatePeers(List<String> peers) {
-    if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty))
+    if (peers.isEmpty || (peers.length == 1 && peers[0].isEmpty)) {
       return "peers can't be empty";
+    }
     for (final p in peers) {
       final e = validatePeer(p);
       if (e != null) return 'invalid peer:`$p` $e';
@@ -90,37 +93,33 @@ class MyceliumService {
   bool _socksEnabled = false;
 
   Future<bool> start(List<String> peers, {bool socksEnabled = false}) async {
-    print('MyceliumService: Starting with peers: $peers, SOCKS: $socksEnabled');
-    print('MyceliumService: Platform check - isUseDylib(): ${isUseDylib()}');
+    debugPrint('MyceliumService: Starting Mycelium...');
+    debugPrint('MyceliumService: Starting with peers: $peers, SOCKS: $socksEnabled');
+    debugPrint('MyceliumService: Platform check - isUseDylib(): ${isUseDylib()}');
     _socksEnabled = socksEnabled;
     _status = NodeStatus.connecting;
     _statusController.add(_status);
     final cleaned = preprocessPeers(peers);
-    print('MyceliumService: Cleaned peers: $cleaned');
-    final error = validatePeers(cleaned);
-    if (error != null) {
-      print('MyceliumService: Validation error: $error');
-      _status = NodeStatus.failed;
-      _statusController.add(_status);
-      return false;
-    }
-    await storePeers(cleaned);
-    final key = await _loadOrGeneratePrivKey();
-    print('MyceliumService: Loaded key, starting VPN...');
     try {
       if (isUseDylib()) {
-        print('MyceliumService: Using FFI dylib');
-        myFFStartMycelium(cleaned, key);
+        final key = await _loadOrGeneratePrivKey();
+        final result = await myFFStartMycelium(cleaned, key);
+        if (!result) {
+          debugPrint('MyceliumService: Failed to start Mycelium');
+          _status = NodeStatus.failed;
+          _statusController.add(_status);
+          return false;
+        }
       } else {
-        print('MyceliumService: Using platform channel');
+        final key = await _loadOrGeneratePrivKey();
         final result = await _platform.invokeMethod<bool>('startVpn', {
           'peers': cleaned,
           'secretKey': key,
           'socksEnabled': socksEnabled,
         });
-        print('MyceliumService: startVpn result: $result');
+        debugPrint('MyceliumService: startVpn result: $result');
         if (result != true) {
-          print('MyceliumService: Platform channel returned false');
+          debugPrint('MyceliumService: Platform channel returned false');
           _status = NodeStatus.failed;
           _statusController.add(_status);
           return false;
@@ -128,10 +127,10 @@ class MyceliumService {
       }
       _status = NodeStatus.connected;
       _statusController.add(_status);
-      print('MyceliumService: Successfully connected');
+      debugPrint('MyceliumService: Mycelium started successfully');
       return true;
     } catch (e) {
-      print('MyceliumService: Failed to start: $e');
+      debugPrint('MyceliumService: Error starting Mycelium: $e');
       _status = NodeStatus.failed;
       _statusController.add(_status);
       return false;
@@ -172,7 +171,7 @@ class MyceliumService {
             await _platform.invokeMethod<List<dynamic>>('getPeerStatus');
         peerStatusStrings = result?.cast<String>() ?? [];
       }
-      
+
       // Check for error responses first
       if (peerStatusStrings.isNotEmpty) {
         final firstResponse = peerStatusStrings[0];
@@ -180,7 +179,7 @@ class MyceliumService {
           // Handle error responses like "err_node_timeout"
           throw Exception('Mycelium service error: $firstResponse');
         }
-        
+
         // Filter out the first element if it's "ok" (status indicator)
         if (firstResponse == "ok") {
           peerStatusStrings = peerStatusStrings.sublist(1);
@@ -195,7 +194,7 @@ class MyceliumService {
           if (jsonString.trim().isEmpty || jsonString.startsWith('err_')) {
             continue;
           }
-          
+
           final Map<String, dynamic> json = jsonDecode(jsonString);
           peerStats.add(PeerStats.fromJson(json));
         } catch (e) {
@@ -239,7 +238,7 @@ class MyceliumService {
           };
           return jsonEncode(statusMap);
         }
-        
+
         try {
           final peerStats = await getPeerStatus();
           final statusMap = {
@@ -257,7 +256,7 @@ class MyceliumService {
         }
       }
     } catch (e) {
-      print("Failed to get status: $e");
+      debugPrint("Failed to get status: $e");
       return null;
     }
   }
@@ -278,7 +277,7 @@ class MyceliumService {
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      print("Failed to proxyConnect: $e");
+      debugPrint("Failed to proxyConnect: $e");
       return ['Failed to connect proxy'];
     }
   }
@@ -293,7 +292,7 @@ class MyceliumService {
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      print("Failed to proxyDisconnect: $e");
+      debugPrint("Failed to proxyDisconnect: $e");
       return ['Failed to disconnect proxy'];
     }
   }
@@ -308,7 +307,7 @@ class MyceliumService {
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      print("Failed to startProxyProbe: $e");
+      debugPrint("Failed to startProxyProbe: $e");
       return ['Failed to start proxy probe'];
     }
   }
@@ -323,7 +322,7 @@ class MyceliumService {
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      print("Failed to stopProxyProbe: $e");
+      debugPrint("Failed to stopProxyProbe: $e");
       return ['Failed to stop proxy probe'];
     }
   }
@@ -338,7 +337,7 @@ class MyceliumService {
         return result?.cast<String>() ?? [];
       }
     } catch (e) {
-      print("Failed to listProxies: $e");
+      debugPrint("Failed to listProxies: $e");
       return ['Failed to list proxies'];
     }
   }

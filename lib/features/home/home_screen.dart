@@ -255,7 +255,7 @@ class _HeaderCardState extends State<_HeaderCard>
         await widget.service.stopProxyProbe();
         setState(() => _isSocks5Enabled = false);
       } catch (e) {
-        print('Error stopping proxy: $e');
+        debugPrint('Error stopping proxy: $e');
       }
     }
 
@@ -291,7 +291,7 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withOpacity(
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 
                                     (1.0 - _fadeAnimation.value) * 0.3,
                                   ),
                         ),
@@ -323,7 +323,7 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withOpacity(
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 
                                     (1.0 -
                                             (_fadeAnimation.value - 0.3)
                                                 .clamp(0.0, 1.0)) *
@@ -358,7 +358,7 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withOpacity(
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 
                                     (1.0 -
                                             (_fadeAnimation.value - 0.6)
                                                 .clamp(0.0, 1.0)) *
@@ -427,7 +427,7 @@ class _HeaderCardState extends State<_HeaderCard>
             'Tap to start the Mycelium node',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
           const SizedBox(height: AppSpacing.xxl),
           AppButton(
@@ -445,7 +445,8 @@ class _HeaderCardState extends State<_HeaderCard>
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
                   foregroundColor:
                       Theme.of(context).colorScheme.onSurfaceVariant,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -472,50 +473,51 @@ class _HeaderCardState extends State<_HeaderCard>
               ),
             ),
           ),
-          if (widget.status == NodeStatus.connected && false) ...[
-            const SizedBox(height: AppSpacing.lg),
-            AppCard(
-              margin: EdgeInsets.zero,
-              child: ExpansionTile(
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Flexible(
-                      child: Text('Advanced Options',
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    Icon(Icons.expand_more),
-                  ],
-                ),
-                children: [
-                  ListTile(
-                    title: const Text('Enable SOCKS5 tunneling as VPN'),
-                    trailing: Switch(
-                      value: _isSocks5Enabled,
-                      onChanged: (value) async {
-                        setState(() => _isSocks5Enabled = value);
-                        if (value) {
-                          // First start proxy probing to discover available proxies
-                          await widget.service.startProxyProbe();
-                          // Wait a bit for probes to discover proxies
-                          await Future.delayed(Duration(seconds: 10));
-                          // Then connect to best available proxy
-                          final result = await widget.service.proxyConnect(
-                              '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
-                          debugPrint('Proxy connect result: $result');
-                        } else {
-                          final result = await widget.service.proxyDisconnect();
-                          // Stop proxy probing when disabled
-                          await widget.service.stopProxyProbe();
-                          debugPrint('Proxy disconnect result: $result');
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          // Proxy controls temporarily disabled
+          // if (widget.status == NodeStatus.connected) ...[
+          //   const SizedBox(height: AppSpacing.lg),
+          //   AppCard(
+          //     margin: EdgeInsets.zero,
+          //     child: ExpansionTile(
+          //       title: Row(
+          //         mainAxisAlignment: MainAxisAlignment.center,
+          //         children: const [
+          //           Flexible(
+          //             child: Text('Advanced Options',
+          //                 overflow: TextOverflow.ellipsis),
+          //           ),
+          //           Icon(Icons.expand_more),
+          //         ],
+          //       ),
+          //       children: [
+          //         ListTile(
+          //           title: const Text('Enable SOCKS5 tunneling as VPN'),
+          //           trailing: Switch(
+          //             value: _isSocks5Enabled,
+          //             onChanged: (value) async {
+          //               setState(() => _isSocks5Enabled = value);
+          //               if (value) {
+          //                 // First start proxy probing to discover available proxies
+          //                 await widget.service.startProxyProbe();
+          //                 // Wait a bit for probes to discover proxies
+          //                 await Future.delayed(Duration(seconds: 10));
+          //                 // Then connect to best available proxy
+          //                 final result = await widget.service.proxyConnect(
+          //                     '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
+          //                 debugPrint('Proxy connect result: $result');
+          //               } else {
+          //                 final result = await widget.service.proxyDisconnect();
+          //                 // Stop proxy probing when disabled
+          //                 await widget.service.stopProxyProbe();
+          //                 debugPrint('Proxy disconnect result: $result');
+          //               }
+          //             },
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ],
         ],
       ),
     );

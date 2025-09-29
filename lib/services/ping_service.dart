@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PingResult {
@@ -51,7 +52,7 @@ class PingService {
         timestamp: DateTime.now(),
       );
     } catch (e) {
-      print('Ping failed for $host: $e');
+      debugPrint('Ping error for $host: $e');
       return PingResult(
         host: host,
         latencyMs: null,
@@ -116,7 +117,7 @@ class LatencyNotifier extends StateNotifier<int?> {
       final latency = await _pingService.getAverageLatency();
       state = latency;
     } catch (e) {
-      print('LatencyNotifier: Error updating latency: $e');
+      debugPrint('LatencyNotifier: Error updating latency: $e');
     }
   }
 
