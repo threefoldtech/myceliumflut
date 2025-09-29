@@ -526,6 +526,25 @@ public func helloMycelios() -> String {
     )
 })
 }
+public func listProxies() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_mycelmob_fn_func_list_proxies($0
+    )
+})
+}
+public func proxyConnect(remote: String) -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_mycelmob_fn_func_proxy_connect(
+        FfiConverterString.lower(remote),$0
+    )
+})
+}
+public func proxyDisconnect() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_mycelmob_fn_func_proxy_disconnect($0
+    )
+})
+}
 public func startMycelium(peers: [String], tunFd: Int32, secretKey: Data) {try! rustCall() {
     uniffi_mycelmob_fn_func_start_mycelium(
         FfiConverterSequenceString.lower(peers),
@@ -534,10 +553,22 @@ public func startMycelium(peers: [String], tunFd: Int32, secretKey: Data) {try! 
     )
 }
 }
+public func startProxyProbe() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_mycelmob_fn_func_start_proxy_probe($0
+    )
+})
+}
 public func stopMycelium() {try! rustCall() {
     uniffi_mycelmob_fn_func_stop_mycelium($0
     )
 }
+}
+public func stopProxyProbe() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_mycelmob_fn_func_stop_proxy_probe($0
+    )
+})
 }
 
 private enum InitializationResult {
@@ -570,10 +601,25 @@ private var initializationResult: InitializationResult = {
     if (uniffi_mycelmob_checksum_func_hello_mycelios() != 48239) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_mycelmob_checksum_func_list_proxies() != 65480) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_mycelmob_checksum_func_proxy_connect() != 60646) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_mycelmob_checksum_func_proxy_disconnect() != 62431) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_mycelmob_checksum_func_start_mycelium() != 61012) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_mycelmob_checksum_func_start_proxy_probe() != 23502) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_mycelmob_checksum_func_stop_mycelium() != 28488) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_mycelmob_checksum_func_stop_proxy_probe() != 19306) {
         return InitializationResult.apiChecksumMismatch
     }
 

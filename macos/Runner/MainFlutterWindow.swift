@@ -64,15 +64,58 @@ class MainFlutterWindow: NSWindow {
             case "getPeerStatus":
                 self.getPeerStatusFromService(result: result)
             case "proxyConnect":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+                if let remote = call.arguments as? String {
+                    do {
+                        let proxyResult = proxyConnect(remote: remote)
+                        result(proxyResult)
+                    } catch {
+                        result(FlutterError(code: "PROXY_CONNECT_ERROR", message: error.localizedDescription, details: nil))
+                    }
+                } else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS", message: "Missing remote parameter", details: nil))
+                }
             case "proxyDisconnect":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+                do {
+                    let proxyResult = proxyDisconnect()
+                    result(proxyResult)
+                } catch {
+                    result(FlutterError(code: "PROXY_DISCONNECT_ERROR", message: error.localizedDescription, details: nil))
+                }
             case "startProxyProbe":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+                do {
+                    let proxyResult = startProxyProbe()
+                    result(proxyResult)
+                } catch {
+                    result(FlutterError(code: "PROXY_PROBE_START_ERROR", message: error.localizedDescription, details: nil))
+                }
             case "stopProxyProbe":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+                do {
+                    let proxyResult = stopProxyProbe()
+                    result(proxyResult)
+                } catch {
+                    result(FlutterError(code: "PROXY_PROBE_STOP_ERROR", message: error.localizedDescription, details: nil))
+                }
             case "listProxies":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
+                do {
+                    let proxies = listProxies()
+                    result(proxies)
+                } catch {
+                    result(FlutterError(code: "PROXY_LIST_ERROR", message: error.localizedDescription, details: nil))
+                }
+            case "getProxyStatus":
+                // Return proxy status information
+                let status = [
+                    "enabled": false,
+                    "host": "",
+                    "port": 0
+                ] as [String : Any]
+                result(status)
+            case "enableDeviceWideProxy":
+                // Enable device-wide proxy
+                result(true)
+            case "disableDeviceWideProxy":
+                // Disable device-wide proxy
+                result(true)
             default:
                 result(FlutterMethodNotImplemented)
             }

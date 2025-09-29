@@ -103,6 +103,12 @@ import OSLog
                         debuglog("Error in listProxies: \(error.localizedDescription)")
                         result(FlutterError(code: "LIST_PROXIES_ERROR", message: error.localizedDescription, details: nil))
                     }
+                case "enableDeviceWideProxy":
+                    self.enableDeviceWideProxy(result: result)
+                case "disableDeviceWideProxy":
+                    self.disableDeviceWideProxy(result: result)
+                case "getProxyStatus":
+                    self.getProxyStatus(result: result)
                 default:
                     result(FlutterMethodNotImplemented)
                 }
@@ -274,6 +280,146 @@ import OSLog
     private var cachedPeerStatus: [String]? = nil
     private var lastPeerStatusCall: Date = Date.distantPast
     private let peerStatusThrottleInterval: TimeInterval = 2.0
+    
+    // MARK: - Device-Wide Proxy Methods
+    
+    private func enableDeviceWideProxy(result: @escaping FlutterResult) {
+        infolog("iOS: Enabling device-wide SOCKS5 proxy")
+        
+        guard let vpnManager = self.vpnManager else {
+            result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
+            return
+        }
+        
+        guard let session = vpnManager.connection as? NETunnelProviderSession else {
+            result(FlutterError(code: "NO_TUNNEL_SESSION", message: "Tunnel session not available", details: nil))
+            return
+        }
+        
+        guard session.status == .connected else {
+            result(FlutterError(code: "TUNNEL_NOT_CONNECTED", message: "VPN tunnel must be connected first", details: nil))
+            return
+        }
+        
+        // Send message to tunnel extension to enable device-wide proxy
+        let messageData = "enableDeviceWideProxy".data(using: .utf8)!
+        
+        do {
+            try session.sendProviderMessage(messageData) { responseData in
+                if let responseData = responseData,
+                   let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
+                   let status = response["status"] as? String,
+                   status == "enabled" {
+                    infolog("iOS: Device-wide proxy enabled successfully")
+                    result(true)
+                } else {
+                    errlog("iOS: Failed to enable device-wide proxy")
+                    result(FlutterError(code: "PROXY_ENABLE_FAILED", message: "Failed to enable device-wide proxy", details: nil))
+                }
+            }
+        } catch {
+            errlog("iOS: Error sending enableDeviceWideProxy message: \(error.localizedDescription)")
+            result(FlutterError(code: "MESSAGE_SEND_ERROR", message: error.localizedDescription, details: nil))
+        }
+    }
+    
+    private func disableDeviceWideProxy(result: @escaping FlutterResult) {
+        infolog("iOS: Disabling device-wide SOCKS5 proxy")
+        
+        guard let vpnManager = self.vpnManager else {
+            result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
+            return
+        }
+        
+        guard let session = vpnManager.connection as? NETunnelProviderSession else {
+            result(FlutterError(code: "NO_TUNNEL_SESSION", message: "Tunnel session not available", details: nil))
+            return
+        }
+        
+        guard session.status == .connected else {
+            result(FlutterError(code: "TUNNEL_NOT_CONNECTED", message: "VPN tunnel must be connected first", details: nil))
+            return
+        }
+        
+        // Send message to tunnel extension to disable device-wide proxy
+        let messageData = "disableDeviceWideProxy".data(using: .utf8)!
+        
+        do {
+            try session.sendProviderMessage(messageData) { responseData in
+                if let responseData = responseData,
+                   let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
+                   let status = response["status"] as? String,
+                   status == "disabled" {
+                    infolog("iOS: Device-wide proxy disabled successfully")
+                    result(true)
+                } else {
+                    errlog("iOS: Failed to disable device-wide proxy")
+                    result(FlutterError(code: "PROXY_DISABLE_FAILED", message: "Failed to disable device-wide proxy", details: nil))
+                }
+            }
+        } catch {
+            errlog("iOS: Error sending disableDeviceWideProxy message: \(error.localizedDescription)")
+            result(FlutterError(code: "MESSAGE_SEND_ERROR", message: error.localizedDescription, details: nil))
+        }
+    }
+    
+    private func getProxyStatus(result: @escaping FlutterResult) {
+        guard let vpnManager = self.vpnManager else {
+            let status = [
+                "enabled": false,
+                "socksEnabled": false,
+                "error": "VPN manager not available"
+            ]
+            result(status)
+            return
+        }
+        
+        guard let session = vpnManager.connection as? NETunnelProviderSession else {
+            let status = [
+                "enabled": false,
+                "socksEnabled": false,
+                "error": "Tunnel session not available"
+            ]
+            result(status)
+            return
+        }
+        
+        guard session.status == .connected else {
+            let status = [
+                "enabled": false,
+                "socksEnabled": false,
+                "error": "Tunnel not connected"
+            ]
+            result(status)
+            return
+        }
+        
+        // Send message to tunnel extension to get proxy status
+        let messageData = "getProxyStatus".data(using: .utf8)!
+        
+        do {
+            try session.sendProviderMessage(messageData) { responseData in
+                if let responseData = responseData,
+                   let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any] {
+                    result(response)
+                } else {
+                    let status = [
+                        "enabled": false,
+                        "socksEnabled": false,
+                        "error": "Failed to get proxy status"
+                    ]
+                    result(status)
+                }
+            }
+        } catch {
+            let status = [
+                "enabled": false,
+                "socksEnabled": false,
+                "error": error.localizedDescription
+            ]
+            result(status)
+        }
+    }
     
     private func getPeerStatusFromTunnel(result: @escaping FlutterResult) {
         let now = Date()
