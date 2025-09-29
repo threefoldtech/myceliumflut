@@ -103,7 +103,8 @@ class _MyAppState extends ConsumerState<MyApp>
               await trayManager.setIcon('assets/images/mycelium_icon.png');
               _logger.info("Tray icon set using fallback: mycelium_icon.png");
             } catch (fallbackError) {
-              _logger.severe("Failed to set fallback tray icon: $fallbackError");
+              _logger
+                  .severe("Failed to set fallback tray icon: $fallbackError");
             }
           }
         }

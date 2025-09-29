@@ -24,7 +24,8 @@ class ResponsiveLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return MediaQuery.of(context).size.width >= ResponsiveBreakpoints.desktop
         ? desktop
-        : MediaQuery.of(context).size.width >= ResponsiveBreakpoints.mobile && tablet != null
+        : MediaQuery.of(context).size.width >= ResponsiveBreakpoints.mobile &&
+                tablet != null
             ? tablet!
             : mobile;
   }

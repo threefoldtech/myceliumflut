@@ -18,7 +18,7 @@ class DesktopLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     return Scaffold(
       body: SizedBox(
         width: screenWidth,
@@ -42,12 +42,14 @@ class DesktopLayout extends StatelessWidget {
                         color: Theme.of(context).colorScheme.surface,
                         border: Border(
                           bottom: BorderSide(
-                            color: Theme.of(context).dividerColor.withOpacity(0.3),
+                            color:
+                                Theme.of(context).dividerColor.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xxl),
                       alignment: Alignment.centerLeft,
                       child: title,
                     ),
@@ -55,7 +57,7 @@ class DesktopLayout extends StatelessWidget {
                     // Main content with proper padding
                     Expanded(
                       child: Material(
-                        color: Theme.of(context).colorScheme.background,
+                        color: Theme.of(context).colorScheme.surface,
                         child: Padding(
                           padding: const EdgeInsets.all(AppSpacing.xxl),
                           child: SingleChildScrollView(

@@ -17,7 +17,8 @@ class AppColors {
 
   // Data visualization colors
   static const Color dataUpload = Color(0xFF0988B0); // Blue for upload (TX)
-  static const Color dataDownload = Color(0xFF10B981); // Green for download (RX)
+  static const Color dataDownload =
+      Color(0xFF10B981); // Green for download (RX)
   static const Color dataPeers = Color(0xFF0988B0); // Primary blue for peers
   static const Color dataUptime = Color(0xFF10B981); // Green for uptime
   static const Color dataTraffic = Color(0xFF0D9C9E); // Accent teal for traffic

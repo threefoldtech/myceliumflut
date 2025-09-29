@@ -200,7 +200,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
         await widget.service.stopProxyProbe();
         setState(() => _isSocks5Enabled = false);
       } catch (e) {
-        print('Error stopping proxy: $e');
+        debugPrint('Error stopping proxy: $e');
       }
     }
 
@@ -242,7 +242,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(
+                                .withValues(alpha: 
                                   (1.0 - _fadeAnimation.value) * 0.3,
                                 ),
                           ),
@@ -278,7 +278,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(
+                                .withValues(alpha: 
                                   (1.0 -
                                           (_fadeAnimation.value - 0.3)
                                               .clamp(0.0, 1.0)) *
@@ -317,7 +317,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(
+                                .withValues(alpha: 
                                   (1.0 -
                                           (_fadeAnimation.value - 0.6)
                                               .clamp(0.0, 1.0)) *
@@ -409,7 +409,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.7),
+                        .withValues(alpha: 0.7),
                   ),
               textAlign: TextAlign.center,
             ),
@@ -444,32 +444,7 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
               ),
             ],
 
-            // Advanced options for desktop
-            if (isConnected && false) ...[
-              const SizedBox(height: AppSpacing.xxl),
-              ExpansionTile(
-                title: const Text('Advanced Options'),
-                children: [
-                  SwitchListTile(
-                    title: const Text('Enable SOCKS5 tunneling'),
-                    subtitle: const Text('Use Mycelium as VPN tunnel'),
-                    value: _isSocks5Enabled,
-                    onChanged: (value) async {
-                      setState(() => _isSocks5Enabled = value);
-                      if (value) {
-                        await widget.service.startProxyProbe();
-                        await Future.delayed(Duration(seconds: 10));
-                        await widget.service.proxyConnect(
-                            '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
-                      } else {
-                        await widget.service.proxyDisconnect();
-                        await widget.service.stopProxyProbe();
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
+            // Advanced options temporarily disabled
           ],
         ),
       ),
@@ -558,14 +533,14 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   @override
   Widget build(BuildContext context) {
-    final nodeStatusAsync = ref.watch(nodeStatusProvider);
     final uptimeNotifier = ref.watch(uptimeProvider.notifier);
     final connectedCount = _getConnectedPeersCount();
 
@@ -580,27 +555,27 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-              Icon(
-                Icons.hub,
-                size: 32,
-                color: AppColors.dataPeers,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Connected Peers',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                '$connectedCount',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.dataPeers,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                Icon(
+                  Icons.hub,
+                  size: 32,
+                  color: AppColors.dataPeers,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Connected Peers',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  '$connectedCount',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.dataPeers,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ),
@@ -628,29 +603,30 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
                 margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.podcasts,
-                    size: 32,
-                    color: AppColors.dataTraffic,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Network Traffic',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    trafficDisplay,
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.dataTraffic,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.podcasts,
+                      size: 32,
+                      color: AppColors.dataTraffic,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Network Traffic',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      trafficDisplay,
+                      style:
+                          Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.dataTraffic,
+                              ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             );
@@ -666,27 +642,27 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-              Icon(
-                Icons.access_time,
-                size: 32,
-                color: AppColors.dataUptime,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Uptime',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                uptimeNotifier.formattedUptime,
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.dataUptime,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                Icon(
+                  Icons.access_time,
+                  size: 32,
+                  color: AppColors.dataUptime,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Uptime',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  uptimeNotifier.formattedUptime,
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.dataUptime,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ),
@@ -695,36 +671,3 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: valueColor,
-              ),
-        ),
-      ],
-    );
-  }
-}

@@ -21,7 +21,7 @@ class TrafficChart extends StatelessWidget {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -38,8 +38,8 @@ class TrafficChart extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -54,9 +54,13 @@ class TrafficChart extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'Loading traffic data...',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
                         ),
                       ],
                     ),
@@ -65,140 +69,162 @@ class TrafficChart extends StatelessWidget {
                     ? Center(
                         child: Text(
                           'Collecting data...',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
                         ),
                       )
                     : LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 2,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Theme.of(context).dividerColor.withOpacity(0.1),
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 30,
-                            interval: 4,
-                            getTitlesWidget: (double value, TitleMeta meta) {
-                              final hour = value.toInt();
-                              if (hour % 4 == 0) {
-                                return SideTitleWidget(
-                                  axisSide: meta.axisSide,
-                                  child: Text(
-                                    '${hour.toString().padLeft(2, '0')}:00',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 2,
-                            reservedSize: 40,
-                            getTitlesWidget: (double value, TitleMeta meta) {
-                              return SideTitleWidget(
-                                axisSide: meta.axisSide,
-                                child: Text(
-                                  _formatBytes(value),
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ),
+                        LineChartData(
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            horizontalInterval: 2,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: Theme.of(context)
+                                    .dividerColor
+                                    .withValues(alpha: 0.1),
+                                strokeWidth: 1,
                               );
                             },
                           ),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 30,
+                                interval: 4,
+                                getTitlesWidget:
+                                    (double value, TitleMeta meta) {
+                                  final hour = value.toInt();
+                                  if (hour % 4 == 0) {
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      child: Text(
+                                        '${hour.toString().padLeft(2, '0')}:00',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.6),
+                                            ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: 2,
+                                reservedSize: 40,
+                                getTitlesWidget:
+                                    (double value, TitleMeta meta) {
+                                  return SideTitleWidget(
+                                    axisSide: meta.axisSide,
+                                    child: Text(
+                                      _formatBytes(value),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
+                                          ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          minX: 0,
+                          maxX: 23,
+                          minY: 0,
+                          maxY: _getMaxY(),
+                          lineBarsData: [
+                            // Download area
+                            LineChartBarData(
+                              spots: data.asMap().entries.map((entry) {
+                                return FlSpot(
+                                    entry.key.toDouble(), entry.value.download);
+                              }).toList(),
+                              isCurved: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.dataDownload.withValues(alpha: 0.8),
+                                  AppColors.dataDownload.withValues(alpha: 0.3),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              barWidth: 0,
+                              isStrokeCapRound: true,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.dataDownload.withValues(alpha: 0.4),
+                                    AppColors.dataDownload.withValues(alpha: 0.1),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                            ),
+                            // Upload area (stacked on top)
+                            LineChartBarData(
+                              spots: data.asMap().entries.map((entry) {
+                                return FlSpot(entry.key.toDouble(),
+                                    entry.value.download + entry.value.upload);
+                              }).toList(),
+                              isCurved: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.dataUpload.withValues(alpha: 0.8),
+                                  AppColors.dataUpload.withValues(alpha: 0.3),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              barWidth: 0,
+                              isStrokeCapRound: true,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.dataUpload.withValues(alpha: 0.4),
+                                    AppColors.dataUpload.withValues(alpha: 0.1),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      borderData: FlBorderData(show: false),
-                      minX: 0,
-                      maxX: 23,
-                      minY: 0,
-                      maxY: _getMaxY(),
-                      lineBarsData: [
-                        // Download area
-                        LineChartBarData(
-                          spots: data.asMap().entries.map((entry) {
-                            return FlSpot(entry.key.toDouble(), entry.value.download);
-                          }).toList(),
-                          isCurved: true,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.dataDownload.withOpacity(0.8),
-                              AppColors.dataDownload.withOpacity(0.3),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          barWidth: 0,
-                          isStrokeCapRound: true,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.dataDownload.withOpacity(0.4),
-                                AppColors.dataDownload.withOpacity(0.1),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                        // Upload area (stacked on top)
-                        LineChartBarData(
-                          spots: data.asMap().entries.map((entry) {
-                            return FlSpot(entry.key.toDouble(), entry.value.download + entry.value.upload);
-                          }).toList(),
-                          isCurved: true,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.dataUpload.withOpacity(0.8),
-                              AppColors.dataUpload.withOpacity(0.3),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          barWidth: 0,
-                          isStrokeCapRound: true,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.dataUpload.withOpacity(0.4),
-                                AppColors.dataUpload.withOpacity(0.1),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
           ),
           const SizedBox(height: AppSpacing.sm),
           // Legend
@@ -223,7 +249,7 @@ class TrafficChart extends StatelessWidget {
 
   double _getMaxY() {
     if (data.isEmpty) return 10;
-    
+
     double maxValue = 0;
     for (final point in data) {
       final total = point.download + point.upload;
@@ -231,7 +257,7 @@ class TrafficChart extends StatelessWidget {
         maxValue = total;
       }
     }
-    
+
     // Add 20% padding to the top
     return maxValue * 1.2;
   }
@@ -239,7 +265,9 @@ class TrafficChart extends StatelessWidget {
   String _formatBytes(double bytes) {
     if (bytes < 1024) return '${bytes.toInt()} B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} K';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} M';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} M';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}G';
   }
 }
@@ -270,8 +298,8 @@ class _LegendItem extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-          ),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
         ),
       ],
     );

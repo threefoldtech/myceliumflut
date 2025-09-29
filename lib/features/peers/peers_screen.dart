@@ -286,7 +286,7 @@ class _PeersMobileLayoutState extends ConsumerState<_PeersMobileLayout> {
                 isMyceliumRunning: isMyceliumRunning,
               ),
             );
-          }).toList(),
+          }),
         const SizedBox(height: AppSpacing.md),
         AppCard(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -642,7 +642,8 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -697,7 +698,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurface
-                                        .withOpacity(0.7),
+                                        .withValues(alpha: 0.7),
                                   ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -727,7 +728,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onSurface
-                                            .withOpacity(0.5),
+                                            .withValues(alpha: 0.5),
                                       ),
                                 ),
                               ],
@@ -882,20 +883,20 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     decoration: BoxDecoration(
                       color: _pingResult!.success
                           ? (_pingResult!.latencyMs! < 50
-                              ? AppColors.success.withOpacity(0.1)
+                              ? AppColors.success.withValues(alpha: 0.1)
                               : _pingResult!.latencyMs! < 150
-                                  ? Colors.orange.withOpacity(0.1)
-                                  : AppColors.error.withOpacity(0.1))
-                          : AppColors.error.withOpacity(0.1),
+                                  ? Colors.orange.withValues(alpha: 0.1)
+                                  : AppColors.error.withValues(alpha: 0.1))
+                          : AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: _pingResult!.success
                             ? (_pingResult!.latencyMs! < 50
-                                ? AppColors.success.withOpacity(0.3)
+                                ? AppColors.success.withValues(alpha: 0.3)
                                 : _pingResult!.latencyMs! < 150
-                                    ? Colors.orange.withOpacity(0.3)
-                                    : AppColors.error.withOpacity(0.3))
-                            : AppColors.error.withOpacity(0.3),
+                                    ? Colors.orange.withValues(alpha: 0.3)
+                                    : AppColors.error.withValues(alpha: 0.3))
+                            : AppColors.error.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -958,7 +959,7 @@ class _PeersEmptyState extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
         const SizedBox(height: AppSpacing.xxl),
         FilledButton.icon(
           onPressed: () => _showAddPeerDialog(context, ref),
@@ -1016,11 +1017,13 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
       builder: (context, setState) {
         final inputText = controller.text.trim();
         bool isValidIP = _isValidIP(inputText);
-        
+
         // Check if peer already exists
-        final formattedPeer = inputText.startsWith('tcp://') ? inputText : 'tcp://$inputText:9651';
+        final formattedPeer = inputText.startsWith('tcp://')
+            ? inputText
+            : 'tcp://$inputText:9651';
         bool peerExists = currentPeers.contains(formattedPeer);
-        
+
         String? errorText;
         if (inputText.isNotEmpty && !isValidIP) {
           errorText = 'Please enter a valid IP address';
@@ -1043,7 +1046,10 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
                 keyboardType: TextInputType.url,
                 onChanged: (value) => setState(() {}),
               ),
-              if (errorText == null && inputText.isNotEmpty && isValidIP && !peerExists)
+              if (errorText == null &&
+                  inputText.isNotEmpty &&
+                  isValidIP &&
+                  !peerExists)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
@@ -1071,7 +1077,9 @@ void _showAddPeerDialog(BuildContext context, WidgetRef ref) {
               onPressed: isValidIP && inputText.isNotEmpty && !peerExists
                   ? () async {
                       await peersNotifier.addPeer(formattedPeer);
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   : null,
               style: ElevatedButton.styleFrom(

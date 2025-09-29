@@ -15,7 +15,8 @@ class AppSettings extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_kThemeModeKey);
     if (saved != null) {
-      _themeMode = ThemeMode.values.firstWhere((m) => m.toString() == saved, orElse: () => ThemeMode.light);
+      _themeMode = ThemeMode.values.firstWhere((m) => m.toString() == saved,
+          orElse: () => ThemeMode.light);
       notifyListeners();
     }
   }
@@ -31,5 +32,3 @@ class AppSettings extends ChangeNotifier {
 final appSettingsProvider = ChangeNotifierProvider<AppSettings>((ref) {
   return AppSettings();
 });
-
-

@@ -13,17 +13,18 @@ class AppTheme {
       secondary: AppColors.brandAccent,
       error: AppColors.error,
       surface: AppColors.surface,
-      background: AppColors.background,
       outline: AppColors.neutral300,
     );
 
-    final rawTextTheme = base.textTheme.copyWith(
-      displayLarge: AppTypography.display,
-      headlineMedium: AppTypography.headline,
-      titleMedium: AppTypography.title,
-      bodyMedium: AppTypography.body,
-      labelMedium: AppTypography.label,
-    ).apply(fontFamily: 'Roboto');
+    final rawTextTheme = base.textTheme
+        .copyWith(
+          displayLarge: AppTypography.display,
+          headlineMedium: AppTypography.headline,
+          titleMedium: AppTypography.title,
+          bodyMedium: AppTypography.body,
+          labelMedium: AppTypography.label,
+        )
+        .apply(fontFamily: 'Roboto');
 
     final textTheme = rawTextTheme.apply(
       bodyColor: colorScheme.onSurface,
@@ -39,7 +40,8 @@ class AppTheme {
         foregroundColor: AppColors.neutral900,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.title.copyWith(color: AppColors.neutral900),
+        titleTextStyle:
+            AppTypography.title.copyWith(color: AppColors.neutral900),
       ),
       cardTheme: CardTheme(
         color: AppColors.surface,
@@ -50,25 +52,25 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.disabled)) {
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
               return AppColors.neutral300;
             }
             return colorScheme.primary;
           }),
-          foregroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.disabled)) {
-              return colorScheme.onSurface.withOpacity(0.38);
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.onSurface.withValues(alpha: 0.38);
             }
             return colorScheme.onPrimary;
           }),
-          minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
-          shape: MaterialStateProperty.all(
+          minimumSize: WidgetStateProperty.all(const Size.fromHeight(48)),
+          shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadii.md),
             ),
           ),
-          padding: MaterialStateProperty.all(
+          padding: WidgetStateProperty.all(
             const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           ),
           animationDuration: AppMotion.medium,
@@ -98,17 +100,18 @@ class AppTheme {
       secondary: AppColors.brandAccent,
       error: AppColors.error,
       surface: AppColors.neutral800,
-      background: AppColors.neutral900,
       outline: AppColors.neutral600,
     );
 
-    final rawTextTheme = base.textTheme.copyWith(
-      displayLarge: AppTypography.display,
-      headlineMedium: AppTypography.headline,
-      titleMedium: AppTypography.title,
-      bodyMedium: AppTypography.body,
-      labelMedium: AppTypography.label,
-    ).apply(fontFamily: 'Roboto');
+    final rawTextTheme = base.textTheme
+        .copyWith(
+          displayLarge: AppTypography.display,
+          headlineMedium: AppTypography.headline,
+          titleMedium: AppTypography.title,
+          bodyMedium: AppTypography.body,
+          labelMedium: AppTypography.label,
+        )
+        .apply(fontFamily: 'Roboto');
 
     final textTheme = rawTextTheme.apply(
       bodyColor: colorScheme.onSurface,
@@ -118,13 +121,14 @@ class AppTheme {
     return base.copyWith(
       colorScheme: colorScheme,
       textTheme: textTheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.title.copyWith(color: colorScheme.onSurface),
+        titleTextStyle:
+            AppTypography.title.copyWith(color: colorScheme.onSurface),
       ),
       cardTheme: CardTheme(
         color: colorScheme.surface,
@@ -135,25 +139,25 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.disabled)) {
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
               return AppColors.neutral600;
             }
             return colorScheme.primary;
           }),
-          foregroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.disabled)) {
-              return colorScheme.onSurface.withOpacity(0.38);
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.onSurface.withValues(alpha: 0.38);
             }
             return colorScheme.onPrimary;
           }),
-          minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
-          shape: MaterialStateProperty.all(
+          minimumSize: WidgetStateProperty.all(const Size.fromHeight(48)),
+          shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadii.md),
             ),
           ),
-          padding: MaterialStateProperty.all(
+          padding: WidgetStateProperty.all(
             const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           ),
           animationDuration: AppMotion.medium,
@@ -174,5 +178,3 @@ class AppTheme {
     );
   }
 }
-
-
