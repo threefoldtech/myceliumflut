@@ -633,10 +633,11 @@ class _StatsRow extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       networkTraffic['total'] ?? '0 B',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.dataTraffic,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.dataTraffic,
+                              ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -734,10 +735,11 @@ class _StatsRow extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       networkTraffic['total'] ?? '0 B',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.dataTraffic,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.dataTraffic,
+                              ),
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -920,7 +922,7 @@ class _ConnectedStatsRowState extends ConsumerState<_ConnectedStatsRow> {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   networkTraffic['total'] ?? '0 B',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.dataTraffic,
                       ),
