@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/peer_models.dart';
 import 'ffi/mycelium_service.dart';
@@ -25,7 +26,7 @@ class PeersService {
       final response = await http.get(Uri.parse(_url));
 
       if (response.statusCode != 200) {
-        print("failed to load peers from remote. Using fallback peers.");
+        debugPrint("failed to load peers from remote. Using fallback peers.");
         return _fallbackPeers;
       }
 
@@ -33,7 +34,7 @@ class PeersService {
       final peers = List<String>.from(jsonData['mycelium']['peers']);
       return peers;
     } catch (e) {
-      print("error fetching peers: $e. Using fallback peers.");
+      debugPrint("error fetching peers: $e. Using fallback peers.");
       return _fallbackPeers;
     }
   }
@@ -41,20 +42,10 @@ class PeersService {
   Future<List<PeerStats>> fetchPeerStats() async {
     try {
       final service = MyceliumService();
-      final statusJson = await service.getStatus();
-      
-      if (statusJson == null || statusJson.isEmpty) {
-        return [];
-      }
-
-      final statusData = jsonDecode(statusJson);
-      final peersData = statusData['peers'] as List<dynamic>?;
-      
-      if (peersData == null) return [];
-
-      return peersData.map((peerJson) => PeerStats.fromJson(peerJson)).toList();
+      final peerStatusList = await service.getPeerStatus();
+      return peerStatusList;
     } catch (e) {
-      print("Error fetching peer stats: $e");
+      debugPrint('PeersService: Error getting peer status: $e');
       return [];
     }
   }

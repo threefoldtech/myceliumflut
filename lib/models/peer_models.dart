@@ -78,28 +78,28 @@ enum ConnectionState {
 class PeerStats {
   /// The protocol used by this peer (e.g., "tcp", "quic")
   final String protocol;
-  
+
   /// The socket address of the peer
   final String address;
-  
+
   /// The type of peer (static, discovered, etc.)
   final PeerType peerType;
-  
+
   /// Current connection state
   final ConnectionState connectionState;
-  
+
   /// Total bytes received from this peer
   final int rxBytes;
-  
+
   /// Total bytes transmitted to this peer
   final int txBytes;
-  
+
   /// Time since this peer was discovered (in seconds)
   final int discoveredSeconds;
-  
+
   /// Time since last successful connection (in seconds), null if never connected
   final int? lastConnectedSeconds;
-  
+
   /// Location information for this peer (country, city, etc.)
   final LocationInfo? locationInfo;
 
@@ -121,7 +121,8 @@ class PeerStats {
       protocol: json['protocol'] as String,
       address: json['address'] as String,
       peerType: PeerType.fromString(json['peerType'] as String),
-      connectionState: ConnectionState.fromString(json['connectionState'] as String),
+      connectionState:
+          ConnectionState.fromString(json['connectionState'] as String),
       rxBytes: json['rxBytes'] as int,
       txBytes: json['txBytes'] as int,
       discoveredSeconds: json['discoveredSeconds'] as int,
@@ -148,7 +149,9 @@ class PeerStats {
   static String formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
@@ -191,8 +194,8 @@ class PeerStats {
   @override
   String toString() {
     return 'PeerStats(protocol: $protocol, address: $address, type: $peerType, '
-           'state: $connectionState, rx: $formattedRxBytes, tx: $formattedTxBytes, '
-           'discovered: $formattedDiscovered, lastConnected: $formattedLastConnected)';
+        'state: $connectionState, rx: $formattedRxBytes, tx: $formattedTxBytes, '
+        'discovered: $formattedDiscovered, lastConnected: $formattedLastConnected)';
   }
 
   @override

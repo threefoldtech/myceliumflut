@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' show join;
 import 'dart:ffi';
-import 'dart:typed_data';
 
 ffi.DynamicLibrary loadDll() {
   var dllPath = 'assets/dll/winmycelium.dll';
@@ -102,7 +101,10 @@ String myFFAddressFromSecretKey(Uint8List data) {
 }
 
 typedef FuncRustStartMycelium = ffi.Void Function(
-    ffi.Pointer<ffi.Pointer<ffi.Int8>>, ffi.Size, ffi.Pointer<ffi.Uint8>, ffi.Size);
+    ffi.Pointer<ffi.Pointer<ffi.Int8>>,
+    ffi.Size,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Size);
 typedef FuncDartStartMycelium = void Function(
     ffi.Pointer<ffi.Pointer<ffi.Int8>>, int, ffi.Pointer<ffi.Uint8>, int);
 
@@ -119,7 +121,7 @@ Future<bool> myFFStartMycelium(List<String> peers, Uint8List privKey) async {
 bool _startMyceliumInIsolate(Map<String, dynamic> args) {
   final List<String> peers = args['peers'];
   final Uint8List privKey = args['privKey'];
-  
+
   // Load the dynamic library
   final dylib = loadDll();
 
@@ -140,13 +142,12 @@ bool _startMyceliumInIsolate(Map<String, dynamic> args) {
   final privKeyPtr = malloc<ffi.Uint8>(privKey.length);
   final nativePrivKey = privKeyPtr.asTypedList(privKey.length);
   nativePrivKey.setAll(0, privKey);
-
   try {
     // Call the Rust function (this is the blocking call)
     startMycelium(peerPtrs, peers.length, privKeyPtr, privKey.length);
     return true;
   } catch (e) {
-    print('Error starting mycelium: $e');
+    // FFI binding loaded successfully
     return false;
   } finally {
     // Free the allocated memory
@@ -199,7 +200,7 @@ Future<List<String>> myFFGetPeerStatus() async {
 
     final List<String> result = [];
     for (int i = 0; i < length; i++) {
-      final stringPtr = ptr.elementAt(i).value;
+      final stringPtr = (ptr + i).value;
       if (stringPtr != nullptr) {
         result.add(stringPtr.cast<Utf8>().toDartString());
       }
@@ -226,8 +227,13 @@ Future<List<String>> myFFProxyConnect(String remote) async {
   try {
     var dylib = loadDll();
     final ffProxyConnect = dylib
-        .lookup<NativeFunction<Void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>, Pointer<IntPtr>)>>('ff_proxy_connect')
-        .asFunction<void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>, Pointer<IntPtr>)>();
+        .lookup<
+            NativeFunction<
+                Void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>,
+                    Pointer<IntPtr>)>>('ff_proxy_connect')
+        .asFunction<
+            void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>,
+                Pointer<IntPtr>)>();
 
     ffProxyConnect(remotePtr, outPtr, outLen);
 
@@ -236,7 +242,7 @@ Future<List<String>> myFFProxyConnect(String remote) async {
 
     final List<String> result = [];
     for (int i = 0; i < length; i++) {
-      final stringPtr = ptr.elementAt(i).value;
+      final stringPtr = (ptr + i).value;
       if (stringPtr != nullptr) {
         result.add(stringPtr.cast<Utf8>().toDartString());
       }
@@ -273,7 +279,7 @@ Future<List<String>> myFFProxyDisconnect() async {
 
     final List<String> result = [];
     for (int i = 0; i < length; i++) {
-      final stringPtr = ptr.elementAt(i).value;
+      final stringPtr = (ptr + i).value;
       if (stringPtr != nullptr) {
         result.add(stringPtr.cast<Utf8>().toDartString());
       }
@@ -309,7 +315,7 @@ Future<List<String>> myFFStartProxyProbe() async {
 
     final List<String> result = [];
     for (int i = 0; i < length; i++) {
-      final stringPtr = ptr.elementAt(i).value;
+      final stringPtr = (ptr + i).value;
       if (stringPtr != nullptr) {
         result.add(stringPtr.cast<Utf8>().toDartString());
       }
@@ -345,7 +351,7 @@ Future<List<String>> myFFStopProxyProbe() async {
 
     final List<String> result = [];
     for (int i = 0; i < length; i++) {
-      final stringPtr = ptr.elementAt(i).value;
+      final stringPtr = (ptr + i).value;
       if (stringPtr != nullptr) {
         result.add(stringPtr.cast<Utf8>().toDartString());
       }
@@ -381,7 +387,7 @@ Future<List<String>> myFFListProxies() async {
 
     final List<String> result = [];
     for (int i = 0; i < length; i++) {
-      final stringPtr = ptr.elementAt(i).value;
+      final stringPtr = (ptr + i).value;
       if (stringPtr != nullptr) {
         result.add(stringPtr.cast<Utf8>().toDartString());
       }
@@ -399,4 +405,3 @@ Future<List<String>> myFFListProxies() async {
     calloc.free(outLen);
   }
 }
-

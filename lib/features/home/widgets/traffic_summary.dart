@@ -34,8 +34,8 @@ class TrafficSummary extends StatelessWidget {
               Text(
                 'Traffic Summary (24h)',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -69,7 +69,7 @@ class TrafficSummary extends StatelessWidget {
                   icon: Icons.trending_up,
                   label: 'Peak Upload',
                   value: peakUpload,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -78,7 +78,7 @@ class TrafficSummary extends StatelessWidget {
                   icon: Icons.trending_down,
                   label: 'Peak Download',
                   value: peakDownload,
-                  color: AppColors.success.withOpacity(0.7),
+                  color: AppColors.success.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -107,7 +107,7 @@ class _TrafficItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
       child: Column(
@@ -121,9 +121,9 @@ class _TrafficItem extends StatelessWidget {
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: color,
+                        fontWeight: FontWeight.w500,
+                      ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -133,9 +133,9 @@ class _TrafficItem extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'mycelium_providers.dart';
 import '../services/ffi/mycelium_service.dart';
@@ -27,8 +28,9 @@ class TrafficStats {
   static String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
@@ -89,8 +91,10 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
       }
 
       // Calculate rates (bytes per second over 5-second interval)
-      final rxRate = _previousTotalRx > 0 ? ((totalRx - _previousTotalRx) / 5).round() : 0;
-      final txRate = _previousTotalTx > 0 ? ((totalTx - _previousTotalTx) / 5).round() : 0;
+      final rxRate =
+          _previousTotalRx > 0 ? ((totalRx - _previousTotalRx) / 5).round() : 0;
+      final txRate =
+          _previousTotalTx > 0 ? ((totalTx - _previousTotalTx) / 5).round() : 0;
 
       // Update peak rates
       if (rxRate > _maxRxRate) _maxRxRate = rxRate;
@@ -98,8 +102,10 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
 
       // Accumulate total traffic instead of replacing it
       final currentState = state;
-      final newTotalUpload = currentState.totalUploadBytes + (totalTx - _previousTotalTx).abs();
-      final newTotalDownload = currentState.totalDownloadBytes + (totalRx - _previousTotalRx).abs();
+      final newTotalUpload =
+          currentState.totalUploadBytes + (totalTx - _previousTotalTx).abs();
+      final newTotalDownload =
+          currentState.totalDownloadBytes + (totalRx - _previousTotalRx).abs();
 
       // Update state with accumulated totals
       state = TrafficStats(
@@ -113,7 +119,7 @@ class DynamicTrafficNotifier extends StateNotifier<TrafficStats> {
       _previousTotalRx = totalRx;
       _previousTotalTx = totalTx;
     } catch (e) {
-      print('DynamicTrafficNotifier: Error updating traffic stats: $e');
+      debugPrint('DynamicTrafficNotifier: Error updating traffic stats: $e');
     }
   }
 

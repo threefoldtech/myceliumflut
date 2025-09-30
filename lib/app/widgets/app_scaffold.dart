@@ -44,10 +44,10 @@ class AppScaffold extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight: MediaQuery.of(context).size.height -
-                         MediaQuery.of(context).padding.top -
-                         MediaQuery.of(context).padding.bottom -
-                         kToolbarHeight -
-                         80, // approximate bottom nav height
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom -
+                  kToolbarHeight -
+                  80, // approximate bottom nav height
             ),
             child: child,
           ),

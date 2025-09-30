@@ -20,9 +20,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       name: 'settings',
-      pageBuilder: (context, state) => const MaterialPage(child: SettingsScreen()),
+      pageBuilder: (context, state) =>
+          const MaterialPage(child: SettingsScreen()),
     ),
   ],
 );
-
-

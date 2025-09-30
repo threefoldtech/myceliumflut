@@ -255,7 +255,7 @@ class _HeaderCardState extends State<_HeaderCard>
         await widget.service.stopProxyProbe();
         setState(() => _isSocks5Enabled = false);
       } catch (e) {
-        print('Error stopping proxy: $e');
+        debugPrint('Error stopping proxy: $e');
       }
     }
 
@@ -291,8 +291,8 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withOpacity(
-                                    (1.0 - _fadeAnimation.value) * 0.3,
+                              Theme.of(context).colorScheme.primary.withValues(
+                                    alpha: (1.0 - _fadeAnimation.value) * 0.3,
                                   ),
                         ),
                         child: Container(
@@ -323,8 +323,8 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withOpacity(
-                                    (1.0 -
+                              Theme.of(context).colorScheme.primary.withValues(
+                                    alpha: (1.0 -
                                             (_fadeAnimation.value - 0.3)
                                                 .clamp(0.0, 1.0)) *
                                         0.2,
@@ -358,8 +358,8 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withOpacity(
-                                    (1.0 -
+                              Theme.of(context).colorScheme.primary.withValues(
+                                    alpha: (1.0 -
                                             (_fadeAnimation.value - 0.6)
                                                 .clamp(0.0, 1.0)) *
                                         0.1,
@@ -426,8 +426,10 @@ class _HeaderCardState extends State<_HeaderCard>
           Text(
             'Tap to start the Mycelium node',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6)),
           ),
           const SizedBox(height: AppSpacing.xxl),
           AppButton(
@@ -445,7 +447,8 @@ class _HeaderCardState extends State<_HeaderCard>
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
                   foregroundColor:
                       Theme.of(context).colorScheme.onSurfaceVariant,
                   padding: const EdgeInsets.symmetric(horizontal: 16),

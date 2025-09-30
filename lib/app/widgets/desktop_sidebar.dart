@@ -18,13 +18,13 @@ class DesktopSidebar extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         border: Border(
           right: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.3),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(2, 0),
           ),
@@ -93,7 +93,7 @@ class DesktopSidebar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Divider(
-                  color: Theme.of(context).dividerColor.withOpacity(0.3),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
@@ -102,7 +102,7 @@ class DesktopSidebar extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.6),
+                            .withValues(alpha: 0.6),
                       ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -112,7 +112,7 @@ class DesktopSidebar extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.4),
+                            .withValues(alpha: 0.4),
                       ),
                 ),
               ],
@@ -153,13 +153,13 @@ class _SidebarItem extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadii.md),
             border: isSelected
                 ? Border.all(
                     color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     width: 1,
                   )
                 : null,
@@ -171,7 +171,7 @@ class _SidebarItem extends StatelessWidget {
                 size: 20,
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(

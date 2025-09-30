@@ -268,7 +268,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
                                       color: Theme.of(context)
                                           .colorScheme
                                           .onSurface
-                                          .withOpacity(0.6)),
+                                          .withValues(alpha: 0.6)),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -295,7 +295,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.6)),
+                          .withValues(alpha: 0.6)),
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -307,7 +307,7 @@ class _SettingsMobileLayout extends ConsumerWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.6)),
+                            .withValues(alpha: 0.6)),
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -353,7 +353,7 @@ class _InfoRowWithSubtitle extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.6)),
+                        .withValues(alpha: 0.6)),
               ),
             ],
           ),
@@ -418,7 +418,7 @@ class _InfoRowWithCopy extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.6)),
+                            .withValues(alpha: 0.6)),
                   ),
                 ],
               ),
@@ -453,7 +453,7 @@ class _InfoRowWithCopy extends StatelessWidget {
                 tooltip: 'Copy IP Address',
                 style: IconButton.styleFrom(
                   backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   foregroundColor: Theme.of(context).colorScheme.primary,
                   minimumSize: const Size(40, 40),
                 ),
