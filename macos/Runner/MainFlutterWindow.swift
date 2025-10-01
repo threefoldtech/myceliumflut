@@ -88,11 +88,19 @@ class MainFlutterWindow: NSWindow {
                 ] as [String : Any]
                 result(status)
             case "enableDeviceWideProxy":
-                // Enable device-wide proxy
-                result(true)
+                // Call AppDelegate's enableDeviceWideProxy method
+                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                    appDelegate.enableDeviceWideProxy(result: result)
+                } else {
+                    result(FlutterError(code: "NO_APP_DELEGATE", message: "Could not access AppDelegate", details: nil))
+                }
             case "disableDeviceWideProxy":
-                // Disable device-wide proxy
-                result(true)
+                // Call AppDelegate's disableDeviceWideProxy method
+                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+                    appDelegate.disableDeviceWideProxy(result: result)
+                } else {
+                    result(FlutterError(code: "NO_APP_DELEGATE", message: "Could not access AppDelegate", details: nil))
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }

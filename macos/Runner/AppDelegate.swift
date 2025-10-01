@@ -15,6 +15,7 @@ class AppDelegate: FlutterAppDelegate {
     private let socksProxyPort = 1080
     private var originalProxySettings: [String: Any] = [:]
     private var isProxyEnabled = false
+    private var proxyBridgeTask: Process?
     
     override func applicationDidFinishLaunching(_ notification: Notification) {
         super.applicationDidFinishLaunching(notification)
@@ -168,12 +169,71 @@ class AppDelegate: FlutterAppDelegate {
         }
     }
     
+    // MARK: - Proxy Methods
+    
+    private func handleProxyConnect(remote: String, result: @escaping FlutterResult) {
+        DispatchQueue.global(qos: .background).async {
+            let connectResult = proxyConnect(remote: remote)
+            DispatchQueue.main.async {
+                result(connectResult)
+            }
+        }
+    }
+    
+    private func handleProxyDisconnect(result: @escaping FlutterResult) {
+        DispatchQueue.global(qos: .background).async {
+            let disconnectResult = proxyDisconnect()
+            DispatchQueue.main.async {
+                result(disconnectResult)
+            }
+        }
+    }
+    
+    private func handleStartProxyProbe(result: @escaping FlutterResult) {
+        DispatchQueue.global(qos: .background).async {
+            let probeResult = startProxyProbe()
+            DispatchQueue.main.async {
+                result(probeResult)
+            }
+        }
+    }
+    
+    private func handleStopProxyProbe(result: @escaping FlutterResult) {
+        DispatchQueue.global(qos: .background).async {
+            let stopResult = stopProxyProbe()
+            DispatchQueue.main.async {
+                result(stopResult)
+            }
+        }
+    }
+    
+    private func handleListProxies(result: @escaping FlutterResult) {
+        DispatchQueue.global(qos: .background).async {
+            let proxies = listProxies()
+            DispatchQueue.main.async {
+                result(proxies)
+            }
+        }
+    }
+    
     // MARK: - Device-Wide Proxy Methods
     
-    private func enableDeviceWideProxy(result: @escaping FlutterResult) {
+    func enableDeviceWideProxy(result: @escaping FlutterResult) {
         print("macOS: Enabling device-wide SOCKS5 proxy")
         
         DispatchQueue.global(qos: .background).async {
+            // Start proxy bridge first
+            guard self.startProxyBridge() else {
+                DispatchQueue.main.async {
+                    print("macOS: Failed to start proxy bridge")
+                    result(FlutterError(code: "PROXY_BRIDGE_FAILED", message: "Failed to start proxy bridge", details: nil))
+                }
+                return
+            }
+            
+            // Small delay to let bridge start
+            Thread.sleep(forTimeInterval: 1.0)
+            
             let success = self.enableSystemProxy()
             
             DispatchQueue.main.async {
@@ -182,16 +242,20 @@ class AppDelegate: FlutterAppDelegate {
                     result(true)
                 } else {
                     print("macOS: Failed to enable device-wide proxy")
+                    self.stopProxyBridge() // Clean up bridge if system proxy failed
                     result(FlutterError(code: "PROXY_ENABLE_FAILED", message: "Failed to configure system proxy settings", details: nil))
                 }
             }
         }
     }
     
-    private func disableDeviceWideProxy(result: @escaping FlutterResult) {
+    func disableDeviceWideProxy(result: @escaping FlutterResult) {
         print("macOS: Disabling device-wide SOCKS5 proxy")
         
         DispatchQueue.global(qos: .background).async {
+            // Stop proxy bridge first
+            self.stopProxyBridge()
+            
             let success = self.disableSystemProxy()
             
             DispatchQueue.main.async {
@@ -206,7 +270,7 @@ class AppDelegate: FlutterAppDelegate {
         }
     }
     
-    private func getProxyStatus(result: @escaping FlutterResult) {
+    func getProxyStatus(result: @escaping FlutterResult) {
         DispatchQueue.global(qos: .background).async {
             let status = [
                 "enabled": self.isProxyEnabled,
@@ -221,119 +285,18 @@ class AppDelegate: FlutterAppDelegate {
         }
     }
     
-    // MARK: - Proxy Methods
-    
-    private func handleProxyConnect(remote: String, result: @escaping FlutterResult) {
-        print("macOS: Connecting to SOCKS5 proxy: \(remote)")
-        
-        // Run proxy connect in background to avoid blocking UI
-        DispatchQueue.global(qos: .background).async {
-            do {
-                let proxyResult = proxyConnect(remote: remote)
-                DispatchQueue.main.async {
-                    print("macOS: Proxy connect result: \(proxyResult)")
-                    result(proxyResult)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("macOS: Error connecting to proxy: \(error)")
-                    result(FlutterError(code: "PROXY_CONNECT_ERROR", message: error.localizedDescription, details: nil))
-                }
-            }
-        }
-    }
-    
-    private func handleProxyDisconnect(result: @escaping FlutterResult) {
-        print("macOS: Disconnecting from SOCKS5 proxy")
-        
-        // Run proxy disconnect in background to avoid blocking UI
-        DispatchQueue.global(qos: .background).async {
-            do {
-                let proxyResult = proxyDisconnect()
-                DispatchQueue.main.async {
-                    print("macOS: Proxy disconnect result: \(proxyResult)")
-                    result(proxyResult)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("macOS: Error disconnecting from proxy: \(error)")
-                    result(FlutterError(code: "PROXY_DISCONNECT_ERROR", message: error.localizedDescription, details: nil))
-                }
-            }
-        }
-    }
-    
-    private func handleStartProxyProbe(result: @escaping FlutterResult) {
-        print("macOS: Starting proxy probe")
-        
-        // Run proxy probe start in background to avoid blocking UI
-        DispatchQueue.global(qos: .background).async {
-            do {
-                let proxyResult = startProxyProbe()
-                DispatchQueue.main.async {
-                    print("macOS: Start proxy probe result: \(proxyResult)")
-                    result(proxyResult)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("macOS: Error starting proxy probe: \(error)")
-                    result(FlutterError(code: "PROXY_PROBE_START_ERROR", message: error.localizedDescription, details: nil))
-                }
-            }
-        }
-    }
-    
-    private func handleStopProxyProbe(result: @escaping FlutterResult) {
-        print("macOS: Stopping proxy probe")
-        
-        // Run proxy probe stop in background to avoid blocking UI
-        DispatchQueue.global(qos: .background).async {
-            do {
-                let proxyResult = stopProxyProbe()
-                DispatchQueue.main.async {
-                    print("macOS: Stop proxy probe result: \(proxyResult)")
-                    result(proxyResult)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("macOS: Error stopping proxy probe: \(error)")
-                    result(FlutterError(code: "PROXY_PROBE_STOP_ERROR", message: error.localizedDescription, details: nil))
-                }
-            }
-        }
-    }
-    
-    private func handleListProxies(result: @escaping FlutterResult) {
-        print("macOS: Listing available proxies")
-        
-        // Run list proxies in background to avoid blocking UI
-        DispatchQueue.global(qos: .background).async {
-            do {
-                let proxies = listProxies()
-                DispatchQueue.main.async {
-                    print("macOS: Available proxies: \(proxies)")
-                    result(proxies)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("macOS: Error listing proxies: \(error)")
-                    result(FlutterError(code: "PROXY_LIST_ERROR", message: error.localizedDescription, details: nil))
-                }
-            }
-        }
-    }
-    
     // MARK: - Application Lifecycle
     
     override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        // Clean up proxy settings before terminating
+        // Clean up proxy settings and bridge before terminating
         if isProxyEnabled {
+            stopProxyBridge()
             _ = disableSystemProxy()
         }
         
         // Stop Mycelium service
         if isMyceliumRunning {
-            stopMycelium()
+            myceliumStartTask?.cancel()
         }
         
         let controller : FlutterViewController = mainFlutterWindow?.contentViewController as! FlutterViewController
@@ -344,6 +307,10 @@ class AppDelegate: FlutterAppDelegate {
     
     private func enableSystemProxy() -> Bool {
         print("SystemProxy: Enabling device-wide SOCKS5 proxy...")
+        print("SystemProxy: Will configure system to use SOCKS5 proxy at \(socksProxyHost):\(socksProxyPort)")
+        
+        // Try without admin privileges first
+        print("SystemProxy: Attempting to configure proxy without admin privileges...")
         
         // First, backup current proxy settings
         guard backupCurrentProxySettings() else {
@@ -358,7 +325,8 @@ class AppDelegate: FlutterAppDelegate {
         }
         
         isProxyEnabled = true
-        print("SystemProxy: Device-wide SOCKS5 proxy enabled successfully")
+        print("SystemProxy: Device-wide SOCKS5 proxy enabled successfully (no admin required)")
+        print("SystemProxy: System should now route traffic through \(socksProxyHost):\(socksProxyPort)")
         return true
     }
     
@@ -418,47 +386,60 @@ class AppDelegate: FlutterAppDelegate {
     }
     
     private func configureSystemSOCKSProxy() -> Bool {
-        guard let dynamicStore = SCDynamicStoreCreate(nil, "MyceliumProxyManager" as CFString, nil, nil) else {
-            print("SystemProxy: Failed to create SCDynamicStore")
-            return false
-        }
+        print("SystemProxy: Using networksetup command for proxy configuration")
         
-        // Get list of network services
-        guard let networkServices = getNetworkServices() else {
-            print("SystemProxy: Failed to get network services")
-            return false
-        }
+        // Use networksetup command which is more reliable
+        let task = Process()
+        task.launchPath = "/usr/sbin/networksetup"
         
-        // Configure SOCKS proxy for each network service
-        for serviceID in networkServices {
-            let proxiesKey = "State:/Network/Service/\(serviceID)/Proxies"
+        // First, get list of network services
+        task.arguments = ["-listallnetworkservices"]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = pipe
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
             
-            // Get current proxy settings
-            var proxiesDict = SCDynamicStoreCopyValue(dynamicStore, proxiesKey as CFString) as? [String: Any] ?? [:]
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            let services = output.components(separatedBy: .newlines).filter { !$0.isEmpty && !$0.hasPrefix("An asterisk") }
             
-            // Configure SOCKS5 proxy
-            proxiesDict["SOCKSEnable"] = 1
-            proxiesDict["SOCKSProxy"] = socksProxyHost
-            proxiesDict["SOCKSPort"] = socksProxyPort
+            var successCount = 0
             
-            // Also configure HTTP/HTTPS proxy to route through SOCKS5
-            proxiesDict["HTTPEnable"] = 1
-            proxiesDict["HTTPProxy"] = socksProxyHost
-            proxiesDict["HTTPPort"] = socksProxyPort
-            proxiesDict["HTTPSEnable"] = 1
-            proxiesDict["HTTPSProxy"] = socksProxyHost
-            proxiesDict["HTTPSPort"] = socksProxyPort
-            
-            // Set the new proxy configuration
-            if !SCDynamicStoreSetValue(dynamicStore, proxiesKey as CFString, proxiesDict as CFPropertyList) {
-                print("SystemProxy: Failed to set proxy configuration for service: \(serviceID)")
-                return false
+            for service in services {
+                let trimmedService = service.trimmingCharacters(in: .whitespaces)
+                if trimmedService.isEmpty { continue }
+                
+                // Configure SOCKS proxy for this service
+                let socksTask = Process()
+                socksTask.launchPath = "/usr/sbin/networksetup"
+                socksTask.arguments = ["-setsocksfirewallproxy", trimmedService, socksProxyHost, String(socksProxyPort)]
+                
+                do {
+                    try socksTask.run()
+                    socksTask.waitUntilExit()
+                    
+                    if socksTask.terminationStatus == 0 {
+                        print("SystemProxy: Configured SOCKS proxy for service: \(trimmedService)")
+                        successCount += 1
+                    } else {
+                        print("SystemProxy: Failed to configure SOCKS proxy for service: \(trimmedService)")
+                    }
+                } catch {
+                    print("SystemProxy: Error configuring SOCKS proxy for service \(trimmedService): \(error)")
+                }
             }
             
-            print("SystemProxy: Configured SOCKS5 proxy for service: \(serviceID)")
+            print("SystemProxy: Successfully configured \(successCount)/\(services.count) network services")
+            return successCount > 0
+            
+        } catch {
+            print("SystemProxy: Failed to get network services: \(error)")
+            return false
         }
-        
-        return true
     }
     
     private func restoreOriginalProxySettings() -> Bool {
@@ -499,5 +480,54 @@ class AppDelegate: FlutterAppDelegate {
         }
         
         return serviceOrder
+    }
+    
+    // MARK: - Proxy Bridge Implementation
+    
+    private func startProxyBridge() -> Bool {
+        print("SystemProxy: Starting proxy bridge from 127.0.0.1:1080 to [410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080")
+        
+        // Stop any existing bridge
+        stopProxyBridge()
+        
+        // Use socat to create a bridge from localhost:1080 to the IPv6 address
+        proxyBridgeTask = Process()
+        proxyBridgeTask?.launchPath = "/opt/homebrew/bin/socat"
+        proxyBridgeTask?.arguments = [
+            "TCP4-LISTEN:1080,reuseaddr,fork",
+            "TCP6:[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080"
+        ]
+        
+        do {
+            try proxyBridgeTask?.run()
+            print("SystemProxy: Proxy bridge started successfully")
+            return true
+        } catch {
+            print("SystemProxy: Failed to start proxy bridge: \(error)")
+            // Try alternative socat path
+            proxyBridgeTask = Process()
+            proxyBridgeTask?.launchPath = "/usr/local/bin/socat"
+            proxyBridgeTask?.arguments = [
+                "TCP4-LISTEN:1080,reuseaddr,fork",
+                "TCP6:[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080"
+            ]
+            
+            do {
+                try proxyBridgeTask?.run()
+                print("SystemProxy: Proxy bridge started successfully (alternative path)")
+                return true
+            } catch {
+                print("SystemProxy: Failed to start proxy bridge with alternative path: \(error)")
+                return false
+            }
+        }
+    }
+    
+    private func stopProxyBridge() {
+        if let bridge = proxyBridgeTask {
+            bridge.terminate()
+            proxyBridgeTask = nil
+            print("SystemProxy: Stopped proxy bridge")
+        }
     }
 }
