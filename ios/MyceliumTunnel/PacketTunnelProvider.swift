@@ -178,6 +178,83 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             } else {
                 completionHandler?(nil)
             }
+        } else if messageString.hasPrefix("proxyConnect:") {
+            // Extract remote address from message
+            let remote = String(messageString.dropFirst("proxyConnect:".count))
+            infolog("Proxy connect to: \(remote)")
+            do {
+                let result = proxyConnect(remote: remote)
+                let responseData = try JSONSerialization.data(withJSONObject: result, options: [])
+                completionHandler?(responseData)
+            } catch {
+                errlog("Error in proxyConnect: \(error.localizedDescription)")
+                let errorResponse = ["err_proxy_connect_failed"]
+                if let errorData = try? JSONSerialization.data(withJSONObject: errorResponse, options: []) {
+                    completionHandler?(errorData)
+                } else {
+                    completionHandler?(nil)
+                }
+            }
+        } else if messageString == "proxyDisconnect" {
+            infolog("Proxy disconnect")
+            do {
+                let result = proxyDisconnect()
+                let responseData = try JSONSerialization.data(withJSONObject: result, options: [])
+                completionHandler?(responseData)
+            } catch {
+                errlog("Error in proxyDisconnect: \(error.localizedDescription)")
+                let errorResponse = ["err_proxy_disconnect_failed"]
+                if let errorData = try? JSONSerialization.data(withJSONObject: errorResponse, options: []) {
+                    completionHandler?(errorData)
+                } else {
+                    completionHandler?(nil)
+                }
+            }
+        } else if messageString == "startProxyProbe" {
+            infolog("Start proxy probe")
+            do {
+                let result = startProxyProbe()
+                let responseData = try JSONSerialization.data(withJSONObject: result, options: [])
+                completionHandler?(responseData)
+            } catch {
+                errlog("Error in startProxyProbe: \(error.localizedDescription)")
+                let errorResponse = ["err_start_proxy_probe_failed"]
+                if let errorData = try? JSONSerialization.data(withJSONObject: errorResponse, options: []) {
+                    completionHandler?(errorData)
+                } else {
+                    completionHandler?(nil)
+                }
+            }
+        } else if messageString == "stopProxyProbe" {
+            infolog("Stop proxy probe")
+            do {
+                let result = stopProxyProbe()
+                let responseData = try JSONSerialization.data(withJSONObject: result, options: [])
+                completionHandler?(responseData)
+            } catch {
+                errlog("Error in stopProxyProbe: \(error.localizedDescription)")
+                let errorResponse = ["err_stop_proxy_probe_failed"]
+                if let errorData = try? JSONSerialization.data(withJSONObject: errorResponse, options: []) {
+                    completionHandler?(errorData)
+                } else {
+                    completionHandler?(nil)
+                }
+            }
+        } else if messageString == "listProxies" {
+            infolog("List proxies")
+            do {
+                let result = listProxies()
+                let responseData = try JSONSerialization.data(withJSONObject: result, options: [])
+                completionHandler?(responseData)
+            } catch {
+                errlog("Error in listProxies: \(error.localizedDescription)")
+                let errorResponse = ["err_list_proxies_failed"]
+                if let errorData = try? JSONSerialization.data(withJSONObject: errorResponse, options: []) {
+                    completionHandler?(errorData)
+                } else {
+                    completionHandler?(nil)
+                }
+            }
         } else {
             errlog("Unknown message: \(messageString)")
             completionHandler?(nil)

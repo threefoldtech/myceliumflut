@@ -1,5 +1,6 @@
 import Foundation
 import SystemConfiguration
+import OSLog
 
 /// Manages macOS system proxy settings for device-wide traffic forwarding
 class SystemProxyManager {
@@ -10,42 +11,42 @@ class SystemProxyManager {
     
     /// Enable device-wide SOCKS5 proxy by configuring system network settings
     func enableDeviceWideProxy() -> Bool {
-        print("SystemProxyManager: Enabling device-wide SOCKS5 proxy...")
+        infolog("SystemProxyManager: Enabling device-wide SOCKS5 proxy...")
         
         // First, backup current proxy settings
         guard backupCurrentProxySettings() else {
-            print("SystemProxyManager: Failed to backup current proxy settings")
+            errlog("SystemProxyManager: Failed to backup current proxy settings")
             return false
         }
         
         // Configure system to use SOCKS5 proxy
         guard configureSystemSOCKSProxy() else {
-            print("SystemProxyManager: Failed to configure SOCKS5 proxy")
+            errlog("SystemProxyManager: Failed to configure SOCKS5 proxy")
             return false
         }
         
         isProxyEnabled = true
-        print("SystemProxyManager: Device-wide SOCKS5 proxy enabled successfully")
+        infolog("SystemProxyManager: Device-wide SOCKS5 proxy enabled successfully")
         return true
     }
     
     /// Disable device-wide proxy by restoring original system settings
     func disableDeviceWideProxy() -> Bool {
-        print("SystemProxyManager: Disabling device-wide SOCKS5 proxy...")
+        infolog("SystemProxyManager: Disabling device-wide SOCKS5 proxy...")
         
         guard isProxyEnabled else {
-            print("SystemProxyManager: Proxy is not currently enabled")
+            infolog("SystemProxyManager: Proxy is not currently enabled")
             return true
         }
         
         guard restoreOriginalProxySettings() else {
-            print("SystemProxyManager: Failed to restore original proxy settings")
+            errlog("SystemProxyManager: Failed to restore original proxy settings")
             return false
         }
         
         isProxyEnabled = false
         originalProxySettings.removeAll()
-        print("SystemProxyManager: Device-wide SOCKS5 proxy disabled successfully")
+        infolog("SystemProxyManager: Device-wide SOCKS5 proxy disabled successfully")
         return true
     }
     
@@ -63,13 +64,13 @@ class SystemProxyManager {
     
     private func backupCurrentProxySettings() -> Bool {
         guard let dynamicStore = SCDynamicStoreCreate(nil, "MyceliumProxyManager" as CFString, nil, nil) else {
-            print("SystemProxyManager: Failed to create SCDynamicStore")
+            errlog("SystemProxyManager: Failed to create SCDynamicStore")
             return false
         }
         
         // Get list of network services
         guard let networkServices = getNetworkServices() else {
-            print("SystemProxyManager: Failed to get network services")
+            errlog("SystemProxyManager: Failed to get network services")
             return false
         }
         
@@ -90,7 +91,7 @@ class SystemProxyManager {
             
             if !serviceSettings.isEmpty {
                 originalProxySettings[serviceID] = serviceSettings
-                print("SystemProxyManager: Backed up settings for service: \(serviceID)")
+                infolog("SystemProxyManager: Backed up settings for service: \(serviceID)")
             }
         }
         
@@ -99,13 +100,13 @@ class SystemProxyManager {
     
     private func configureSystemSOCKSProxy() -> Bool {
         guard let dynamicStore = SCDynamicStoreCreate(nil, "MyceliumProxyManager" as CFString, nil, nil) else {
-            print("SystemProxyManager: Failed to create SCDynamicStore")
+            errlog("SystemProxyManager: Failed to create SCDynamicStore")
             return false
         }
         
         // Get list of network services
         guard let networkServices = getNetworkServices() else {
-            print("SystemProxyManager: Failed to get network services")
+            errlog("SystemProxyManager: Failed to get network services")
             return false
         }
         
@@ -134,11 +135,11 @@ class SystemProxyManager {
             
             // Set the new proxy configuration
             if !SCDynamicStoreSetValue(dynamicStore, proxiesKey as CFString, proxiesDict as CFPropertyList) {
-                print("SystemProxyManager: Failed to set proxy configuration for service: \(serviceID)")
+                errlog("SystemProxyManager: Failed to set proxy configuration for service: \(serviceID)")
                 return false
             }
             
-            print("SystemProxyManager: Configured SOCKS5 proxy for service: \(serviceID)")
+            infolog("SystemProxyManager: Configured SOCKS5 proxy for service: \(serviceID)")
         }
         
         return true
@@ -146,7 +147,7 @@ class SystemProxyManager {
     
     private func restoreOriginalProxySettings() -> Bool {
         guard let dynamicStore = SCDynamicStoreCreate(nil, "MyceliumProxyManager" as CFString, nil, nil) else {
-            print("SystemProxyManager: Failed to create SCDynamicStore")
+            errlog("SystemProxyManager: Failed to create SCDynamicStore")
             return false
         }
         
@@ -158,7 +159,7 @@ class SystemProxyManager {
             if let proxiesDict = serviceSettings["Proxies"] as? [String: Any] {
                 let proxiesKey = "State:/Network/Service/\(serviceID)/Proxies"
                 if !SCDynamicStoreSetValue(dynamicStore, proxiesKey as CFString, proxiesDict as CFPropertyList) {
-                    print("SystemProxyManager: Failed to restore proxy settings for service: \(serviceID)")
+                    errlog("SystemProxyManager: Failed to restore proxy settings for service: \(serviceID)")
                     return false
                 }
             }
@@ -166,7 +167,7 @@ class SystemProxyManager {
             // Restore DNS settings
             restoreDNSSettings(for: serviceID, originalSettings: serviceSettings)
             
-            print("SystemProxyManager: Restored settings for service: \(serviceID)")
+            infolog("SystemProxyManager: Restored settings for service: \(serviceID)")
         }
         
         return true
@@ -180,7 +181,7 @@ class SystemProxyManager {
         // Get the current network setup
         guard let setupKey = SCDynamicStoreCopyValue(dynamicStore, "Setup:/Network/Global/IPv4" as CFString) as? [String: Any],
               let serviceOrder = setupKey["ServiceOrder"] as? [String] else {
-            print("SystemProxyManager: Failed to get network service order")
+            errlog("SystemProxyManager: Failed to get network service order")
             return nil
         }
         
@@ -228,7 +229,7 @@ extension SystemProxyManager {
                 proxiesDict["ExceptionsList"] = exceptionList
                 
                 if !SCDynamicStoreSetValue(dynamicStore, proxiesKey as CFString, proxiesDict as CFPropertyList) {
-                    print("SystemProxyManager: Failed to set proxy exceptions for service: \(serviceID)")
+                    errlog("SystemProxyManager: Failed to set proxy exceptions for service: \(serviceID)")
                     return false
                 }
             }
@@ -277,9 +278,9 @@ extension SystemProxyManager {
         
         // Set the DNS configuration
         if !SCDynamicStoreSetValue(dynamicStore, dnsKey as CFString, dnsDict as CFPropertyList) {
-            print("SystemProxyManager: Failed to set DNS configuration for service: \(serviceID)")
+            errlog("SystemProxyManager: Failed to set DNS configuration for service: \(serviceID)")
         } else {
-            print("SystemProxyManager: Configured DNS settings for service: \(serviceID)")
+            infolog("SystemProxyManager: Configured DNS settings for service: \(serviceID)")
         }
     }
     
@@ -294,10 +295,27 @@ extension SystemProxyManager {
         // Restore original DNS settings if they existed
         if let originalDNS = originalSettings["DNS"] as? [String: Any] {
             if !SCDynamicStoreSetValue(dynamicStore, dnsKey as CFString, originalDNS as CFPropertyList) {
-                print("SystemProxyManager: Failed to restore DNS settings for service: \(serviceID)")
+                errlog("SystemProxyManager: Failed to restore DNS settings for service: \(serviceID)")
             } else {
-                print("SystemProxyManager: Restored DNS settings for service: \(serviceID)")
+                infolog("SystemProxyManager: Restored DNS settings for service: \(serviceID)")
             }
         }
     }
+}
+
+// MARK: - Logging Functions
+func debuglog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .debug, args)
+}
+
+func infolog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .info, args)
+}
+
+func errlog(_ msg: String, _ args: CVarArg...) {
+    mlog(msg, .error, args)
+}
+
+func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
+    os_log("%{public}@ %{public}@", log: .default, type: type, "myceliumflut:SystemProxyManager:", String(describing: msg), args)
 }
