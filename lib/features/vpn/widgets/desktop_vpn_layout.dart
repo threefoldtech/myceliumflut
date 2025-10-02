@@ -1,43 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../state/mycelium_providers.dart' as providers;
 import '../../../state/vpn_provider.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import 'manual_proxy_widget.dart';
 import 'automatic_proxy_widget.dart';
 import 'proxy_status_widget.dart';
 
-class DesktopVpnLayout extends ConsumerStatefulWidget {
+class DesktopVpnLayout extends ConsumerWidget {
   final MyceliumService myceliumService;
   
   const DesktopVpnLayout({super.key, required this.myceliumService});
 
   @override
-  ConsumerState<DesktopVpnLayout> createState() => _DesktopVpnLayoutState();
-}
-
-class _DesktopVpnLayoutState extends ConsumerState<DesktopVpnLayout> {
-  late VpnProvider vpnProvider;
-
-  @override
-  void initState() {
-    super.initState();
-    vpnProvider = VpnProvider(widget.myceliumService);
-  }
-
-  @override
-  void dispose() {
-    vpnProvider.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vpnProvider = ref.watch(providers.vpnProvider);
+    
     return ListenableBuilder(
       listenable: vpnProvider,
       builder: (context, child) => _VpnContent(
         vpnProvider: vpnProvider,
-        myceliumService: widget.myceliumService,
+        myceliumService: myceliumService,
       ),
     );
   }

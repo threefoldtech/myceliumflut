@@ -1,42 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../state/mycelium_providers.dart' as providers;
 import '../../../state/vpn_provider.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import 'proxy_status_widget.dart';
 import 'manual_proxy_widget.dart';
 import 'automatic_proxy_widget.dart';
 
-class MobileVpnLayout extends StatefulWidget {
+class MobileVpnLayout extends ConsumerWidget {
   final MyceliumService myceliumService;
   
   const MobileVpnLayout({super.key, required this.myceliumService});
 
   @override
-  State<MobileVpnLayout> createState() => _MobileVpnLayoutState();
-}
-
-class _MobileVpnLayoutState extends State<MobileVpnLayout> {
-  late VpnProvider vpnProvider;
-
-  @override
-  void initState() {
-    super.initState();
-    vpnProvider = VpnProvider(widget.myceliumService);
-  }
-
-  @override
-  void dispose() {
-    vpnProvider.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vpnProvider = ref.watch(providers.vpnProvider);
+    
     return ListenableBuilder(
       listenable: vpnProvider,
       builder: (context, child) => _MobileVpnContent(
         vpnProvider: vpnProvider,
-        myceliumService: widget.myceliumService,
+        myceliumService: myceliumService,
       ),
     );
   }

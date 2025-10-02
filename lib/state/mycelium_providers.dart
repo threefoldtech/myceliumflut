@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myceliumflut/features/peers/peers_repository.dart';
 import '../services/ffi/mycelium_service.dart';
 import '../services/peers_service.dart';
+import 'vpn_provider.dart';
 
 final myceliumServiceProvider = Provider<MyceliumService>((ref) {
   final service = MyceliumService();
@@ -157,4 +158,12 @@ final peersProvider =
   final myceliumService = ref.watch(myceliumServiceProvider);
 
   return PeersNotifier(service, repo, myceliumService);
+});
+
+// VPN Provider - persists across page navigation
+final vpnProvider = Provider<VpnProvider>((ref) {
+  final myceliumService = ref.watch(myceliumServiceProvider);
+  final provider = VpnProvider(myceliumService);
+  ref.onDispose(provider.dispose);
+  return provider;
 });

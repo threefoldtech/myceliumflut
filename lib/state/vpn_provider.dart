@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../services/ffi/mycelium_service.dart';
 
 enum VpnMode { manual, automatic }
+
 enum ProxyStatus { disconnected, connecting, connected, error }
 
 class ProxyInfo {
@@ -22,7 +23,7 @@ class ProxyInfo {
 
 class VpnProvider extends ChangeNotifier {
   final MyceliumService _myceliumService;
-  
+
   VpnMode _mode = VpnMode.automatic;
   ProxyStatus _status = ProxyStatus.disconnected;
   List<ProxyInfo> _availableProxies = [];
@@ -53,13 +54,13 @@ class VpnProvider extends ChangeNotifier {
     if (_mode != mode) {
       _mode = mode;
       _clearError();
-      
+
       if (mode == VpnMode.automatic) {
         startProxyDiscovery();
       } else {
         stopProxyDiscovery();
       }
-      
+
       notifyListeners();
     }
   }
@@ -85,7 +86,7 @@ class VpnProvider extends ChangeNotifier {
       notifyListeners();
 
       print("VpnProvider: Starting proxy discovery...");
-      
+
       // Start proxy probe in background without blocking UI
       _myceliumService.startProxyProbe().catchError((e) {
         print("VpnProvider: Error starting proxy probe: $e");
@@ -104,7 +105,6 @@ class VpnProvider extends ChangeNotifier {
       Timer(const Duration(seconds: 1), () {
         _updateProxyList();
       });
-      
     } catch (e) {
       _setError("Failed to start proxy discovery: $e");
       _isProbing = false;
@@ -115,7 +115,7 @@ class VpnProvider extends ChangeNotifier {
   Future<void> stopProxyDiscovery() async {
     _probeTimer?.cancel();
     _probeTimer = null;
-    
+
     if (_isProbing) {
       try {
         await _myceliumService.stopProxyProbe();
@@ -131,7 +131,10 @@ class VpnProvider extends ChangeNotifier {
     try {
       final proxies = await _myceliumService.listProxies();
       final newProxies = proxies
-          .where((address) => address.isNotEmpty && address != "Failed to list proxies")
+          .where((address) =>
+              address.isNotEmpty &&
+              address != "Failed to list proxies" &&
+              address.toLowerCase() != "ok")
           .map((address) => ProxyInfo(
                 address: address,
                 name: _getProxyDisplayName(address),
@@ -149,9 +152,7 @@ class VpnProvider extends ChangeNotifier {
 
       _availableProxies = newProxies;
       notifyListeners();
-      
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   String _getProxyDisplayName(String address) {
@@ -205,13 +206,14 @@ class VpnProvider extends ChangeNotifier {
       }
 
       print("VpnProvider: Connecting to proxy: $proxyAddress");
-      
+
       // Connect to the proxy
       final connectResult = await _myceliumService.proxyConnect(proxyAddress);
       print("VpnProvider: Proxy connect result: $connectResult");
 
       if (connectResult.isEmpty || connectResult[0] != "ok") {
-        throw Exception("Failed to connect to proxy: ${connectResult.join(', ')}");
+        throw Exception(
+            "Failed to connect to proxy: ${connectResult.join(', ')}");
       }
 
       // Extract actual proxy address from result
@@ -234,22 +236,21 @@ class VpnProvider extends ChangeNotifier {
       _status = ProxyStatus.connected;
       _connectedProxy = proxyInfo;
       _deviceWideEnabled = true;
-      
+
       print("VpnProvider: Successfully connected to SOCKS5 proxy");
-      
     } catch (e) {
       _status = ProxyStatus.error;
       _setError("Connection failed: $e");
       print("VpnProvider: Connection error: $e");
     }
-    
+
     notifyListeners();
   }
 
   Future<void> disconnect() async {
     try {
       _clearError();
-      
+
       // Disable device-wide proxy first
       if (_deviceWideEnabled) {
         await _myceliumService.disableDeviceWideProxy();
@@ -263,14 +264,13 @@ class VpnProvider extends ChangeNotifier {
 
       _status = ProxyStatus.disconnected;
       _connectedProxy = null;
-      
+
       print("VpnProvider: Disconnected from SOCKS5 proxy");
-      
     } catch (e) {
       _setError("Disconnect failed: $e");
       print("VpnProvider: Disconnect error: $e");
     }
-    
+
     notifyListeners();
   }
 
