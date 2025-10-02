@@ -90,7 +90,8 @@ class MainFlutterWindow: NSWindow {
             case "enableDeviceWideProxy":
                 // Call AppDelegate's enableDeviceWideProxy method
                 if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                    appDelegate.enableDeviceWideProxy(result: result)
+                    let proxyAddress = (call.arguments as? [String: Any])?["proxyAddress"] as? String
+                    appDelegate.enableDeviceWideProxy(proxyAddress: proxyAddress, result: result)
                 } else {
                     result(FlutterError(code: "NO_APP_DELEGATE", message: "Could not access AppDelegate", details: nil))
                 }

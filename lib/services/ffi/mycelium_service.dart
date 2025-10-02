@@ -347,14 +347,18 @@ class MyceliumService {
   // MARK: - Device-Wide Proxy Methods
 
   /// Enable device-wide traffic forwarding through SOCKS5 proxy
-  Future<bool> enableDeviceWideProxy() async {
+  Future<bool> enableDeviceWideProxy({String? proxyAddress}) async {
     try {
       print("MyceliumService: Enabling device-wide SOCKS5 proxy");
 
-      if (isUseDylib()) {
+      if (Platform.isWindows || Platform.isMacOS) {
         // For desktop platforms (Windows/macOS), use platform-specific implementation
-        final result =
-            await _platform.invokeMethod<bool>('enableDeviceWideProxy');
+        Map<String, dynamic>? arguments;
+        if (proxyAddress != null) {
+          arguments = {'proxyAddress': proxyAddress};
+        }
+        final result = await _platform.invokeMethod<bool>(
+            'enableDeviceWideProxy', arguments);
         return result ?? false;
       } else {
         // For mobile platforms (iOS/Android), use VPN tunnel
@@ -363,7 +367,7 @@ class MyceliumService {
         return result ?? false;
       }
     } catch (e) {
-      print("MyceliumService: Failed to enable device-wide proxy: $e");
+      print("MyceliumService: Error enabling device-wide proxy: $e");
       return false;
     }
   }
@@ -433,7 +437,7 @@ class MyceliumService {
 
       // Connect to proxy (specific or auto-select best)
       print("MyceliumService: Connecting to SOCKS5 proxy...");
-      
+
       String proxyToConnect;
       if (specificProxy != null && specificProxy.isNotEmpty) {
         proxyToConnect = specificProxy;
@@ -447,20 +451,29 @@ class MyceliumService {
         proxyToConnect = availableProxies.first;
         print("MyceliumService: Auto-selected proxy: $proxyToConnect");
       }
-      
-      final connectResult = await proxyConnect(proxyToConnect);
+
+      final connectResult =
+          await proxyConnect("[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080");
       print("MyceliumService: Proxy connect result: $connectResult");
 
       if (connectResult.isNotEmpty && connectResult[0] == "ok") {
-        // Enable device-wide traffic forwarding
+        // Extract the actual proxy address from the connection result
+        String actualProxyAddress = proxyToConnect; // Default fallback
+        if (connectResult.length > 1) {
+          actualProxyAddress = connectResult[1];
+        }
+
+        // Enable device-wide traffic forwarding with the actual proxy address
         print("MyceliumService: Enabling device-wide traffic forwarding...");
-        final enableResult = await enableDeviceWideProxy();
+        final enableResult =
+            await enableDeviceWideProxy(proxyAddress: actualProxyAddress);
 
         if (enableResult) {
           print("MyceliumService: Device-wide proxy started successfully");
           return true;
         } else {
-          print("MyceliumService: Failed to enable device-wide traffic forwarding");
+          print(
+              "MyceliumService: Failed to enable device-wide traffic forwarding");
           // Clean up - disconnect proxy
           await proxyDisconnect();
           await stopProxyProbe();

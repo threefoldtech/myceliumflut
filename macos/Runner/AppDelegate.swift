@@ -11,11 +11,10 @@ class AppDelegate: FlutterAppDelegate {
     private var myceliumStartTask: Task<Void, Never>?
     
     // System proxy management
-    private let socksProxyHost = "127.0.0.1"
-    private let socksProxyPort = 1080
+    private var socksProxyHost = "127.0.0.1"
+    private var socksProxyPort = 1080
     private var originalProxySettings: [String: Any] = [:]
     private var isProxyEnabled = false
-    private var proxyBridgeTask: Process?
     
     override func applicationDidFinishLaunching(_ notification: Notification) {
         super.applicationDidFinishLaunching(notification)
@@ -64,7 +63,12 @@ class AppDelegate: FlutterAppDelegate {
             case "listProxies":
                 self.handleListProxies(result: result)
             case "enableDeviceWideProxy":
-                self.enableDeviceWideProxy(result: result)
+                if let arguments = call.arguments as? [String: Any],
+                   let proxyAddress = arguments["proxyAddress"] as? String {
+                    self.enableDeviceWideProxy(proxyAddress: proxyAddress, result: result)
+                } else {
+                    self.enableDeviceWideProxy(proxyAddress: nil, result: result)
+                }
             case "disableDeviceWideProxy":
                 self.disableDeviceWideProxy(result: result)
             case "getProxyStatus":
@@ -218,21 +222,42 @@ class AppDelegate: FlutterAppDelegate {
     
     // MARK: - Device-Wide Proxy Methods
     
-    func enableDeviceWideProxy(result: @escaping FlutterResult) {
+    private func updateProxyAddress(_ proxyAddress: String) {
+        print("macOS: Updating proxy address to: \(proxyAddress)")
+        
+        // Parse proxy address like "[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080"
+        if proxyAddress.hasPrefix("[") && proxyAddress.contains("]:") {
+            // IPv6 format
+            let components = proxyAddress.components(separatedBy: "]:")
+            if components.count == 2 {
+                let ipv6Address = String(components[0].dropFirst()) // Remove leading "["
+                if let port = Int(components[1]) {
+                    socksProxyHost = ipv6Address
+                    socksProxyPort = port
+                    print("macOS: Set proxy to IPv6: [\(socksProxyHost)]:\(socksProxyPort)")
+                }
+            }
+        } else if proxyAddress.contains(":") {
+            // IPv4 format
+            let components = proxyAddress.components(separatedBy: ":")
+            if components.count == 2 {
+                socksProxyHost = components[0]
+                if let port = Int(components[1]) {
+                    socksProxyPort = port
+                    print("macOS: Set proxy to IPv4: \(socksProxyHost):\(socksProxyPort)")
+                }
+            }
+        }
+    }
+    
+    func enableDeviceWideProxy(proxyAddress: String?, result: @escaping FlutterResult) {
         print("macOS: Enabling device-wide SOCKS5 proxy")
         
         DispatchQueue.global(qos: .background).async {
-            // Start proxy bridge first
-            guard self.startProxyBridge() else {
-                DispatchQueue.main.async {
-                    print("macOS: Failed to start proxy bridge")
-                    result(FlutterError(code: "PROXY_BRIDGE_FAILED", message: "Failed to start proxy bridge", details: nil))
-                }
-                return
+            // Update proxy address if provided
+            if let address = proxyAddress {
+                self.updateProxyAddress(address)
             }
-            
-            // Small delay to let bridge start
-            Thread.sleep(forTimeInterval: 1.0)
             
             let success = self.enableSystemProxy()
             
@@ -242,7 +267,6 @@ class AppDelegate: FlutterAppDelegate {
                     result(true)
                 } else {
                     print("macOS: Failed to enable device-wide proxy")
-                    self.stopProxyBridge() // Clean up bridge if system proxy failed
                     result(FlutterError(code: "PROXY_ENABLE_FAILED", message: "Failed to configure system proxy settings", details: nil))
                 }
             }
@@ -253,9 +277,6 @@ class AppDelegate: FlutterAppDelegate {
         print("macOS: Disabling device-wide SOCKS5 proxy")
         
         DispatchQueue.global(qos: .background).async {
-            // Stop proxy bridge first
-            self.stopProxyBridge()
-            
             let success = self.disableSystemProxy()
             
             DispatchQueue.main.async {
@@ -288,9 +309,8 @@ class AppDelegate: FlutterAppDelegate {
     // MARK: - Application Lifecycle
     
     override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        // Clean up proxy settings and bridge before terminating
+        // Clean up proxy settings before terminating
         if isProxyEnabled {
-            stopProxyBridge()
             _ = disableSystemProxy()
         }
         
@@ -480,54 +500,5 @@ class AppDelegate: FlutterAppDelegate {
         }
         
         return serviceOrder
-    }
-    
-    // MARK: - Proxy Bridge Implementation
-    
-    private func startProxyBridge() -> Bool {
-        print("SystemProxy: Starting proxy bridge from 127.0.0.1:1080 to [410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080")
-        
-        // Stop any existing bridge
-        stopProxyBridge()
-        
-        // Use socat to create a bridge from localhost:1080 to the IPv6 address
-        proxyBridgeTask = Process()
-        proxyBridgeTask?.launchPath = "/opt/homebrew/bin/socat"
-        proxyBridgeTask?.arguments = [
-            "TCP4-LISTEN:1080,reuseaddr,fork",
-            "TCP6:[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080"
-        ]
-        
-        do {
-            try proxyBridgeTask?.run()
-            print("SystemProxy: Proxy bridge started successfully")
-            return true
-        } catch {
-            print("SystemProxy: Failed to start proxy bridge: \(error)")
-            // Try alternative socat path
-            proxyBridgeTask = Process()
-            proxyBridgeTask?.launchPath = "/usr/local/bin/socat"
-            proxyBridgeTask?.arguments = [
-                "TCP4-LISTEN:1080,reuseaddr,fork",
-                "TCP6:[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080"
-            ]
-            
-            do {
-                try proxyBridgeTask?.run()
-                print("SystemProxy: Proxy bridge started successfully (alternative path)")
-                return true
-            } catch {
-                print("SystemProxy: Failed to start proxy bridge with alternative path: \(error)")
-                return false
-            }
-        }
-    }
-    
-    private func stopProxyBridge() {
-        if let bridge = proxyBridgeTask {
-            bridge.terminate()
-            proxyBridgeTask = nil
-            print("SystemProxy: Stopped proxy bridge")
-        }
     }
 }
