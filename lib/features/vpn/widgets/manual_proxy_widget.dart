@@ -120,38 +120,48 @@ class _ManualProxyWidgetState extends State<ManualProxyWidget> {
             
             const SizedBox(height: 24),
             
-            // Connect button
-            if (!vpnProvider.isConnected)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: vpnProvider.manualAddress.isNotEmpty && 
-                            vpnProvider.status != ProxyStatus.connecting
-                      ? () {
-                          if (_formKey.currentState!.validate()) {
-                            vpnProvider.connect();
-                          }
-                        }
-                      : null,
-                  icon: vpnProvider.status == ProxyStatus.connecting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.play_arrow),
-                  label: Text(
-                    vpnProvider.status == ProxyStatus.connecting
-                        ? 'Connecting...'
-                        : 'Connect to Proxy',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
+            // Connect/Disconnect button
+            SizedBox(
+              width: double.infinity,
+              child: vpnProvider.isConnected
+                  ? ElevatedButton.icon(
+                      onPressed: vpnProvider.disconnect,
+                      icon: const Icon(Icons.stop),
+                      label: const Text('Disconnect from Proxy'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: vpnProvider.manualAddress.isNotEmpty && 
+                                vpnProvider.status != ProxyStatus.connecting
+                          ? () {
+                              if (_formKey.currentState!.validate()) {
+                                vpnProvider.connect();
+                              }
+                            }
+                          : null,
+                      icon: vpnProvider.status == ProxyStatus.connecting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.play_arrow),
+                      label: Text(
+                        vpnProvider.status == ProxyStatus.connecting
+                            ? 'Connecting...'
+                            : 'Connect to Proxy',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
