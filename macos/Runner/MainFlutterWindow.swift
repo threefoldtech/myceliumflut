@@ -30,84 +30,12 @@ class MainFlutterWindow: NSWindow {
         self.contentViewController = flutterViewController
         self.setFrame(windowFrame, display: true)
         
-        flutterChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
-                                                  binaryMessenger: flutterViewController.engine.binaryMessenger)
+        // Setup method channel in AppDelegate
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.setupMethodChannel(with: flutterViewController)
+        }
         
-        flutterChannel?.setMethodCallHandler({
-            (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-            // This method is invoked on the UI thread.
-            switch call.method {
-            case "generateSecretKey":
-                let key = generateSecretKey()
-                result(key)
-            case "addressFromSecretKey":
-                if let key = call.arguments as? FlutterStandardTypedData {
-                    let nodeAddr = addressFromSecretKey(data: key.data)
-                    debuglog("nodeAddr = \(nodeAddr)")
-                    result(nodeAddr)
-                } else {
-                    result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
-                }
-            case "startVpn":
-                if let arguments = call.arguments as? Dictionary<String, Any> {
-                    let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
-                    let peers = arguments["peers"] as! [String]
-                    self.flutterTunnelStatus = .started
-                    self.createTunnel(secretKey: secretKey.data, peers: peers)
-                    result(true)
-                } else {
-                    result(false)
-                }
-            case "stopVpn":
-                self.flutterTunnelStatus = .stopped
-                self.stopMycelium()
-                result(true)
-            case "getPeerStatus":
-                self.getPeerStatusFromService(result: result)
-            case "proxyConnect":
-                if let arguments = call.arguments as? [String: Any],
-                   let remote = arguments["remote"] as? String {
-                    self.sendTunnelMessage(message: "proxyConnect:\(remote)", result: result)
-                } else {
-                    result(FlutterError(code: "INVALID_ARGUMENTS", message: "Missing remote parameter", details: nil))
-                }
-            case "proxyDisconnect":
-                self.sendTunnelMessage(message: "proxyDisconnect", result: result)
-            case "startProxyProbe":
-                self.sendTunnelMessage(message: "startProxyProbe", result: result)
-            case "stopProxyProbe":
-                self.sendTunnelMessage(message: "stopProxyProbe", result: result)
-            case "listProxies":
-                self.sendTunnelMessage(message: "listProxies", result: result)
-            case "getProxyStatus":
-                // Return proxy status information
-                let status = [
-                    "enabled": false,
-                    "host": "",
-                    "port": 0
-                ] as [String : Any]
-                result(status)
-            case "enableDeviceWideProxy":
-                // Call AppDelegate's enableDeviceWideProxy method
-                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                    let proxyAddress = (call.arguments as? [String: Any])?["proxyAddress"] as? String
-                    appDelegate.enableDeviceWideProxy(proxyAddress: proxyAddress, result: result)
-                } else {
-                    result(FlutterError(code: "NO_APP_DELEGATE", message: "Could not access AppDelegate", details: nil))
-                }
-            case "disableDeviceWideProxy":
-                // Call AppDelegate's disableDeviceWideProxy method
-                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                    appDelegate.disableDeviceWideProxy(result: result)
-                } else {
-                    result(FlutterError(code: "NO_APP_DELEGATE", message: "Could not access AppDelegate", details: nil))
-                }
-            default:
-                result(FlutterMethodNotImplemented)
-            }
-        })
         statusObservationToken = observeVPNStatus()
-        
         
         RegisterGeneratedPlugins(registry: flutterViewController)
         

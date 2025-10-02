@@ -16,10 +16,7 @@ class AppDelegate: FlutterAppDelegate {
     private var originalProxySettings: [String: Any] = [:]
     private var isProxyEnabled = false
     
-    override func applicationDidFinishLaunching(_ notification: Notification) {
-        super.applicationDidFinishLaunching(notification)
-        
-        let controller: FlutterViewController = mainFlutterWindow?.contentViewController as! FlutterViewController
+    func setupMethodChannel(with controller: FlutterViewController) {
         flutterChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
                                               binaryMessenger: controller.engine.binaryMessenger)
         flutterChannel!.setMethodCallHandler({
@@ -79,6 +76,11 @@ class AppDelegate: FlutterAppDelegate {
         })
     }
     
+    override func applicationDidFinishLaunching(_ notification: Notification) {
+        super.applicationDidFinishLaunching(notification)
+        // Method channel is now set up by MainFlutterWindow calling setupMethodChannel
+    }
+    
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
@@ -95,27 +97,20 @@ class AppDelegate: FlutterAppDelegate {
         // Cancel any existing start task
         myceliumStartTask?.cancel()
         
-        myceliumStartTask = Task {
-            do {
-                // Start Mycelium service using FFI
-                startMycelium(peers: peers, tunFd: 0, secretKey: secretKey)
-                
-                await MainActor.run {
-                    self.isMyceliumRunning = true
-                    print("macOS: Mycelium service started successfully")
-                    
-                    // Notify Flutter that Mycelium started
-                    self.flutterChannel?.invokeMethod("notifyMyceliumStarted", arguments: nil)
-                    result(true)
-                }
-            } catch {
-                await MainActor.run {
-                    print("macOS: Failed to start Mycelium service: \(error)")
-                    self.flutterChannel?.invokeMethod("notifyMyceliumFailed", arguments: error.localizedDescription)
-                    result(false)
-                }
-            }
+        // Start Mycelium in a background thread (it runs forever in an event loop)
+        myceliumStartTask = Task.detached {
+            // This blocks forever, running the Mycelium event loop
+            startMycelium(peers: peers, tunFd: 0, secretKey: secretKey)
         }
+        
+        // Mark as running and notify Flutter immediately
+        // The startMycelium function will block in its own thread
+        self.isMyceliumRunning = true
+        print("macOS: Mycelium service started successfully")
+        
+        // Notify Flutter that Mycelium started
+        self.flutterChannel?.invokeMethod("notifyMyceliumStarted", arguments: nil)
+        result(true)
     }
     
     private func stopMyceliumService(result: @escaping FlutterResult) {
