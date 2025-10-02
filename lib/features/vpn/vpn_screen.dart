@@ -25,7 +25,12 @@ class VpnScreen extends ConsumerWidget {
         ],
       ),
       currentIndex: 2, // VPN tab index
-      child: DesktopVpnLayout(myceliumService: myceliumService),
+      child: StreamBuilder(
+        stream: myceliumService.statusStream,
+        builder: (context, snapshot) {
+          return DesktopVpnLayout(myceliumService: myceliumService);
+        },
+      ),
     );
   }
 }

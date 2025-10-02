@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../state/vpn_provider.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import 'manual_proxy_widget.dart';
@@ -34,18 +35,78 @@ class _DesktopVpnLayoutState extends ConsumerState<DesktopVpnLayout> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: vpnProvider,
-      builder: (context, child) => _VpnContent(vpnProvider: vpnProvider),
+      builder: (context, child) => _VpnContent(
+        vpnProvider: vpnProvider,
+        myceliumService: widget.myceliumService,
+      ),
     );
   }
 }
 
 class _VpnContent extends StatelessWidget {
   final VpnProvider vpnProvider;
+  final MyceliumService myceliumService;
   
-  const _VpnContent({required this.vpnProvider});
+  const _VpnContent({required this.vpnProvider, required this.myceliumService});
 
   @override
   Widget build(BuildContext context) {
+    // Check if Mycelium is running
+    final isMyceliumRunning = myceliumService.status == NodeStatus.connected;
+    
+    if (!isMyceliumRunning) {
+      return Center(
+        child: Card(
+          margin: const EdgeInsets.all(24.0),
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 64,
+                  color: Colors.orange[400],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Mycelium Not Running',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'You need to start Mycelium before using the SOCKS5 Proxy VPN.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Navigate to home screen
+                    context.go('/');
+                  },
+                  icon: const Icon(Icons.home),
+                  label: const Text('Go to Home'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

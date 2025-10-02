@@ -18,7 +18,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return AppScaffold(
       title: _buildTitle(context),
-      currentIndex: 2,
+      currentIndex: 3, // Settings is the 4th tab (index 3)
       onTabSelected: null,
       child: ResponsiveLayout(
         mobile: _SettingsMobileLayout(),
