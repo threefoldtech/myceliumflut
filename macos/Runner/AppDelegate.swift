@@ -463,28 +463,52 @@ class AppDelegate: FlutterAppDelegate {
     }
     
     private func restoreOriginalProxySettings() -> Bool {
-        guard let dynamicStore = SCDynamicStoreCreate(nil, "MyceliumProxyManager" as CFString, nil, nil) else {
-            print("SystemProxy: Failed to create SCDynamicStore")
-            return false
-        }
+        print("SystemProxy: Restoring original proxy settings using networksetup")
         
-        // Restore original proxy and DNS settings for each network service
-        for (serviceID, originalSettings) in originalProxySettings {
-            guard let serviceSettings = originalSettings as? [String: Any] else { continue }
+        // Use networksetup command to disable SOCKS proxy for all network services
+        let task = Process()
+        task.launchPath = "/usr/sbin/networksetup"
+        task.arguments = ["-listallnetworkservices"]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = pipe
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
             
-            // Restore proxy settings
-            if let proxiesDict = serviceSettings["Proxies"] as? [String: Any] {
-                let proxiesKey = "State:/Network/Service/\(serviceID)/Proxies"
-                if !SCDynamicStoreSetValue(dynamicStore, proxiesKey as CFString, proxiesDict as CFPropertyList) {
-                    print("SystemProxy: Failed to restore proxy settings for service: \(serviceID)")
-                    return false
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            let services = output.components(separatedBy: .newlines).filter { !$0.isEmpty && !$0.hasPrefix("An asterisk") }
+            
+            var successCount = 0
+            
+            for service in services {
+                let disableTask = Process()
+                disableTask.launchPath = "/usr/sbin/networksetup"
+                disableTask.arguments = ["-setsocksfirewallproxystate", service, "off"]
+                
+                do {
+                    try disableTask.run()
+                    disableTask.waitUntilExit()
+                    
+                    if disableTask.terminationStatus == 0 {
+                        successCount += 1
+                        print("SystemProxy: Disabled SOCKS proxy for service: \(service)")
+                    }
+                } catch {
+                    print("SystemProxy: Failed to disable proxy for service \(service): \(error)")
                 }
             }
             
-            print("SystemProxy: Restored settings for service: \(serviceID)")
+            print("SystemProxy: Disabled SOCKS proxy for \(successCount)/\(services.count) services")
+            return successCount > 0
+            
+        } catch {
+            print("SystemProxy: Failed to list network services: \(error)")
+            return false
         }
-        
-        return true
     }
     
     private func getNetworkServices() -> [String]? {
