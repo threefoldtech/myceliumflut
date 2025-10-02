@@ -53,7 +53,7 @@ class _MobileVpnContent extends StatelessWidget {
           Text(
             'Route traffic through Mycelium mesh',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
           ),

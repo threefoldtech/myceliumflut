@@ -56,7 +56,7 @@ class _ManualProxyWidgetState extends State<ManualProxyWidget> {
             Text(
               'Enter the IP address and port of your SOCKS5 proxy server',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Colors.grey[600],
               ),
             ),
             
@@ -130,6 +130,41 @@ class _ManualProxyWidgetState extends State<ManualProxyWidget> {
                   
                   const SizedBox(height: 24),
                   
+                  // Example addresses
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Examples',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _buildExampleItem('IPv4:', '192.168.1.100:1080'),
+                        _buildExampleItem('IPv6:', '[2001:db8::1]:1080'),
+                        _buildExampleItem('Localhost IPv4:', '127.0.0.1:1080'),
+                        _buildExampleItem('Localhost IPv6:', '[::1]:1080'),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
                   // Connect button
                   if (!vpnProvider.isConnected)
                     SizedBox(
@@ -171,4 +206,35 @@ class _ManualProxyWidgetState extends State<ManualProxyWidget> {
     );
   }
 
+  Widget _buildExampleItem(String label, String example) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                _addressController.text = example;
+              },
+              child: Text(
+                example,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

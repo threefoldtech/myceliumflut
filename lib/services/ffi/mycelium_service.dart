@@ -105,13 +105,7 @@ class MyceliumService {
     try {
       if (isUseDylib()) {
         final key = await _loadOrGeneratePrivKey();
-        final result = await myFFStartMycelium(cleaned, key);
-        if (!result) {
-          debugPrint('MyceliumService: Failed to start Mycelium');
-          _status = NodeStatus.failed;
-          _statusController.add(_status);
-          return false;
-        }
+        myFFStartMycelium(cleaned, key);
       } else {
         final key = await _loadOrGeneratePrivKey();
         final result = await _platform.invokeMethod<bool>('startVpn', {

@@ -32,7 +32,7 @@ class ProxyStatusWidget extends StatelessWidget {
                       Text(
                         _getStatusDescription(vpnProvider),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],

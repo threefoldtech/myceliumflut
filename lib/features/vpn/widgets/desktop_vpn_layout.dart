@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../state/vpn_provider.dart';
-import '../../../state/mycelium_providers.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import 'manual_proxy_widget.dart';
 import 'automatic_proxy_widget.dart';
@@ -33,67 +32,9 @@ class _DesktopVpnLayoutState extends ConsumerState<DesktopVpnLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final nodeStatusAsync = ref.watch(nodeStatusProvider);
-    
-    return nodeStatusAsync.when(
-      data: (status) {
-        if (status != NodeStatus.connected) {
-          return _MyceliumNotConnectedWarning();
-        }
-        return ListenableBuilder(
-          listenable: vpnProvider,
-          builder: (context, child) {
-            return _VpnContent(vpnProvider: vpnProvider);
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => _MyceliumNotConnectedWarning(),
-    );
-  }
-}
-
-class _MyceliumNotConnectedWarning extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Card(
-        margin: const EdgeInsets.all(48),
-        child: Padding(
-          padding: const EdgeInsets.all(48),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                size: 64,
-                color: Colors.orange,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Mycelium Not Connected',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Please start Mycelium first before using the VPN feature.',
-                style: Theme.of(context).textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Go to the Home screen and click "Start Mycelium" to connect.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: vpnProvider,
+      builder: (context, child) => _VpnContent(vpnProvider: vpnProvider),
     );
   }
 }
