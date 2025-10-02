@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../app/widgets/responsive_layout.dart';
 import '../../app/widgets/app_scaffold.dart';
 import '../../state/mycelium_providers.dart';
 import 'widgets/desktop_vpn_layout.dart';
-import 'widgets/mobile_vpn_layout.dart';
 
 class VpnScreen extends ConsumerWidget {
   const VpnScreen({super.key});
@@ -27,10 +25,7 @@ class VpnScreen extends ConsumerWidget {
         ],
       ),
       currentIndex: 2, // VPN tab index
-      child: ResponsiveLayout(
-        mobile: MobileVpnLayout(myceliumService: myceliumService),
-        desktop: DesktopVpnLayout(myceliumService: myceliumService),
-      ),
+      child: DesktopVpnLayout(myceliumService: myceliumService),
     );
   }
 }

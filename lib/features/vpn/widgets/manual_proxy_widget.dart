@@ -64,176 +64,96 @@ class _ManualProxyWidgetState extends State<ManualProxyWidget> {
             
             Form(
               key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Proxy Address',
-                      hintText: '192.168.1.100:1080 or [::1]:1080',
-                      prefixIcon: Icon(Icons.language),
-                      border: OutlineInputBorder(),
-                      helperText: 'Format: IP:PORT (IPv4 or IPv6)',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a proxy address';
+              child: TextFormField(
+                controller: _addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Proxy Address',
+                  hintText: '192.168.1.100:1080 or [::1]:1080',
+                  prefixIcon: Icon(Icons.language),
+                  border: OutlineInputBorder(),
+                  helperText: 'Format: IP:PORT (IPv4 or IPv6)',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a proxy address';
+                  }
+                  
+                  final address = value.trim();
+                  
+                  // Check IPv4 format
+                  final ipv4Regex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}:\d+$');
+                  if (ipv4Regex.hasMatch(address)) {
+                    final parts = address.split(':');
+                    final ipParts = parts[0].split('.');
+                    for (final part in ipParts) {
+                      final num = int.tryParse(part);
+                      if (num == null || num < 0 || num > 255) {
+                        return 'Invalid IPv4 address';
                       }
-                      
-                      final address = value.trim();
-                      
-                      // Check IPv4 format: x.x.x.x:port
-                      final ipv4Regex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}:\d+$');
-                      if (ipv4Regex.hasMatch(address)) {
-                        // Validate IP parts
-                        final parts = address.split(':');
-                        final ipParts = parts[0].split('.');
-                        for (final part in ipParts) {
-                          final num = int.tryParse(part);
-                          if (num == null || num < 0 || num > 255) {
-                            return 'Invalid IPv4 address';
+                    }
+                    final port = int.tryParse(parts[1]);
+                    if (port == null || port < 1 || port > 65535) {
+                      return 'Invalid port number (1-65535)';
+                    }
+                    return null;
+                  }
+                  
+                  // Check IPv6 format
+                  final ipv6Regex = RegExp(r'^\[[0-9a-fA-F:]+\]:\d+$');
+                  if (ipv6Regex.hasMatch(address)) {
+                    final parts = address.split(']:');
+                    if (parts.length != 2) {
+                      return 'Invalid IPv6 format';
+                    }
+                    final port = int.tryParse(parts[1]);
+                    if (port == null || port < 1 || port > 65535) {
+                      return 'Invalid port number (1-65535)';
+                    }
+                    return null;
+                  }
+                  
+                  return 'Invalid format. Use IP:PORT (e.g., 192.168.1.100:1080 or [::1]:1080)';
+                },
+                enabled: !vpnProvider.isConnected,
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Connect button
+            if (!vpnProvider.isConnected)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: vpnProvider.manualAddress.isNotEmpty && 
+                            vpnProvider.status != ProxyStatus.connecting
+                      ? () {
+                          if (_formKey.currentState!.validate()) {
+                            vpnProvider.connect();
                           }
                         }
-                        
-                        // Validate port
-                        final port = int.tryParse(parts[1]);
-                        if (port == null || port < 1 || port > 65535) {
-                          return 'Invalid port number (1-65535)';
-                        }
-                        
-                        return null;
-                      }
-                      
-                      // Check IPv6 format: [xxxx:xxxx:...]:port
-                      final ipv6Regex = RegExp(r'^\[[0-9a-fA-F:]+\]:\d+$');
-                      if (ipv6Regex.hasMatch(address)) {
-                        // Basic IPv6 validation
-                        final parts = address.split(']:');
-                        if (parts.length != 2) {
-                          return 'Invalid IPv6 format';
-                        }
-                        
-                        // Validate port
-                        final port = int.tryParse(parts[1]);
-                        if (port == null || port < 1 || port > 65535) {
-                          return 'Invalid port number (1-65535)';
-                        }
-                        
-                        return null;
-                      }
-                      
-                      return 'Invalid format. Use IP:PORT (e.g., 192.168.1.100:1080 or [::1]:1080)';
-                    },
-                    enabled: !vpnProvider.isConnected,
+                      : null,
+                  icon: vpnProvider.status == ProxyStatus.connecting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow),
+                  label: Text(
+                    vpnProvider.status == ProxyStatus.connecting
+                        ? 'Connecting...'
+                        : 'Connect to Proxy',
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Example addresses
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Examples',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        _buildExampleItem('IPv4:', '192.168.1.100:1080'),
-                        _buildExampleItem('IPv6:', '[2001:db8::1]:1080'),
-                        _buildExampleItem('Localhost IPv4:', '127.0.0.1:1080'),
-                        _buildExampleItem('Localhost IPv6:', '[::1]:1080'),
-                      ],
-                    ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Connect button
-                  if (!vpnProvider.isConnected)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: vpnProvider.manualAddress.isNotEmpty && 
-                                  vpnProvider.status != ProxyStatus.connecting
-                            ? () {
-                                if (_formKey.currentState!.validate()) {
-                                  vpnProvider.connect();
-                                }
-                              }
-                            : null,
-                        icon: vpnProvider.status == ProxyStatus.connecting
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.play_arrow),
-                        label: Text(
-                          vpnProvider.status == ProxyStatus.connecting
-                              ? 'Connecting...'
-                              : 'Connect to Proxy',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExampleItem(String label, String example) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                _addressController.text = example;
-              },
-              child: Text(
-                example,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline,
                 ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

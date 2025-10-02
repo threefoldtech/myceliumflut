@@ -92,13 +92,16 @@ class _MobileVpnContent extends StatelessWidget {
                   
                   Expanded(
                     child: TabBarView(
+                      physics: const NeverScrollableScrollPhysics(),
                       children: [
                         SingleChildScrollView(
                           padding: const EdgeInsets.only(top: 16.0),
+                          physics: const AlwaysScrollableScrollPhysics(),
                           child: AutomaticProxyWidget(vpnProvider: vpnProvider),
                         ),
                         SingleChildScrollView(
                           padding: const EdgeInsets.only(top: 16.0),
+                          physics: const AlwaysScrollableScrollPhysics(),
                           child: ManualProxyWidget(vpnProvider: vpnProvider),
                         ),
                       ],
