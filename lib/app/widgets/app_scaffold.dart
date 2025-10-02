@@ -65,6 +65,9 @@ class AppScaffold extends StatelessWidget {
                   if (context.mounted) context.go('/peers');
                   break;
                 case 2:
+                  if (context.mounted) context.go('/vpn');
+                  break;
+                case 3:
                   if (context.mounted) context.go('/settings');
                   break;
               }
@@ -78,6 +81,10 @@ class AppScaffold extends StatelessWidget {
               icon: Icon(Icons.hub_outlined),
               selectedIcon: Icon(Icons.hub),
               label: 'Peers'),
+          NavigationDestination(
+              icon: Icon(Icons.vpn_lock_outlined),
+              selectedIcon: Icon(Icons.vpn_lock),
+              label: 'VPN'),
           NavigationDestination(
               icon: Icon(Icons.settings_outlined),
               selectedIcon: Icon(Icons.settings),

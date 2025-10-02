@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/peers/peers_screen.dart';
+import '../../features/vpn/vpn_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -16,6 +17,11 @@ final appRouter = GoRouter(
       path: '/peers',
       name: 'peers',
       pageBuilder: (context, state) => const MaterialPage(child: PeersScreen()),
+    ),
+    GoRoute(
+      path: '/vpn',
+      name: 'vpn',
+      pageBuilder: (context, state) => const MaterialPage(child: VpnScreen()),
     ),
     GoRoute(
       path: '/settings',
