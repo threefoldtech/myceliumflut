@@ -45,76 +45,71 @@ class _MobileVpnContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        return Scaffold(
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Description
+          Text(
+            'Route traffic through Mycelium mesh',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Status
+          ProxyStatusWidget(vpnProvider: vpnProvider),
+          
+          const SizedBox(height: 16),
+          
+          // Mode tabs
+          Expanded(
+            child: DefaultTabController(
+              length: 2,
+              initialIndex: vpnProvider.mode == VpnMode.automatic ? 0 : 1,
               child: Column(
                 children: [
-                  // Header
-                  Text(
-                    'SOCKS5 Proxy VPN',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  Text(
-                    'Route traffic through Mycelium mesh',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Status
-                  ProxyStatusWidget(vpnProvider: vpnProvider),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Mode tabs
-                  Expanded(
-                    child: DefaultTabController(
-                      length: 2,
-                      child: Column(
-                        children: [
-                          TabBar(
-                            onTap: (index) {
-                              vpnProvider.setMode(
-                                index == 0 ? VpnMode.automatic : VpnMode.manual,
-                              );
-                            },
-                            tabs: const [
-                              Tab(
-                                icon: Icon(Icons.auto_awesome),
-                                text: 'Automatic',
-                              ),
-                              Tab(
-                                icon: Icon(Icons.settings),
-                                text: 'Manual',
-                              ),
-                            ],
-                          ),
-                          
-                          Expanded(
-                            child: TabBarView(
-                              children: [
-                                AutomaticProxyWidget(vpnProvider: vpnProvider),
-                                ManualProxyWidget(vpnProvider: vpnProvider),
-                              ],
-                            ),
-                          ),
-                        ],
+                  TabBar(
+                    onTap: (index) {
+                      vpnProvider.setMode(
+                        index == 0 ? VpnMode.automatic : VpnMode.manual,
+                      );
+                    },
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.auto_awesome),
+                        text: 'Automatic',
                       ),
+                      Tab(
+                        icon: Icon(Icons.settings),
+                        text: 'Manual',
+                      ),
+                    ],
+                  ),
+                  
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: AutomaticProxyWidget(vpnProvider: vpnProvider),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: ManualProxyWidget(vpnProvider: vpnProvider),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        );
+        ],
+      ),
+    );
   }
 }
