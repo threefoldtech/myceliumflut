@@ -10,6 +10,9 @@ class AppDelegate: FlutterAppDelegate {
     private var isMyceliumRunning = false
     private var myceliumStartTask: Task<Void, Never>?
     
+    // Main app Mycelium instance (for proxy operations - runs without TUN)
+    private var mainAppMyceliumRunning = false
+    
     // System proxy management
     private var socksProxyHost = "127.0.0.1"
     private var socksProxyPort = 1080
@@ -94,19 +97,26 @@ class AppDelegate: FlutterAppDelegate {
     private func startMyceliumService(secretKey: Data, peers: [String], result: @escaping FlutterResult) {
         print("macOS: Starting Mycelium service with peers: \(peers)")
         
-        // Cancel any existing start task
-        myceliumStartTask?.cancel()
-        
-        // Start Mycelium in a background thread (it runs forever in an event loop)
-        myceliumStartTask = Task.detached {
-            // This blocks forever, running the Mycelium event loop
-            startMycelium(peers: peers, tunFd: 0, secretKey: secretKey)
+        // Get the MainFlutterWindow to access VPN manager
+        guard let window = NSApplication.shared.windows.first(where: { $0 is MainFlutterWindow }) as? MainFlutterWindow else {
+            print("❌ macOS: Could not find MainFlutterWindow")
+            result(false)
+            return
         }
         
-        // Mark as running and notify Flutter immediately
-        // The startMycelium function will block in its own thread
+        // Start VPN tunnel (for packet forwarding to host)
+        window.createTunnel(secretKey: secretKey, peers: peers)
+        
+        // Also start Mycelium in main app (no TUN, for proxy operations) - run in background
+        print("macOS: Starting main app Mycelium instance (no TUN) for proxy operations")
+        DispatchQueue.global(qos: .background).async {
+            startMyceliumNoTun(peers: peers, secretKey: secretKey)
+        }
+        self.mainAppMyceliumRunning = true
+        
+        // Mark as running
         self.isMyceliumRunning = true
-        print("macOS: Mycelium service started successfully")
+        print("macOS: Mycelium VPN tunnel + main app instance starting...")
         
         // Notify Flutter that Mycelium started
         self.flutterChannel?.invokeMethod("notifyMyceliumStarted", arguments: nil)
@@ -116,70 +126,58 @@ class AppDelegate: FlutterAppDelegate {
     private func stopMyceliumService(result: @escaping FlutterResult) {
         print("macOS: Stopping Mycelium service")
         
-        // Cancel start task if running
-        myceliumStartTask?.cancel()
-        myceliumStartTask = nil
-        
-        Task {
-            do {
-                // Stop Mycelium service using FFI
-                stopMycelium()
-                
-                await MainActor.run {
-                    self.isMyceliumRunning = false
-                    print("macOS: Mycelium service stopped successfully")
-                    
-                    // Notify Flutter that Mycelium finished
-                    self.flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
-                    result(true)
-                }
-            } catch {
-                await MainActor.run {
-                    print("macOS: Error stopping Mycelium service: \(error)")
-                    result(false)
-                }
-            }
+        // Stop main app instance
+        if self.mainAppMyceliumRunning {
+            print("macOS: Stopping main app Mycelium instance")
+            stopMycelium()
+            self.mainAppMyceliumRunning = false
         }
+        
+        // Get the MainFlutterWindow to access VPN manager
+        guard let window = NSApplication.shared.windows.first(where: { $0 is MainFlutterWindow }) as? MainFlutterWindow else {
+            print("❌ macOS: Could not find MainFlutterWindow")
+            result(false)
+            return
+        }
+        
+        // Stop the VPN tunnel
+        window.stopMycelium()
+        
+        self.isMyceliumRunning = false
+        print("macOS: Mycelium VPN tunnel + main app instance stopped")
+        
+        // Notify Flutter that Mycelium finished
+        self.flutterChannel?.invokeMethod("notifyMyceliumFinished", arguments: nil)
+        result(true)
     }
     
     private func getPeerStatusFromService(result: @escaping FlutterResult) {
-        // Run peer status check in background to avoid blocking UI
-        DispatchQueue.global(qos: .background).async {
-            // Check if Mycelium service is running
-            guard self.isMyceliumRunning else {
-                DispatchQueue.main.async {
-                    result(FlutterError(code: "SERVICE_NOT_RUNNING", message: "Mycelium service is not running", details: nil))
-                }
-                return
-            }
-            
-            do {
-                let peerStatus = getPeerStatus()
-                DispatchQueue.main.async {
-                    print("macOS: Got peer status: \(peerStatus)")
-                    result(peerStatus)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("macOS: Error getting peer status: \(error)")
-                    result(FlutterError(code: "PEER_STATUS_ERROR", message: error.localizedDescription, details: nil))
-                }
-            }
+        // Get the MainFlutterWindow to access VPN manager
+        guard let window = NSApplication.shared.windows.first(where: { $0 is MainFlutterWindow }) as? MainFlutterWindow else {
+            print("❌ macOS: Could not find MainFlutterWindow for getPeerStatus")
+            result(FlutterError(code: "NO_WINDOW", message: "MainFlutterWindow not available", details: nil))
+            return
         }
+        
+        // Delegate to MainFlutterWindow's implementation which communicates with VPN extension
+        window.getPeerStatusFromService(result: result)
     }
     
     // MARK: - Proxy Methods
     
     private func handleProxyConnect(remote: String, result: @escaping FlutterResult) {
+        print("macOS: Proxy connect to \(remote) using main app instance")
         DispatchQueue.global(qos: .background).async {
             let connectResult = proxyConnect(remote: remote)
             DispatchQueue.main.async {
+                print("macOS: Proxy connect result: \(connectResult)")
                 result(connectResult)
             }
         }
     }
     
     private func handleProxyDisconnect(result: @escaping FlutterResult) {
+        print("macOS: Proxy disconnect using main app instance")
         DispatchQueue.global(qos: .background).async {
             let disconnectResult = proxyDisconnect()
             DispatchQueue.main.async {
@@ -189,15 +187,18 @@ class AppDelegate: FlutterAppDelegate {
     }
     
     private func handleStartProxyProbe(result: @escaping FlutterResult) {
+        print("macOS: Start proxy probe using main app instance")
         DispatchQueue.global(qos: .background).async {
             let probeResult = startProxyProbe()
             DispatchQueue.main.async {
+                print("macOS: Proxy probe started: \(probeResult)")
                 result(probeResult)
             }
         }
     }
     
     private func handleStopProxyProbe(result: @escaping FlutterResult) {
+        print("macOS: Stop proxy probe using main app instance")
         DispatchQueue.global(qos: .background).async {
             let stopResult = stopProxyProbe()
             DispatchQueue.main.async {
@@ -207,9 +208,11 @@ class AppDelegate: FlutterAppDelegate {
     }
     
     private func handleListProxies(result: @escaping FlutterResult) {
+        print("macOS: List proxies using main app instance")
         DispatchQueue.global(qos: .background).async {
             let proxies = listProxies()
             DispatchQueue.main.async {
+                print("macOS: Found \(proxies.count) proxies: \(proxies)")
                 result(proxies)
             }
         }

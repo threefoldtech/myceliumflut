@@ -72,13 +72,12 @@ class VpnProvider extends ChangeNotifier {
   }
 
   void selectProxy(ProxyInfo? proxy) {
-    _selectedProxy = proxy;
     _clearError();
     notifyListeners();
   }
 
   Future<void> startProxyDiscovery() async {
-    if (_isProbing) return;
+    if (_isProbing) return; // Already probing
 
     try {
       _isProbing = true;
@@ -86,6 +85,15 @@ class VpnProvider extends ChangeNotifier {
       notifyListeners();
 
       print("VpnProvider: Starting proxy discovery...");
+
+      // Check if Mycelium is connected first
+      if (_myceliumService.status != NodeStatus.connected) {
+        print("VpnProvider: Cannot start proxy discovery - Mycelium not connected");
+        _setError("Mycelium must be connected to discover proxies");
+        _isProbing = false;
+        notifyListeners();
+        return;
+      }
 
       // Start proxy probe in background without blocking UI
       _myceliumService.startProxyProbe().catchError((e) {
@@ -96,15 +104,17 @@ class VpnProvider extends ChangeNotifier {
         return <String>[]; // Return empty list on error
       });
 
-      // Start periodic proxy list updates
-      _probeTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      // Start periodic proxy list updates (longer interval for VPN extension environment)
+      _probeTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
         _updateProxyList();
       });
 
-      // Initial proxy list update after a short delay
-      Timer(const Duration(seconds: 1), () {
+      // Initial proxy list update after giving mesh network time to stabilize
+      Timer(const Duration(seconds: 10), () {
         _updateProxyList();
       });
+      
+      print("VpnProvider: Proxy discovery started - checking every 15 seconds (VPN extension may need 2-3 minutes)");
     } catch (e) {
       _setError("Failed to start proxy discovery: $e");
       _isProbing = false;
@@ -129,7 +139,10 @@ class VpnProvider extends ChangeNotifier {
 
   Future<void> _updateProxyList() async {
     try {
+      print("VpnProvider: Checking for available proxies...");
       final proxies = await _myceliumService.listProxies();
+      print("VpnProvider: Received ${proxies.length} proxy responses: $proxies");
+      
       final newProxies = proxies
           .where((address) =>
               address.isNotEmpty &&
@@ -140,6 +153,8 @@ class VpnProvider extends ChangeNotifier {
                 name: _getProxyDisplayName(address),
               ))
           .toList();
+      
+      print("VpnProvider: Filtered to ${newProxies.length} valid proxies");
 
       // Auto-select first proxy if none selected and we have proxies
       if (_selectedProxy == null && newProxies.isNotEmpty) {

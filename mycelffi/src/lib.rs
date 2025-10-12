@@ -1,4 +1,4 @@
-use mobile::{generate_secret_key, address_from_secret_key, start_mycelium, stop_mycelium, get_peer_status};
+use mobile::{generate_secret_key, address_from_secret_key, start_mycelium, start_mycelium_no_tun, stop_mycelium, get_peer_status};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
@@ -67,6 +67,28 @@ pub extern "C" fn ff_start_mycelium(
         unsafe { std::slice::from_raw_parts(priv_key_ptr, priv_key_len).to_vec() };
 
     start_mycelium(peers, 0, priv_key);
+}
+
+#[no_mangle]
+pub extern "C" fn ff_start_mycelium_no_tun(
+    peers_ptr: *const *const c_char,
+    peers_len: usize,
+    priv_key_ptr: *const u8,
+    priv_key_len: usize,
+) {
+    let peers: Vec<String> = unsafe {
+        (0..peers_len)
+            .map(|i| {
+                let c_str = CStr::from_ptr(*peers_ptr.add(i));
+                c_str.to_string_lossy().into_owned()
+            })
+            .collect()
+    };
+
+    let priv_key: Vec<u8> =
+        unsafe { std::slice::from_raw_parts(priv_key_ptr, priv_key_len).to_vec() };
+
+    start_mycelium_no_tun(peers, priv_key);
 }
 
 #[no_mangle]

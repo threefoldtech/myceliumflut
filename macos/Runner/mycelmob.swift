@@ -553,6 +553,13 @@ public func startMycelium(peers: [String], tunFd: Int32, secretKey: Data) {try! 
     )
 }
 }
+public func startMyceliumNoTun(peers: [String], secretKey: Data) {try! rustCall() {
+    uniffi_mycelmob_fn_func_start_mycelium_no_tun(
+        FfiConverterSequenceString.lower(peers),
+        FfiConverterData.lower(secretKey),$0
+    )
+}
+}
 public func startProxyProbe() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_mycelmob_fn_func_start_proxy_probe($0
@@ -611,6 +618,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_mycelmob_checksum_func_start_mycelium() != 61012) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_mycelmob_checksum_func_start_mycelium_no_tun() != 54217) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_mycelmob_checksum_func_start_proxy_probe() != 23502) {

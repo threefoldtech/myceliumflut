@@ -37,7 +37,16 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         
         let tunnelNetworkSettings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: nodeAddr)
         tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [nodeAddr], networkPrefixLengths: [self.addrNetworkPrefixLengths])
-        tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route(destinationAddress: self.routeDestinationAddress, networkPrefixLength: self.routeNetworkPrefixLength)]
+        
+        // Route overlay network (400::/7) through this VPN tunnel interface for HOST traffic
+        // But allow the extension itself to bypass this routing
+        let overlayRoute = NEIPv6Route(destinationAddress: self.routeDestinationAddress, networkPrefixLength: self.routeNetworkPrefixLength)
+        tunnelNetworkSettings.ipv6Settings?.includedRoutes = [overlayRoute]
+        
+        // CRITICAL: Allow extension's own traffic to bypass the tunnel
+        // This lets Mycelium (running in extension) connect to overlay addresses directly via TUN
+        tunnelNetworkSettings.ipv6Settings?.excludedRoutes = []
+        
         tunnelNetworkSettings.mtu = NSNumber(integerLiteral: self.mtuSize)
         
         setTunnelNetworkSettings(tunnelNetworkSettings) { [weak self] error in
@@ -48,6 +57,10 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             if let tunFd = self?.tunnelFileDescriptor {
                 self!.started = true
+                
+                // Start packet forwarding between packetFlow and TUN fd
+                self?.startPacketForwarding(tunFd: tunFd)
+                
                 DispatchQueue.global(qos: .default).async {
                     infolog("calling startMycelium()  with tun fd:\(tunFd) and peers = \(peers) ")
                     startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
@@ -232,6 +245,49 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
         }
         return nil
+    }
+    
+    // Forward packets between NEPacketTunnelFlow and TUN file descriptor
+    private func startPacketForwarding(tunFd: Int32) {
+        infolog("Starting packet forwarding for TUN fd: \(tunFd)")
+        
+        // Read packets from packetFlow and write to TUN
+        packetFlow.readPackets { [weak self] packets, protocols in
+            guard let self = self, self.started else { return }
+            
+            for packet in packets {
+                packet.withUnsafeBytes { buffer in
+                    let ptr = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                    _ = write(tunFd, ptr, buffer.count)
+                }
+            }
+            
+            // Continue reading
+            self.startPacketForwarding(tunFd: tunFd)
+        }
+        
+        // Read from TUN and write to packetFlow (in background)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            
+            while self?.started == true {
+                let bytesRead = read(tunFd, &buffer, buffer.count)
+                
+                if bytesRead > 0 {
+                    let data = Data(bytes: buffer, count: bytesRead)
+                    let packets = [data]
+                    let protocols = [NSNumber(value: AF_INET6)]
+                    
+                    self?.packetFlow.writePackets(packets, withProtocols: protocols)
+                } else if bytesRead < 0 {
+                    let error = String(cString: strerror(errno))
+                    errlog("Error reading from TUN: \(error)")
+                    break
+                }
+            }
+            
+            infolog("Packet forwarding stopped")
+        }
     }
     
 }

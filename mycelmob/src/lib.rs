@@ -20,6 +20,11 @@ pub fn start_mycelium(peers: Vec<String>, tun_fd: i32, secret_key: Vec<u8>) {
 }
 
 #[uniffi::export]
+pub fn start_mycelium_no_tun(peers: Vec<String>, secret_key: Vec<u8>) {
+    mobile::start_mycelium_no_tun(peers, secret_key);
+}
+
+#[uniffi::export]
 pub fn stop_mycelium() {
     mobile::stop_mycelium();
 }

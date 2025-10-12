@@ -191,8 +191,12 @@ class MainFlutterWindow: NSWindow {
     private var lastPeerStatusCall: Date = Date.distantPast
     private let peerStatusThrottleInterval: TimeInterval = 2.0
     
-    // Generic tunnel message sender for proxy methods
-    private func sendTunnelMessage(message: String, result: @escaping FlutterResult) {
+    // Proxy scanning state
+    private var isProxyScanning = false
+    private var discoveredProxies: [String] = []
+    
+    // Generic tunnel message sender for VPN extension communication
+    func sendMessageToExtension(message: String, result: @escaping FlutterResult) {
         guard let vpnManager = self.vpnManager else {
             debuglog("VPN manager not available for \(message)")
             result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
@@ -248,7 +252,7 @@ class MainFlutterWindow: NSWindow {
         }
     }
     
-    private func getPeerStatusFromService(result: @escaping FlutterResult) {
+    func getPeerStatusFromService(result: @escaping FlutterResult) {
         let now = Date()
         
         // Throttle requests to prevent excessive calls
@@ -365,6 +369,146 @@ func infolog(_ msg: String, _ args: CVarArg...) {
 
 func errlog(_ msg: String, _ args: CVarArg...) {
     mlog(msg, .error, args)
+}
+
+extension MainFlutterWindow {
+    // MARK: - Main App Proxy Scanner
+    
+    func startProxyProbeInMainApp(result: @escaping FlutterResult) {
+        print("🔍 macOS: Starting proxy probe in main app (can reach overlay network)")
+        infolog("Starting proxy probe in main app (can reach overlay network)")
+        self.isProxyScanning = true
+        self.discoveredProxies = []
+        
+        // Get peer status to find overlay addresses
+        self.getPeerStatusFromService { peerStatusResult in
+            print("🔍 macOS: Got peer status result: \(type(of: peerStatusResult))")
+            
+            guard let peerStatus = peerStatusResult as? [String], peerStatus.count > 1 else {
+                print("❌ macOS: No peers found or invalid peer status")
+                result(["err_no_peers"])
+                return
+            }
+            
+            print("🔍 macOS: Peer status has \(peerStatus.count) entries")
+            
+            // Parse overlay addresses from peer status (JSON format)
+            var overlayAddresses: [String] = []
+            for i in 1..<peerStatus.count {
+                let peerJson = peerStatus[i]
+                print("🔍 macOS: Parsing peer \(i): \(peerJson)")
+                
+                // Parse JSON to extract overlay address
+                if let jsonData = peerJson.data(using: .utf8),
+                   let peerDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                   let address = peerDict["address"] as? String {
+                    
+                    // Extract IP from "IP:PORT" format
+                    let ipPart = address.split(separator: ":").first.map(String.init) ?? ""
+                    
+                    // Check if it's an IPv6 overlay address (starts with 4 or 5)
+                    if ipPart.hasPrefix("4") || ipPart.hasPrefix("5") {
+                        overlayAddresses.append(ipPart)
+                        print("🔍 macOS: Added overlay address: \(ipPart)")
+                    } else {
+                        print("⚠️ macOS: Skipping non-overlay address: \(ipPart)")
+                    }
+                } else {
+                    print("❌ macOS: Failed to parse JSON for peer \(i)")
+                }
+            }
+            
+            print("🔍 macOS: Probing \(overlayAddresses.count) overlay addresses for SOCKS5 proxies")
+            infolog("Probing \(overlayAddresses.count) overlay addresses for SOCKS5 proxies")
+            
+            // Probe each address in parallel
+            let group = DispatchGroup()
+            for address in overlayAddresses {
+                guard self.isProxyScanning else { break }
+                
+                group.enter()
+                self.testSocks5Proxy(address: address) { isValid in
+                    if isValid {
+                        let proxyAddr = "[\(address)]:1080"
+                        self.discoveredProxies.append(proxyAddr)
+                        infolog("✅ Found valid proxy: \(proxyAddr)")
+                    }
+                    group.leave()
+                }
+            }
+            
+            group.notify(queue: .main) {
+                infolog("Proxy probe complete. Found \(self.discoveredProxies.count) proxies")
+                result(["ok"])
+            }
+        }
+    }
+    
+    private func testSocks5Proxy(address: String, completion: @escaping (Bool) -> Void) {
+        DispatchQueue.global(qos: .background).async {
+            print("🔎 macOS: Testing SOCKS5 proxy at [\(address)]:1080")
+            
+            var inputStream: InputStream?
+            var outputStream: OutputStream?
+            
+            // Try to connect to [address]:1080
+            Stream.getStreamsToHost(withName: address, port: 1080, inputStream: &inputStream, outputStream: &outputStream)
+            
+            guard let input = inputStream, let output = outputStream else {
+                print("❌ macOS: Failed to create streams for \(address)")
+                completion(false)
+                return
+            }
+            
+            print("✅ macOS: Created streams for \(address), opening...")
+            
+            input.open()
+            output.open()
+            
+            // Send SOCKS5 greeting
+            let greeting: [UInt8] = [0x05, 0x01, 0x00]
+            let written = output.write(greeting, maxLength: greeting.count)
+            
+            guard written == greeting.count else {
+                print("❌ macOS: Failed to write SOCKS5 greeting to \(address)")
+                input.close()
+                output.close()
+                completion(false)
+                return
+            }
+            
+            print("✅ macOS: Sent SOCKS5 greeting to \(address), waiting for response...")
+            
+            // Read response with timeout
+            var response = [UInt8](repeating: 0, count: 2)
+            var totalRead = 0
+            let timeout = Date().addingTimeInterval(2.0)
+            
+            while totalRead < 2 && Date() < timeout {
+                if input.hasBytesAvailable {
+                    let read = input.read(&response[totalRead], maxLength: 2 - totalRead)
+                    if read > 0 {
+                        totalRead += read
+                    }
+                }
+                usleep(10000) // 10ms
+            }
+            
+            input.close()
+            output.close()
+            
+            // Check if valid SOCKS5 response
+            let isValid = totalRead == 2 && response[0] == 0x05 && response[1] == 0x00
+            
+            if isValid {
+                print("✅ macOS: Valid SOCKS5 proxy found at [\(address)]:1080")
+            } else {
+                print("❌ macOS: Invalid or no response from \(address) (read \(totalRead) bytes)")
+            }
+            
+            completion(isValid)
+        }
+    }
 }
 
 func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
