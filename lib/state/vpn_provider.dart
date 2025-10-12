@@ -72,6 +72,7 @@ class VpnProvider extends ChangeNotifier {
   }
 
   void selectProxy(ProxyInfo? proxy) {
+    _selectedProxy = proxy;
     _clearError();
     notifyListeners();
   }
