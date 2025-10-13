@@ -10,13 +10,13 @@ import 'proxy_status_widget.dart';
 
 class DesktopVpnLayout extends ConsumerWidget {
   final MyceliumService myceliumService;
-  
+
   const DesktopVpnLayout({super.key, required this.myceliumService});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vpnProvider = ref.watch(providers.vpnProvider);
-    
+
     return ListenableBuilder(
       listenable: vpnProvider,
       builder: (context, child) => _VpnContent(
@@ -30,14 +30,14 @@ class DesktopVpnLayout extends ConsumerWidget {
 class _VpnContent extends StatelessWidget {
   final VpnProvider vpnProvider;
   final MyceliumService myceliumService;
-  
+
   const _VpnContent({required this.vpnProvider, required this.myceliumService});
 
   @override
   Widget build(BuildContext context) {
     // Check if Mycelium is running
     final isMyceliumRunning = myceliumService.status == NodeStatus.connected;
-    
+
     if (!isMyceliumRunning) {
       return Center(
         child: Card(
@@ -56,15 +56,15 @@ class _VpnContent extends StatelessWidget {
                 Text(
                   'Mycelium Not Running',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'You need to start Mycelium before using the SOCKS5 Proxy VPN.',
+                  'You need to start Mycelium before using the VPN.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                        color: Colors.grey[600],
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -90,15 +90,15 @@ class _VpnContent extends StatelessWidget {
         ),
       );
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Status Card
         ProxyStatusWidget(vpnProvider: vpnProvider),
-        
+
         const SizedBox(height: 24),
-        
+
         // Mode Selection
         Card(
           child: Padding(
@@ -109,11 +109,11 @@ class _VpnContent extends StatelessWidget {
                 Text(
                   'Connection Mode',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Mode Toggle
                 SegmentedButton<VpnMode>(
                   segments: const [
@@ -137,9 +137,9 @@ class _VpnContent extends StatelessWidget {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Mode-specific content
         vpnProvider.mode == VpnMode.automatic
             ? AutomaticProxyWidget(vpnProvider: vpnProvider)

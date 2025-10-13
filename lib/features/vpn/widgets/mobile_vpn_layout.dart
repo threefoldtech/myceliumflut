@@ -10,13 +10,13 @@ import 'automatic_proxy_widget.dart';
 
 class MobileVpnLayout extends ConsumerWidget {
   final MyceliumService myceliumService;
-  
+
   const MobileVpnLayout({super.key, required this.myceliumService});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vpnProvider = ref.watch(providers.vpnProvider);
-    
+
     return ListenableBuilder(
       listenable: vpnProvider,
       builder: (context, child) => _MobileVpnContent(
@@ -30,14 +30,15 @@ class MobileVpnLayout extends ConsumerWidget {
 class _MobileVpnContent extends StatelessWidget {
   final VpnProvider vpnProvider;
   final MyceliumService myceliumService;
-  
-  const _MobileVpnContent({required this.vpnProvider, required this.myceliumService});
+
+  const _MobileVpnContent(
+      {required this.vpnProvider, required this.myceliumService});
 
   @override
   Widget build(BuildContext context) {
     // Check if Mycelium is running
     final isMyceliumRunning = myceliumService.status == NodeStatus.connected;
-    
+
     if (!isMyceliumRunning) {
       return Center(
         child: Card(
@@ -56,16 +57,16 @@ class _MobileVpnContent extends StatelessWidget {
                 Text(
                   'Mycelium Not Running',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'You need to start Mycelium before using the SOCKS5 Proxy VPN.',
+                  'You need to start Mycelium before using the VPN.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                        color: Colors.grey[600],
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -91,7 +92,7 @@ class _MobileVpnContent extends StatelessWidget {
         ),
       );
     }
-    
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -100,18 +101,18 @@ class _MobileVpnContent extends StatelessWidget {
           Text(
             'Route traffic through Mycelium mesh',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+                  color: Colors.grey[600],
+                ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Status
           ProxyStatusWidget(vpnProvider: vpnProvider),
-          
+
           const SizedBox(height: 16),
-          
+
           // Mode tabs
           Expanded(
             child: DefaultTabController(
@@ -136,7 +137,6 @@ class _MobileVpnContent extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
                   Expanded(
                     child: TabBarView(
                       physics: const NeverScrollableScrollPhysics(),

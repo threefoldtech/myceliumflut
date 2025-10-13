@@ -97,13 +97,16 @@ class VpnProvider extends ChangeNotifier {
       }
 
       // Start proxy probe in background without blocking UI
-      _myceliumService.startProxyProbe().catchError((e) {
-        print("VpnProvider: Error starting proxy probe: $e");
-        _setError("Failed to start proxy discovery: $e");
+      final probeResult = await _myceliumService.startProxyProbe();
+      
+      // Check for error responses
+      if (probeResult.isNotEmpty && probeResult.first.toLowerCase().contains("err_node_timeout")) {
+        print("VpnProvider: Node timeout error - Mycelium mesh network not responding");
+        _setError("Mesh network timeout - check Mycelium connection");
         _isProbing = false;
         notifyListeners();
-        return <String>[]; // Return empty list on error
-      });
+        return;
+      }
 
       // Start periodic proxy list updates (longer interval for VPN extension environment)
       _probeTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
@@ -144,11 +147,21 @@ class VpnProvider extends ChangeNotifier {
       final proxies = await _myceliumService.listProxies();
       print("VpnProvider: Received ${proxies.length} proxy responses: $proxies");
       
+      // Check for error responses
+      if (proxies.isNotEmpty && proxies.first.toLowerCase().contains("err_node_timeout")) {
+        print("VpnProvider: Node timeout error - Mycelium mesh network not responding");
+        _setError("Mesh network timeout - check Mycelium connection");
+        // Stop discovery on timeout
+        await stopProxyDiscovery();
+        return;
+      }
+      
       final newProxies = proxies
           .where((address) =>
               address.isNotEmpty &&
               address != "Failed to list proxies" &&
-              address.toLowerCase() != "ok")
+              address.toLowerCase() != "ok" &&
+              !address.toLowerCase().contains("err_"))
           .map((address) => ProxyInfo(
                 address: address,
                 name: _getProxyDisplayName(address),
@@ -160,7 +173,10 @@ class VpnProvider extends ChangeNotifier {
       // Don't auto-select any proxy - keep selectedProxy as null for auto-select mode
       _availableProxies = newProxies;
       notifyListeners();
-    } catch (e) {}
+    } catch (e) {
+      print("VpnProvider: Error updating proxy list: $e");
+      _setError("Failed to list proxies: $e");
+    }
   }
 
   String _getProxyDisplayName(String address) {

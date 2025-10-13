@@ -36,12 +36,16 @@ class _VpnScreenState extends ConsumerState<VpnScreen> {
           final isMyceliumRunning =
               myceliumService.status == NodeStatus.connected;
 
-          // Disconnect VPN when Mycelium disconnects
-          if (_previousStatus == NodeStatus.connected && 
-              !isMyceliumRunning && 
-              vpnProv.isConnected) {
-            // Disconnect VPN asynchronously
-            Future.microtask(() => vpnProv.disconnect());
+          // Handle Mycelium disconnection
+          if (_previousStatus == NodeStatus.connected && !isMyceliumRunning) {
+            // Disconnect VPN if connected
+            if (vpnProv.isConnected) {
+              Future.microtask(() => vpnProv.disconnect());
+            }
+            // Stop proxy discovery if running
+            if (vpnProv.isProbing) {
+              Future.microtask(() => vpnProv.stopProxyDiscovery());
+            }
           }
           _previousStatus = myceliumService.status;
 
@@ -91,7 +95,7 @@ class _VpnScreenState extends ConsumerState<VpnScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'You need to start Mycelium before using the SOCKS5 Proxy VPN.',
+                'You need to start Mycelium before using the VPN.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
