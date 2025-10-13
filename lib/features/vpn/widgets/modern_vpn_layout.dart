@@ -496,37 +496,63 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              isConnected ? 'Connected and protected' : 'Disconnected',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+            const SizedBox(height: 16),
+            
+            // Status information
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isConnected 
+                    ? (isDark ? Colors.green[900]!.withValues(alpha: 0.2) : Colors.green[50])
+                    : (isDark ? Colors.grey[850] : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isConnected ? Colors.green[400]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isConnected ? 'Connected and protected' : 'Disconnected',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isConnected ? Colors.green[700] : Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (isConnected) ...[
+                    const SizedBox(height: 12),
+                    _buildStatusRow(context, 'Connected to:', vpnProvider.connectedProxy?.address ?? 'Unknown', showBadge: true),
+                    const SizedBox(height: 8),
+                    _buildStatusRow(context, 'Server:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
+                    const SizedBox(height: 8),
+                    _buildStatusRow(context, 'Ping:', '25ms'),
+                  ],
+                ],
               ),
             ),
             
-            if (isConnected) ...[
-              const SizedBox(height: 20),
-              _buildStatusRow(context, 'Connected to:', vpnProvider.connectedProxy?.address ?? 'Unknown', showBadge: true),
-              const SizedBox(height: 12),
-              _buildStatusRow(context, 'Server:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
-              const SizedBox(height: 12),
-              _buildStatusRow(context, 'Ping:', '25ms'),
-            ],
-            
             const SizedBox(height: 20),
+            
+            // Connect/Disconnect button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  if (isConnected) {
-                    vpnProvider.disconnect();
-                  } else {
-                    vpnProvider.connect();
-                  }
-                },
+                onPressed: (isConnected || vpnProvider.availableProxies.isNotEmpty) 
+                    ? () {
+                        if (isConnected) {
+                          vpnProvider.disconnect();
+                        } else {
+                          vpnProvider.connect();
+                        }
+                      }
+                    : null, // Disable button when no proxies available and not connected
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isConnected ? Colors.red[600] : Colors.blue[400],
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey[400],
+                  disabledForegroundColor: Colors.grey[600],
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -535,7 +561,10 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(isConnected ? Icons.power_settings_new : Icons.power_settings_new, size: 20),
+                    Icon(
+                      isConnected ? Icons.close : Icons.power_settings_new, 
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       isConnected ? 'Disconnect' : 'Connect',

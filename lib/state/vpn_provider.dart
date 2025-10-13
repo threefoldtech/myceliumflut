@@ -157,15 +157,7 @@ class VpnProvider extends ChangeNotifier {
       
       print("VpnProvider: Filtered to ${newProxies.length} valid proxies");
 
-      // Auto-select first proxy if none selected and we have proxies
-      if (_selectedProxy == null && newProxies.isNotEmpty) {
-        _selectedProxy = ProxyInfo(
-          address: newProxies.first.address,
-          name: "Auto-selected",
-          isAutoSelected: true,
-        );
-      }
-
+      // Don't auto-select any proxy - keep selectedProxy as null for auto-select mode
       _availableProxies = newProxies;
       notifyListeners();
     } catch (e) {}
