@@ -16,13 +16,10 @@ class ModernVpnLayout extends ConsumerStatefulWidget {
 
 class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
   final TextEditingController _proxyUrlController = TextEditingController();
-  final TextEditingController _searchController = TextEditingController();
-  bool _showAllProxies = false;
 
   @override
   void dispose() {
     _proxyUrlController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -248,7 +245,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     Icon(Icons.search, size: 20, color: Colors.blue[400]),
                     const SizedBox(width: 8),
                     Text(
-                      'Proxy Discovery',
+                      'VPN Node Discovery',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -256,8 +253,12 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                   ],
                 ),
                 OutlinedButton.icon(
-                  onPressed: isDiscovering ? null : () {
-                    vpnProvider.startProxyDiscovery();
+                  onPressed: () {
+                    if (isDiscovering) {
+                      vpnProvider.stopProxyDiscovery();
+                    } else {
+                      vpnProvider.startProxyDiscovery();
+                    }
                   },
                   icon: isDiscovering 
                       ? SizedBox(
@@ -269,7 +270,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                           ),
                         )
                       : Icon(Icons.search, size: 18),
-                  label: Text(isDiscovering ? 'Searching...' : 'Search Proxies'),
+                  label: Text(isDiscovering ? 'Stop Search' : 'Search VPN Nodes'),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey[300]!),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -301,7 +302,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No proxies discovered yet',
+            'No VPN nodes discovered yet',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
@@ -309,7 +310,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Click "Search Proxies" to find available servers',
+            'Click "Search VPN Nodes" to find available servers',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.grey[500],
             ),
@@ -320,7 +321,20 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
   }
 
   Widget _buildProxyList(BuildContext context, VpnProvider vpnProvider, List<ProxyInfo> proxies, {required bool isDesktop}) {
-    final displayProxies = _showAllProxies ? proxies : proxies.take(1).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Create auto-select option
+    final autoSelectOption = ProxyInfo(
+      address: 'auto',
+      name: 'Auto-select (Random)',
+      isAutoSelected: true,
+    );
+    
+    // Combine auto-select with discovered proxies
+    final allOptions = [autoSelectOption, ...proxies];
+    
+    // Determine selected value
+    final selectedValue = vpnProvider.selectedProxy?.address ?? 'auto';
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,7 +343,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Select Proxy',
+              'Select VPN Node',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
@@ -353,182 +367,89 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
         ),
         const SizedBox(height: 12),
         
-        // Best proxy (first one)
-        ...displayProxies.map((proxy) => _buildProxyItem(
-          context,
-          proxy,
-          isSelected: vpnProvider.selectedProxy?.address == proxy.address,
-          isBest: proxies.indexOf(proxy) == 0,
-          onTap: () {
-            // Update the selectProxy method to actually set the proxy
-            vpnProvider.selectProxy(proxy);
-          },
-        )),
-        
-        if (proxies.length > 1) ...[
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: () {
-              setState(() {
-                _showAllProxies = !_showAllProxies;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _showAllProxies ? 'Hide Proxies' : 'All Discovered Proxies',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      if (!_showAllProxies)
-                        Text(
-                          '${proxies.length} total',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
+        // Dropdown for VPN node selection
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[850] : Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+            ),
+          ),
+          child: DropdownButton<String>(
+            value: selectedValue,
+            isExpanded: true,
+            underline: const SizedBox(),
+            icon: Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium,
+            dropdownColor: isDark ? Colors.grey[850] : Colors.white,
+            items: allOptions.map((proxy) {
+              return DropdownMenuItem<String>(
+                value: proxy.address,
+                child: Row(
+                  children: [
+                    if (proxy.address == 'auto') ...[
+                      Icon(Icons.auto_awesome, size: 16, color: Colors.blue[400]),
                       const SizedBox(width: 8),
-                      Icon(
-                        _showAllProxies ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        color: Colors.grey[600],
+                    ] else ...[
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.green[400],
+                          shape: BoxShape.circle,
+                        ),
                       ),
+                      const SizedBox(width: 12),
                     ],
-                  ),
-                ],
-              ),
-            ),
+                    Expanded(
+                      child: Text(
+                        proxy.address == 'auto' 
+                            ? 'Auto-select (Random)' 
+                            : proxy.address,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (proxy.address == 'auto')
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[600],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Default',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                if (newValue == 'auto') {
+                  // Auto-select means no specific proxy selected - will pick random on connect
+                  vpnProvider.selectProxy(null);
+                } else {
+                  // Find and select the specific proxy
+                  final selectedProxy = proxies.firstWhere(
+                    (p) => p.address == newValue,
+                    orElse: () => proxies.first,
+                  );
+                  vpnProvider.selectProxy(selectedProxy);
+                }
+              }
+            },
           ),
-        ],
-        
-        if (_showAllProxies && proxies.length > 1) ...[
-          const SizedBox(height: 12),
-          ...proxies.skip(1).map((proxy) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildProxyItem(
-              context,
-              proxy,
-              isSelected: vpnProvider.selectedProxy?.address == proxy.address,
-              isBest: false,
-              onTap: () {
-                vpnProvider.selectProxy(proxy);
-              },
-            ),
-          )),
-        ],
+        ),
       ],
-    );
-  }
-
-  Widget _buildProxyItem(
-    BuildContext context,
-    ProxyInfo proxy,
-    {
-      required bool isSelected,
-      required bool isBest,
-      required VoidCallback onTap,
-    }
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? (isDark ? Colors.blue[900]!.withValues(alpha: 0.3) : Colors.blue[50])
-              : (isDark ? Colors.grey[850] : Colors.grey[100]),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Colors.blue[400]! : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Colors.green[400],
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          proxy.address,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isBest) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[600],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'US',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        'Ping: 26ms',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Speed: Fast',
-                        style: TextStyle(
-                          color: Colors.green[600],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

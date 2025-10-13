@@ -12,25 +12,26 @@ class VpnScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myceliumService = ref.watch(myceliumServiceProvider);
-    
+
     return AppScaffold(
       title: Text(
-        'Vpn',
+        'VPN',
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+              fontWeight: FontWeight.w600,
+            ),
       ),
       currentIndex: 2, // VPN tab index
       child: StreamBuilder(
         stream: myceliumService.statusStream,
         builder: (context, snapshot) {
           // Check if Mycelium is running
-          final isMyceliumRunning = myceliumService.status == NodeStatus.connected;
-          
+          final isMyceliumRunning =
+              myceliumService.status == NodeStatus.connected;
+
           if (!isMyceliumRunning) {
             return _buildMyceliumNotRunning(context);
           }
-          
+
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: ModernVpnLayout(myceliumService: myceliumService),
@@ -39,10 +40,10 @@ class VpnScreen extends ConsumerWidget {
       ),
     );
   }
-  
+
   Widget _buildMyceliumNotRunning(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Center(
       child: Card(
         elevation: 0,
@@ -68,15 +69,15 @@ class VpnScreen extends ConsumerWidget {
               Text(
                 'Mycelium Not Running',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 16),
               Text(
                 'You need to start Mycelium before using the SOCKS5 Proxy VPN.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import '../theme/tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'responsive_layout.dart';
@@ -57,6 +58,11 @@ class AppScaffold extends StatelessWidget {
         selectedIndex: currentIndex,
         onDestinationSelected: onTabSelected ??
             (index) {
+              final isMacOS = defaultTargetPlatform == TargetPlatform.macOS;
+              if (!isMacOS && index >= 2) {
+                // Skip VPN tab on non-macOS, adjust index
+                index++;
+              }
               switch (index) {
                 case 0:
                   if (context.mounted) context.go('/');
@@ -72,20 +78,21 @@ class AppScaffold extends StatelessWidget {
                   break;
               }
             },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'Home'),
-          NavigationDestination(
+          const NavigationDestination(
               icon: Icon(Icons.hub_outlined),
               selectedIcon: Icon(Icons.hub),
               label: 'Peers'),
-          NavigationDestination(
-              icon: Icon(Icons.vpn_lock_outlined),
-              selectedIcon: Icon(Icons.vpn_lock),
-              label: 'VPN'),
-          NavigationDestination(
+          if (defaultTargetPlatform == TargetPlatform.macOS)
+            const NavigationDestination(
+                icon: Icon(Icons.vpn_lock_outlined),
+                selectedIcon: Icon(Icons.vpn_lock),
+                label: 'VPN'),
+          const NavigationDestination(
               icon: Icon(Icons.settings_outlined),
               selectedIcon: Icon(Icons.settings),
               label: 'Settings'),
