@@ -55,9 +55,9 @@ class VpnProvider extends ChangeNotifier {
       _mode = mode;
       _clearError();
 
-      if (mode == VpnMode.automatic) {
-        startProxyDiscovery();
-      } else {
+      // Don't auto-start discovery when switching to automatic mode
+      // User should manually click "Search VPN Nodes" button
+      if (mode == VpnMode.manual) {
         stopProxyDiscovery();
       }
 
@@ -207,12 +207,14 @@ class VpnProvider extends ChangeNotifier {
         );
       } else {
         if (_selectedProxy == null) {
-          // Auto-select mode: pick first available proxy
+          // Auto-select mode: pick random available proxy
           if (_availableProxies.isEmpty) {
             throw Exception("No proxies available");
           }
-          proxyAddress = _availableProxies.first.address;
-          proxyInfo = _availableProxies.first;
+          // Pick a random proxy from available list
+          final randomIndex = DateTime.now().millisecondsSinceEpoch % _availableProxies.length;
+          proxyAddress = _availableProxies[randomIndex].address;
+          proxyInfo = _availableProxies[randomIndex];
         } else {
           proxyAddress = _selectedProxy!.address;
           proxyInfo = _selectedProxy!;
@@ -268,14 +270,15 @@ class VpnProvider extends ChangeNotifier {
     try {
       _clearError();
 
-      // Disable device-wide proxy first
-      if (_deviceWideEnabled) {
-        await _myceliumService.disableDeviceWideProxy();
-        _deviceWideEnabled = false;
-      }
+      // Always try to disable device-wide proxy (even if flag is not set)
+      // This ensures system proxy is cleaned up
+      print("VpnProvider: Disabling device-wide proxy...");
+      await _myceliumService.disableDeviceWideProxy();
+      _deviceWideEnabled = false;
 
       // Disconnect from proxy
       if (_status == ProxyStatus.connected) {
+        print("VpnProvider: Disconnecting from proxy...");
         await _myceliumService.proxyDisconnect();
       }
 

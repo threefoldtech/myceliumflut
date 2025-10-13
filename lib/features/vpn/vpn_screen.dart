@@ -6,12 +6,20 @@ import '../../state/mycelium_providers.dart';
 import '../../services/ffi/mycelium_service.dart';
 import 'widgets/modern_vpn_layout.dart';
 
-class VpnScreen extends ConsumerWidget {
+class VpnScreen extends ConsumerStatefulWidget {
   const VpnScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VpnScreen> createState() => _VpnScreenState();
+}
+
+class _VpnScreenState extends ConsumerState<VpnScreen> {
+  NodeStatus? _previousStatus;
+
+  @override
+  Widget build(BuildContext context) {
     final myceliumService = ref.watch(myceliumServiceProvider);
+    final vpnProv = ref.watch(vpnProvider);
 
     return AppScaffold(
       title: Text(
@@ -27,6 +35,15 @@ class VpnScreen extends ConsumerWidget {
           // Check if Mycelium is running
           final isMyceliumRunning =
               myceliumService.status == NodeStatus.connected;
+
+          // Disconnect VPN when Mycelium disconnects
+          if (_previousStatus == NodeStatus.connected && 
+              !isMyceliumRunning && 
+              vpnProv.isConnected) {
+            // Disconnect VPN asynchronously
+            Future.microtask(() => vpnProv.disconnect());
+          }
+          _previousStatus = myceliumService.status;
 
           if (!isMyceliumRunning) {
             return _buildMyceliumNotRunning(context);
