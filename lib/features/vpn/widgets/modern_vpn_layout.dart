@@ -496,46 +496,29 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            
-            // Status information
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isConnected 
-                    ? (isDark ? Colors.green[900]!.withValues(alpha: 0.2) : Colors.green[50])
-                    : (isDark ? Colors.grey[850] : Colors.grey[100]),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isConnected ? Colors.green[400]! : Colors.grey[300]!,
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isConnected ? 'Connected and protected' : 'Disconnected',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isConnected ? Colors.green[700] : Colors.grey[600],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (isConnected) ...[
-                    const SizedBox(height: 12),
-                    _buildStatusRow(context, 'Connected to:', vpnProvider.connectedProxy?.address ?? 'Unknown', showBadge: true),
-                    const SizedBox(height: 8),
-                    _buildStatusRow(context, 'Server:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
-                    const SizedBox(height: 8),
-                    _buildStatusRow(context, 'Ping:', '25ms'),
-                  ],
-                ],
+            const SizedBox(height: 12),
+            Text(
+              isConnected ? 'Connected and protected' : 'Disconnected',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: isConnected ? Colors.green[600] : Colors.grey[600],
+                fontWeight: FontWeight.w500,
               ),
             ),
             
-            const SizedBox(height: 20),
+            if (isConnected) ...[
+              const SizedBox(height: 16),
+              _buildStatusRow(context, 'Connected to:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
+              const SizedBox(height: 8),
+              _buildStatusRow(context, 'Server:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
+              const SizedBox(height: 8),
+              _buildStatusRow(context, 'Ping:', '25ms'),
+              const SizedBox(height: 24),
+            ],
             
-            // Connect/Disconnect button
+            if (!isConnected)
+              const SizedBox(height: 24),
+            
+            // Connect/Disconnect button - always visible
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -549,11 +532,14 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                       }
                     : null, // Disable button when no proxies available and not connected
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isConnected ? Colors.red[600] : Colors.blue[400],
+                  backgroundColor: isConnected 
+                      ? Colors.red
+                      : null, // Use theme default (cyan/teal)
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[400],
-                  disabledForegroundColor: Colors.grey[600],
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+                  disabledForegroundColor: isDark ? Colors.grey[600] : Colors.grey[500],
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -562,7 +548,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isConnected ? Icons.close : Icons.power_settings_new, 
+                      isConnected ? Icons.power_off : Icons.power_settings_new, 
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -583,47 +569,31 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     );
   }
 
-  Widget _buildStatusRow(BuildContext context, String label, String value, {bool showBadge = false}) {
+  Widget _buildStatusRow(BuildContext context, String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13,
+            ),
           ),
         ),
-        Row(
-          children: [
-            if (showBadge)
-              Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue[600],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'US',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            Flexible(
-              child: Text(
-                value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
             ),
-          ],
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
         ),
       ],
     );

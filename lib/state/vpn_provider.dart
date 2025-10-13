@@ -207,10 +207,16 @@ class VpnProvider extends ChangeNotifier {
         );
       } else {
         if (_selectedProxy == null) {
-          throw Exception("No proxy selected");
+          // Auto-select mode: pick first available proxy
+          if (_availableProxies.isEmpty) {
+            throw Exception("No proxies available");
+          }
+          proxyAddress = _availableProxies.first.address;
+          proxyInfo = _availableProxies.first;
+        } else {
+          proxyAddress = _selectedProxy!.address;
+          proxyInfo = _selectedProxy!;
         }
-        proxyAddress = _selectedProxy!.address;
-        proxyInfo = _selectedProxy!;
       }
 
       print("VpnProvider: Connecting to proxy: $proxyAddress");
@@ -244,6 +250,9 @@ class VpnProvider extends ChangeNotifier {
       _status = ProxyStatus.connected;
       _connectedProxy = proxyInfo;
       _deviceWideEnabled = true;
+
+      // Stop proxy discovery when connected
+      await stopProxyDiscovery();
 
       print("VpnProvider: Successfully connected to SOCKS5 proxy");
     } catch (e) {
