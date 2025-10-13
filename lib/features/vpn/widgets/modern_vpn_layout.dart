@@ -7,7 +7,7 @@ import '../../../app/widgets/responsive_layout.dart';
 
 class ModernVpnLayout extends ConsumerStatefulWidget {
   final MyceliumService myceliumService;
-  
+
   const ModernVpnLayout({super.key, required this.myceliumService});
 
   @override
@@ -27,7 +27,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
   Widget build(BuildContext context) {
     final vpnProvider = ref.watch(providers.vpnProvider);
     final isDesktop = ResponsiveHelper.isDesktop(context);
-    
+
     return ListenableBuilder(
       listenable: vpnProvider,
       builder: (context, child) {
@@ -59,9 +59,9 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             ],
           ),
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         // Right side - VPN Status
         SizedBox(
           width: 320,
@@ -90,9 +90,10 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     );
   }
 
-  Widget _buildConnectionModeCard(BuildContext context, VpnProvider vpnProvider, {required bool isDesktop}) {
+  Widget _buildConnectionModeCard(BuildContext context, VpnProvider vpnProvider,
+      {required bool isDesktop}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -113,17 +114,17 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 Text(
                   'Connection Mode',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   vpnProvider.mode == VpnMode.automatic
-                      ? 'Automatically select best proxy'
-                      : 'Manually configure proxy',
+                      ? 'Automatically select best node'
+                      : 'Manually configure node',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                        color: Colors.grey[600],
+                      ),
                 ),
               ],
             ),
@@ -132,16 +133,17 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 Text(
                   vpnProvider.mode == VpnMode.automatic ? 'Auto' : 'Manual',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 const SizedBox(width: 8),
                 Switch(
+                  inactiveThumbColor: Theme.of(context).colorScheme.primary,
                   value: vpnProvider.mode == VpnMode.automatic,
                   onChanged: (value) {
-                    vpnProvider.setMode(value ? VpnMode.automatic : VpnMode.manual);
+                    vpnProvider
+                        .setMode(value ? VpnMode.automatic : VpnMode.manual);
                   },
-                  activeColor: Colors.blue[400],
                 ),
               ],
             ),
@@ -153,7 +155,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
 
   Widget _buildManualConfigCard(BuildContext context, VpnProvider vpnProvider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -175,8 +177,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 Text(
                   'Manual Configuration',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ],
             ),
@@ -184,8 +186,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             Text(
               'Proxy URL',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -209,8 +211,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             Text(
               'Enter the complete proxy URL including protocol and port',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
             ),
           ],
         ),
@@ -218,11 +220,12 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     );
   }
 
-  Widget _buildProxyDiscoveryCard(BuildContext context, VpnProvider vpnProvider, {required bool isDesktop}) {
+  Widget _buildProxyDiscoveryCard(BuildContext context, VpnProvider vpnProvider,
+      {required bool isDesktop}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final proxies = vpnProvider.availableProxies;
     final isDiscovering = vpnProvider.isProbing;
-    
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -247,8 +250,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     Text(
                       'VPN Node Discovery',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                 ),
@@ -260,30 +263,31 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                       vpnProvider.startProxyDiscovery();
                     }
                   },
-                  icon: isDiscovering 
+                  icon: isDiscovering
                       ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[600]!),
                           ),
                         )
                       : Icon(Icons.search, size: 18),
-                  label: Text(isDiscovering ? 'Stop Search' : 'Search VPN Nodes'),
+                  label:
+                      Text(isDiscovering ? 'Stop Search' : 'Search VPN Nodes'),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey[300]!),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            
             if (proxies.isEmpty && !isDiscovering)
               _buildEmptyState(context)
             else if (proxies.isNotEmpty)
-              _buildProxyList(context, vpnProvider, proxies, isDesktop: isDesktop),
+              _buildProxyList(context, vpnProvider, proxies,
+                  isDesktop: isDesktop),
           ],
         ),
       ),
@@ -306,17 +310,17 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             Text(
               'No VPN nodes discovered yet',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Click "Search VPN Nodes" to find available servers',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
-              ),
+                    color: Colors.grey[500],
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -325,22 +329,24 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     );
   }
 
-  Widget _buildProxyList(BuildContext context, VpnProvider vpnProvider, List<ProxyInfo> proxies, {required bool isDesktop}) {
+  Widget _buildProxyList(
+      BuildContext context, VpnProvider vpnProvider, List<ProxyInfo> proxies,
+      {required bool isDesktop}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Create auto-select option
     final autoSelectOption = ProxyInfo(
       address: 'auto',
       name: 'Auto-select (Random)',
       isAutoSelected: true,
     );
-    
+
     // Combine auto-select with discovered proxies
     final allOptions = [autoSelectOption, ...proxies];
-    
+
     // Determine selected value
     final selectedValue = vpnProvider.selectedProxy?.address ?? 'auto';
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -350,8 +356,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             Text(
               'Select VPN Node',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -371,7 +377,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
           ],
         ),
         const SizedBox(height: 12),
-        
+
         // Dropdown for VPN node selection
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -395,7 +401,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 child: Row(
                   children: [
                     if (proxy.address == 'auto') ...[
-                      Icon(Icons.auto_awesome, size: 16, color: Colors.blue[400]),
+                      Icon(Icons.auto_awesome,
+                          size: 16, color: Colors.blue[400]),
                       const SizedBox(width: 8),
                     ] else ...[
                       Container(
@@ -410,8 +417,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     ],
                     Expanded(
                       child: Text(
-                        proxy.address == 'auto' 
-                            ? 'Auto-select (Random)' 
+                        proxy.address == 'auto'
+                            ? 'Auto-select (Random)'
                             : proxy.address,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -419,7 +426,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     if (proxy.address == 'auto')
                       Container(
                         margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.blue[600],
                           borderRadius: BorderRadius.circular(4),
@@ -458,10 +466,11 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     );
   }
 
-  Widget _buildVpnStatusCard(BuildContext context, VpnProvider vpnProvider, {required bool isDesktop}) {
+  Widget _buildVpnStatusCard(BuildContext context, VpnProvider vpnProvider,
+      {required bool isDesktop}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isConnected = vpnProvider.isConnected;
-    
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -490,8 +499,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 Text(
                   'VPN Status',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const Spacer(),
                 Icon(
@@ -505,29 +514,26 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             Text(
               isConnected ? 'Connected and protected' : 'Disconnected',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isConnected ? Colors.green[600] : Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+                    color: isConnected ? Colors.green[600] : Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
-            
+
             if (isConnected) ...[
               const SizedBox(height: 16),
-              _buildStatusRow(context, 'Connected to:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
-              const SizedBox(height: 8),
-              _buildStatusRow(context, 'Server:', vpnProvider.connectedProxy?.address ?? 'Unknown'),
-              const SizedBox(height: 8),
-              _buildStatusRow(context, 'Ping:', '25ms'),
+              _buildStatusRow(context, 'Connected to:',
+                  vpnProvider.connectedProxy?.address ?? 'Unknown'),
               const SizedBox(height: 24),
             ],
-            
-            if (!isConnected)
-              const SizedBox(height: 24),
-            
+
+            if (!isConnected) const SizedBox(height: 24),
             // Connect/Disconnect button - always visible
             SizedBox(
               width: double.infinity,
+              height: 48,
               child: ElevatedButton(
-                onPressed: (isConnected || vpnProvider.availableProxies.isNotEmpty) 
+                onPressed: (isConnected ||
+                        vpnProvider.availableProxies.isNotEmpty)
                     ? () {
                         if (isConnected) {
                           vpnProvider.disconnect();
@@ -537,14 +543,16 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                       }
                     : null, // Disable button when no proxies available and not connected
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isConnected 
+                  backgroundColor: isConnected
                       ? Colors.red
-                      : null, // Use theme default (cyan/teal)
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
-                  disabledForegroundColor: isDark ? Colors.grey[600] : Colors.grey[500],
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
+                      : Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor: isConnected
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onPrimaryContainer,
+                  disabledBackgroundColor:
+                      isDark ? Colors.grey[800] : Colors.grey[300],
+                  disabledForegroundColor:
+                      isDark ? Colors.grey[600] : Colors.grey[500],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -553,15 +561,15 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isConnected ? Icons.power_off : Icons.power_settings_new, 
+                      Icons.power_settings_new,
                       size: 20,
+                      color: isConnected ? Colors.white : null,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       isConnected ? 'Disconnect' : 'Connect',
                       style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                        fontSize: 15,
                       ),
                     ),
                   ],

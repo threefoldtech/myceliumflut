@@ -30,7 +30,7 @@ class AutomaticProxyWidget extends StatelessWidget {
             const SizedBox(height: 16),
             
             Text(
-              'Automatically discover and connect to available SOCKS5 proxies in the Mycelium network',
+              'Automatically discover and connect to available nodes in the Mycelium network',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey[600],
               ),
