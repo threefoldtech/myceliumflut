@@ -10,3 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 mobile = { path = "../../mycelium/mobile" }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"

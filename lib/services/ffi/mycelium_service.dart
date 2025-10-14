@@ -345,8 +345,11 @@ class MyceliumService {
     try {
       print("MyceliumService: Enabling device-wide SOCKS5 proxy");
 
-      if (Platform.isWindows || Platform.isMacOS) {
-        // For desktop platforms (Windows/macOS), use platform-specific implementation
+      if (Platform.isWindows) {
+        // For Windows, use FFI to configure system proxy
+        return await myFFEnableSystemProxy(proxyAddress: proxyAddress);
+      } else if (Platform.isMacOS) {
+        // For macOS, use platform channel (already implemented in AppDelegate)
         Map<String, dynamic>? arguments;
         if (proxyAddress != null) {
           arguments = {'proxyAddress': proxyAddress};
@@ -371,8 +374,11 @@ class MyceliumService {
     try {
       print("MyceliumService: Disabling device-wide SOCKS5 proxy");
 
-      if (isUseDylib()) {
-        // For desktop platforms (Windows/macOS), use platform-specific implementation
+      if (Platform.isWindows) {
+        // For Windows, use FFI to disable system proxy
+        return await myFFDisableSystemProxy();
+      } else if (Platform.isMacOS) {
+        // For macOS, use platform channel (already implemented in AppDelegate)
         final result =
             await _platform.invokeMethod<bool>('disableDeviceWideProxy');
         return result ?? false;
@@ -391,8 +397,12 @@ class MyceliumService {
   /// Get device-wide proxy status
   Future<Map<String, dynamic>> getDeviceWideProxyStatus() async {
     try {
-      if (isUseDylib()) {
-        // For desktop platforms (Windows/macOS)
+      if (Platform.isWindows) {
+        // For Windows, use FFI to get system proxy status
+        final enabled = await myFFGetSystemProxyStatus();
+        return {'enabled': enabled, 'socksEnabled': enabled};
+      } else if (Platform.isMacOS) {
+        // For macOS, use platform channel (already implemented in AppDelegate)
         final result = await _platform
             .invokeMethod<Map<dynamic, dynamic>>('getProxyStatus');
         return result?.cast<String, dynamic>() ??

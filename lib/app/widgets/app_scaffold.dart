@@ -58,9 +58,10 @@ class AppScaffold extends StatelessWidget {
         selectedIndex: currentIndex,
         onDestinationSelected: onTabSelected ??
             (index) {
-              final isMacOS = defaultTargetPlatform == TargetPlatform.macOS;
-              if (!isMacOS && index >= 2) {
-                // Skip VPN tab on non-macOS, adjust index
+              final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
+                  defaultTargetPlatform == TargetPlatform.windows;
+              if (!isDesktop && index >= 2) {
+                // Skip VPN tab on mobile platforms, adjust index
                 index++;
               }
               switch (index) {
@@ -87,7 +88,8 @@ class AppScaffold extends StatelessWidget {
               icon: Icon(Icons.hub_outlined),
               selectedIcon: Icon(Icons.hub),
               label: 'Peers'),
-          if (defaultTargetPlatform == TargetPlatform.macOS)
+          if (defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows)
             const NavigationDestination(
                 icon: Icon(Icons.vpn_lock_outlined),
                 selectedIcon: Icon(Icons.vpn_lock),

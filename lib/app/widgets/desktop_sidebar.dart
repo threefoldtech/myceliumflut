@@ -75,7 +75,7 @@ class DesktopSidebar extends StatelessWidget {
                     onTap: () => context.go('/peers'),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  if (defaultTargetPlatform == TargetPlatform.macOS) ...[
+                  if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) ...[
                     _SidebarItem(
                       icon: Icons.vpn_lock_outlined,
                       selectedIcon: Icons.vpn_lock,
