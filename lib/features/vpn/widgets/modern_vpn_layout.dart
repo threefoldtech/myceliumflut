@@ -16,6 +16,56 @@ class ModernVpnLayout extends ConsumerStatefulWidget {
 
 class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
   final TextEditingController _proxyUrlController = TextEditingController();
+  String? _validationError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Connect controller to VPN provider
+    _proxyUrlController.addListener(() {
+      final vpnProvider = ref.read(providers.vpnProvider);
+      vpnProvider.setManualAddress(_proxyUrlController.text);
+      _validateProxyAddress(_proxyUrlController.text);
+    });
+  }
+
+  void _validateProxyAddress(String address) {
+    setState(() {
+      if (address.isEmpty) {
+        _validationError = null;
+        return;
+      }
+
+      // Check IPv4 format: x.x.x.x:port
+      final ipv4Regex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}:\d+$');
+      if (ipv4Regex.hasMatch(address)) {
+        _validationError = null;
+        return;
+      }
+
+      // Check IPv6 format: [xxxx:xxxx:...]:port
+      final ipv6Regex = RegExp(r'^\[[0-9a-fA-F:]+\]:\d+$');
+      if (ipv6Regex.hasMatch(address)) {
+        _validationError = null;
+        return;
+      }
+
+      _validationError = 'Invalid format. Use [IPv6]:PORT or IPv4:PORT';
+    });
+  }
+
+  bool _canConnect(VpnProvider vpnProvider, bool isConnected) {
+    // Can always disconnect
+    if (isConnected) return true;
+
+    // For manual mode, check if address is valid
+    if (vpnProvider.mode == VpnMode.manual) {
+      return _validationError == null && _proxyUrlController.text.isNotEmpty;
+    }
+
+    // For automatic mode, check if proxies are available
+    return vpnProvider.availableProxies.isNotEmpty;
+  }
 
   @override
   void dispose() {
@@ -193,13 +243,22 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             TextField(
               controller: _proxyUrlController,
               decoration: InputDecoration(
-                hintText: 'http://proxy.example.com:8080',
+                hintText: '[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080',
                 hintStyle: TextStyle(color: Colors.grey[400]),
+                errorText: _validationError,
                 filled: true,
                 fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.red, width: 1),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.red, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -209,7 +268,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter the complete proxy URL including protocol and port',
+              'Enter vpn node address in format: [IPv6]:PORT or IPv4:PORT',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -532,8 +591,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: (isConnected ||
-                        vpnProvider.availableProxies.isNotEmpty)
+                onPressed: _canConnect(vpnProvider, isConnected)
                     ? () {
                         if (isConnected) {
                           vpnProvider.disconnect();
@@ -541,7 +599,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                           vpnProvider.connect();
                         }
                       }
-                    : null, // Disable button when no proxies available and not connected
+                    : null, // Disable button when conditions not met
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isConnected
                       ? Colors.red
