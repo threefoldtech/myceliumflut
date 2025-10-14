@@ -603,10 +603,10 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isConnected
                       ? Colors.red
-                      : Theme.of(context).colorScheme.primaryContainer,
+                      : Theme.of(context).colorScheme.primary,
                   foregroundColor: isConnected
                       ? Colors.white
-                      : Theme.of(context).colorScheme.onPrimaryContainer,
+                      : Theme.of(context).colorScheme.onPrimary,
                   disabledBackgroundColor:
                       isDark ? Colors.grey[800] : Colors.grey[300],
                   disabledForegroundColor:
@@ -621,7 +621,11 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     Icon(
                       Icons.power_settings_new,
                       size: 20,
-                      color: isConnected ? Colors.white : null,
+                      color: isConnected
+                          ? Colors.white
+                          : _canConnect(vpnProvider, isConnected)
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : null,
                     ),
                     const SizedBox(width: 8),
                     Text(
