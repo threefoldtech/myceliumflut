@@ -504,7 +504,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 ),
                 const Spacer(),
                 Icon(
-                  isConnected ? Icons.shield_outlined : Icons.shield,
+                  isConnected ? Icons.shield : Icons.shield_outlined,
                   color: isConnected ? Colors.green[400] : Colors.grey[400],
                   size: 24,
                 ),
@@ -512,7 +512,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             ),
             const SizedBox(height: 12),
             Text(
-              isConnected ? 'Connected and protected' : 'Disconnected',
+              isConnected ? 'Connected' : 'Disconnected',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: isConnected ? Colors.green[600] : Colors.grey[600],
                     fontWeight: FontWeight.w500,
