@@ -13,6 +13,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'services/ffi/mycelium_service.dart';
+import 'state/mycelium_providers.dart';
 
 final _logger = Logger('Mycelium');
 
@@ -205,21 +206,35 @@ class _MyAppState extends ConsumerState<MyApp>
         await windowManager.hide();
         break;
       case 'quit':
-        _myceliumService.stop();
-        // Give a brief moment for stop to propagate
-        await Future.delayed(const Duration(milliseconds: 200));
-        // Terminate application
-        if (Platform.isMacOS) {
-          // Use existing plugin to terminate if available
-          try {
-            _flutterDesktopSleepPlugin.terminateApp();
-          } catch (_) {
-            exit(0);
+        // Disconnect VPN first if connected
+        try {
+          final vpnProv = ref.read(vpnProvider);
+          if (vpnProv.isConnected) {
+            await vpnProv.disconnect();
           }
-        } else {
-          exit(0);
+          // Stop any ongoing proxy discovery
+          if (vpnProv.isProbing) {
+            await vpnProv.stopProxyDiscovery();
+          }
+        } catch (e) {
+          print('Error disconnecting VPN during quit: $e');
         }
-        break;
+
+        // Stop Mycelium with timeout
+        try {
+          await _myceliumService.stop().timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              print('Mycelium stop timed out, forcing exit');
+              return false;
+            },
+          );
+        } catch (e) {
+          print('Error stopping Mycelium: $e');
+        }
+
+        // Exit immediately
+        exit(0);
     }
   }
 }
