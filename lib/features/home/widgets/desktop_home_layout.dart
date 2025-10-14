@@ -242,8 +242,8 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withValues(alpha: 
-                                  (1.0 - _fadeAnimation.value) * 0.3,
+                                .withValues(
+                                  alpha: (1.0 - _fadeAnimation.value) * 0.3,
                                 ),
                           ),
                           child: Container(
@@ -278,8 +278,8 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withValues(alpha: 
-                                  (1.0 -
+                                .withValues(
+                                  alpha: (1.0 -
                                           (_fadeAnimation.value - 0.3)
                                               .clamp(0.0, 1.0)) *
                                       0.2,
@@ -317,8 +317,8 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withValues(alpha: 
-                                  (1.0 -
+                                .withValues(
+                                  alpha: (1.0 -
                                           (_fadeAnimation.value - 0.6)
                                               .clamp(0.0, 1.0)) *
                                       0.1,
@@ -423,9 +423,12 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
                 label: isConnected ? 'Disconnect Mycelium' : 'Start Mycelium',
                 onPressed: isConnected ? stopMycelium : startMycelium,
                 isLoading: isConnecting,
-                backgroundColor:
-                    isConnected ? AppColors.error : AppColors.brandPrimary,
-                foregroundColor: Colors.white,
+                backgroundColor: isConnected
+                    ? AppColors.error
+                    : Theme.of(context).colorScheme.primary,
+                foregroundColor: isConnected
+                    ? AppColors.white
+                    : Theme.of(context).colorScheme.onPrimary,
               ),
             ),
 
@@ -670,4 +673,3 @@ class _DesktopStatsCardsState extends ConsumerState<_DesktopStatsCards> {
     );
   }
 }
-

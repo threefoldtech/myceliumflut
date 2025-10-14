@@ -436,8 +436,12 @@ class _HeaderCardState extends State<_HeaderCard>
             label: isConnected ? 'Stop Mycelium' : 'Start Mycelium',
             onPressed: isConnected ? stopMycelium : startMycelium,
             isLoading: isConnecting,
-            backgroundColor: isConnected ? Colors.red : null,
-            foregroundColor: isConnected ? Colors.white : null,
+            backgroundColor: isConnected
+                ? AppColors.error
+                : Theme.of(context).colorScheme.primary,
+            foregroundColor: isConnected
+                ? AppColors.error
+                : Theme.of(context).colorScheme.onPrimary,
           ),
           const SizedBox(height: AppSpacing.lg),
           Visibility(

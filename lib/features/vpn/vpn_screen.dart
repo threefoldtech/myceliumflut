@@ -106,11 +106,14 @@ class _VpnScreenState extends ConsumerState<VpnScreen> {
                 onPressed: () {
                   context.go('/');
                 },
-                icon: const Icon(Icons.home),
+                icon: Icon(
+                  Icons.home,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
                 label: const Text('Go to Home'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[400],
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
