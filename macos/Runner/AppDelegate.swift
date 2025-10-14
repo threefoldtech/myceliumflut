@@ -12,6 +12,7 @@ class AppDelegate: FlutterAppDelegate {
     
     // Main app Mycelium instance (for proxy operations - runs without TUN)
     private var mainAppMyceliumRunning = false
+    private var mainAppSecretKey: Data?
     
     // System proxy management
     private var socksProxyHost = "127.0.0.1"
@@ -104,13 +105,20 @@ class AppDelegate: FlutterAppDelegate {
             return
         }
         
-        // Start VPN tunnel (for packet forwarding to host)
+        // Start VPN tunnel (for packet forwarding to host) with user's key
         window.createTunnel(secretKey: secretKey, peers: peers)
         
-        // Also start Mycelium in main app (no TUN, for proxy operations) - run in background
-        print("macOS: Starting main app Mycelium instance (no TUN) for proxy operations")
+        // Generate a separate key for main app instance to avoid conflicts
+        if self.mainAppSecretKey == nil {
+            self.mainAppSecretKey = generateSecretKey()
+            let mainAppAddress = addressFromSecretKey(data: self.mainAppSecretKey!)
+            print("macOS: Generated separate key for main app instance. Address: \(mainAppAddress)")
+        }
+        
+        // Start Mycelium in main app (no TUN, for proxy operations) with separate key
+        print("macOS: Starting main app Mycelium instance (no TUN) for proxy operations with separate key")
         DispatchQueue.global(qos: .background).async {
-            startMyceliumNoTun(peers: peers, secretKey: secretKey)
+            startMyceliumNoTun(peers: peers, secretKey: self.mainAppSecretKey!)
         }
         self.mainAppMyceliumRunning = true
         
