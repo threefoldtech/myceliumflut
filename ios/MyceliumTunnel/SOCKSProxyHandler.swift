@@ -36,7 +36,7 @@ class SOCKSProxyHandler {
         }
         
         // Parse packet to determine if it should be proxied
-        guard let (destinationHost, destinationPort, protocol) = parsePacket(packet) else {
+        guard let (destinationHost, destinationPort, protocolType) = parsePacket(packet) else {
             return false
         }
         
@@ -50,7 +50,7 @@ class SOCKSProxyHandler {
             packet: packet,
             destinationHost: destinationHost,
             destinationPort: destinationPort,
-            protocol: `protocol`,
+            protocolType: protocolType,
             flow: flow
         )
         
@@ -137,10 +137,10 @@ class SOCKSProxyHandler {
         packet: Data,
         destinationHost: String,
         destinationPort: UInt16,
-        protocol: String,
+        protocolType: String,
         flow: NEPacketTunnelFlow
     ) {
-        infolog("SOCKSProxyHandler: Forwarding \(protocol) traffic to \(destinationHost):\(destinationPort) through SOCKS5")
+        infolog("SOCKSProxyHandler: Forwarding \(protocolType) traffic to \(destinationHost):\(destinationPort) through SOCKS5")
         
         connectionQueue.async {
             self.createSOCKSConnection(
@@ -373,7 +373,7 @@ class SOCKSProxyHandler {
     
     private func removeConnection(_ connection: NWConnection) {
         connectionQueue.async {
-            if let index = self.activeConnections.firstIndex(of: connection) {
+            if let index = self.activeConnections.firstIndex(where: { $0 === connection }) {
                 self.activeConnections.remove(at: index)
             }
             connection.cancel()
@@ -388,14 +388,4 @@ class SOCKSProxyHandler {
             self.activeConnections.removeAll()
         }
     }
-}
-
-// MARK: - Logging Extensions
-
-private func infolog(_ msg: String, _ args: CVarArg...) {
-    os_log("%{public}@", log: .default, type: .info, "SOCKSProxyHandler: " + msg)
-}
-
-private func errlog(_ msg: String, _ args: CVarArg...) {
-    os_log("%{public}@", log: .default, type: .error, "SOCKSProxyHandler: " + msg)
 }

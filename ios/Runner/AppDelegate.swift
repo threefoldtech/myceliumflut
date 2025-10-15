@@ -20,6 +20,11 @@ import OSLog
     let localizedDescription = "mycelium tunnel"
     let vpnUsername = "aiueo"
     let vpnServerAddress = "mycelium"
+    
+    // Mycelium service in main app for device-wide proxy
+    private var isMyceliumRunning = false
+    private var currentSecretKey: Data? = nil
+    private var currentPeers: [String] = []
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
@@ -50,6 +55,15 @@ import OSLog
                     if let arguments = call.arguments as? Dictionary<String, Any> {
                         let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
                         let peers = arguments["peers"] as! [String]
+                        
+                        // Save configuration for Mycelium service
+                        self.currentSecretKey = secretKey.data
+                        self.currentPeers = peers
+                        
+                        // Start Mycelium service in main app (no-TUN mode for proxy operations)
+                        self.startMyceliumService()
+                        
+                        // Start VPN tunnel for mesh network routing
                         self.flutterTunnelStatus = .started
                         self.createTunnel(secretKey: secretKey.data, peers: peers)
                         result(true)
@@ -58,25 +72,67 @@ import OSLog
                     }
                 case "stopVpn":
                     self.flutterTunnelStatus = .stopped
+                    
+                    // Stop Mycelium service in main app
+                    self.stopMyceliumService()
+                    
+                    // Stop VPN tunnel
                     self.stopMycelium()
                     result(true)
                 case "getPeerStatus":
-                    self.getPeerStatusFromTunnel(result: result)
+                    // Call main app's Mycelium (has network access)
+                    DispatchQueue.global(qos: .background).async {
+                        let status = getPeerStatus()
+                        DispatchQueue.main.async {
+                            result(status)
+                        }
+                    }
                 case "proxyConnect":
                     if let arguments = call.arguments as? [String: Any],
                        let remote = arguments["remote"] as? String {
-                        self.sendTunnelMessage(message: "proxyConnect:\(remote)", result: result)
+                        DispatchQueue.global(qos: .background).async {
+                            do {
+                                try proxyConnect(remote: remote)
+                                DispatchQueue.main.async {
+                                    result(["ok"])
+                                }
+                            } catch {
+                                DispatchQueue.main.async {
+                                    result(["Failed to connect: \(error.localizedDescription)"])
+                                }
+                            }
+                        }
                     } else {
-                        result(FlutterError(code: "INVALID_ARGUMENTS", message: "Missing remote parameter", details: nil))
+                        result(["Failed: Missing remote parameter"])
                     }
                 case "proxyDisconnect":
-                    self.sendTunnelMessage(message: "proxyDisconnect", result: result)
+                    DispatchQueue.global(qos: .background).async {
+                        let _ = proxyDisconnect()
+                        DispatchQueue.main.async {
+                            result(["ok"])
+                        }
+                    }
                 case "startProxyProbe":
-                    self.sendTunnelMessage(message: "startProxyProbe", result: result)
+                    DispatchQueue.global(qos: .background).async {
+                        let _ = startProxyProbe()
+                        DispatchQueue.main.async {
+                            result(["Proxy probe started"])
+                        }
+                    }
                 case "stopProxyProbe":
-                    self.sendTunnelMessage(message: "stopProxyProbe", result: result)
+                    DispatchQueue.global(qos: .background).async {
+                        let _ = stopProxyProbe()
+                        DispatchQueue.main.async {
+                            result(["Proxy probe stopped"])
+                        }
+                    }
                 case "listProxies":
-                    self.sendTunnelMessage(message: "listProxies", result: result)
+                    DispatchQueue.global(qos: .background).async {
+                        let proxies = listProxies()
+                        DispatchQueue.main.async {
+                            result(proxies)
+                        }
+                    }
                 case "enableDeviceWideProxy":
                     self.enableDeviceWideProxy(result: result)
                 case "disableDeviceWideProxy":
@@ -169,11 +225,26 @@ import OSLog
         
     }
     private func startVpnTunnel(vpnManager: NETunnelProviderManager, secretKey: Data, peers: [String]) {
+        startVpnTunnelWithDeviceWide(vpnManager: vpnManager, secretKey: secretKey, peers: peers, deviceWideMode: false)
+    }
+    
+    private func startVpnTunnelWithDeviceWide(vpnManager: NETunnelProviderManager, secretKey: Data, peers: [String], deviceWideMode: Bool) {
         do {
+            // Save configuration for later retrieval
+            if let protocolConfig = vpnManager.protocolConfiguration as? NETunnelProviderProtocol {
+                protocolConfig.providerConfiguration = [
+                    "secretKey": secretKey,
+                    "peers": peers
+                ]
+            }
+            
             let options: [String: NSObject] = [
                 "secretKey": secretKey as NSObject,
-                "peers": peers as NSObject
+                "peers": peers as NSObject,
+                "deviceWideProxy": deviceWideMode as NSObject
             ]
+            
+            infolog("iOS: Starting VPN tunnel (deviceWideProxy: \(deviceWideMode))")
             try vpnManager.connection.startVPNTunnel(options: options)
         } catch {
             errlog("startVPNTunnel() failed: " + error.localizedDescription)
@@ -315,7 +386,10 @@ import OSLog
     // MARK: - Device-Wide Proxy Methods
     
     private func enableDeviceWideProxy(result: @escaping FlutterResult) {
-        infolog("iOS: Enabling device-wide SOCKS5 proxy")
+        infolog("iOS: Enabling device-wide proxy mode")
+        
+        // Mycelium is already running in main app with SOCKS5 on localhost:1080
+        // Just restart VPN tunnel with device-wide mode to route all traffic
         
         guard let vpnManager = self.vpnManager else {
             result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
@@ -327,35 +401,30 @@ import OSLog
             return
         }
         
-        guard session.status == .connected else {
-            result(FlutterError(code: "TUNNEL_NOT_CONNECTED", message: "VPN tunnel must be connected first", details: nil))
+        // Get current VPN configuration
+        guard let protocolConfig = vpnManager.protocolConfiguration as? NETunnelProviderProtocol,
+              let providerConfig = protocolConfig.providerConfiguration,
+              let secretKeyData = providerConfig["secretKey"] as? Data,
+              let peers = providerConfig["peers"] as? [String] else {
+            result(FlutterError(code: "INVALID_CONFIG", message: "Could not get VPN configuration", details: nil))
             return
         }
         
-        // Send message to tunnel extension to enable device-wide proxy
-        let messageData = "enableDeviceWideProxy".data(using: .utf8)!
+        // Stop current VPN tunnel
+        session.stopVPNTunnel()
         
-        do {
-            try session.sendProviderMessage(messageData) { responseData in
-                if let responseData = responseData,
-                   let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
-                   let status = response["status"] as? String,
-                   status == "enabled" {
-                    infolog("iOS: Device-wide proxy enabled successfully")
-                    result(true)
-                } else {
-                    errlog("iOS: Failed to enable device-wide proxy")
-                    result(FlutterError(code: "PROXY_ENABLE_FAILED", message: "Failed to enable device-wide proxy", details: nil))
-                }
-            }
-        } catch {
-            errlog("iOS: Error sending enableDeviceWideProxy message: \(error.localizedDescription)")
-            result(FlutterError(code: "MESSAGE_SEND_ERROR", message: error.localizedDescription, details: nil))
+        // Wait for VPN to stop, then restart in device-wide mode
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.startVpnTunnelWithDeviceWide(vpnManager: vpnManager, secretKey: secretKeyData, peers: peers, deviceWideMode: true)
+            result(true)
         }
     }
     
     private func disableDeviceWideProxy(result: @escaping FlutterResult) {
-        infolog("iOS: Disabling device-wide SOCKS5 proxy")
+        infolog("iOS: Disabling device-wide proxy mode")
+        
+        // Mycelium keeps running in main app (for proxy operations)
+        // Just restart VPN tunnel in standard mode (mesh traffic only)
         
         guard let vpnManager = self.vpnManager else {
             result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
@@ -367,36 +436,28 @@ import OSLog
             return
         }
         
-        guard session.status == .connected else {
-            result(FlutterError(code: "TUNNEL_NOT_CONNECTED", message: "VPN tunnel must be connected first", details: nil))
+        // Get current VPN configuration to restart in standard mode
+        guard let protocolConfig = vpnManager.protocolConfiguration as? NETunnelProviderProtocol,
+              let providerConfig = protocolConfig.providerConfiguration,
+              let secretKeyData = providerConfig["secretKey"] as? Data,
+              let peers = providerConfig["peers"] as? [String] else {
+            result(FlutterError(code: "INVALID_CONFIG", message: "Could not get VPN configuration", details: nil))
             return
         }
         
-        // Send message to tunnel extension to disable device-wide proxy
-        let messageData = "disableDeviceWideProxy".data(using: .utf8)!
+        // Stop current VPN tunnel
+        session.stopVPNTunnel()
         
-        do {
-            try session.sendProviderMessage(messageData) { responseData in
-                if let responseData = responseData,
-                   let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
-                   let status = response["status"] as? String,
-                   status == "disabled" {
-                    infolog("iOS: Device-wide proxy disabled successfully")
-                    result(true)
-                } else {
-                    errlog("iOS: Failed to disable device-wide proxy")
-                    result(FlutterError(code: "PROXY_DISABLE_FAILED", message: "Failed to disable device-wide proxy", details: nil))
-                }
-            }
-        } catch {
-            errlog("iOS: Error sending disableDeviceWideProxy message: \(error.localizedDescription)")
-            result(FlutterError(code: "MESSAGE_SEND_ERROR", message: error.localizedDescription, details: nil))
+        // Wait for VPN to stop, then restart in standard mode
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.startVpnTunnelWithDeviceWide(vpnManager: vpnManager, secretKey: secretKeyData, peers: peers, deviceWideMode: false)
+            result(true)
         }
     }
     
     private func getProxyStatus(result: @escaping FlutterResult) {
         guard let vpnManager = self.vpnManager else {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": "VPN manager not available"
@@ -406,7 +467,7 @@ import OSLog
         }
         
         guard let session = vpnManager.connection as? NETunnelProviderSession else {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": "Tunnel session not available"
@@ -416,7 +477,7 @@ import OSLog
         }
         
         guard session.status == .connected else {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": "Tunnel not connected"
@@ -434,7 +495,7 @@ import OSLog
                    let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any] {
                     result(response)
                 } else {
-                    let status = [
+                    let status: [String: Any] = [
                         "enabled": false,
                         "socksEnabled": false,
                         "error": "Failed to get proxy status"
@@ -443,7 +504,7 @@ import OSLog
                 }
             }
         } catch {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": error.localizedDescription
@@ -555,6 +616,55 @@ import OSLog
             self?.vpnStatusDidChange(notification)
         }
     }
+    // MARK: - Mycelium Service Management (Main App)
+    
+    private func startMyceliumService() {
+        guard !isMyceliumRunning else {
+            infolog("iOS: Mycelium service already running")
+            return
+        }
+        
+        guard let secretKey = currentSecretKey else {
+            errlog("iOS: No secret key available for Mycelium service")
+            return
+        }
+        
+        let peers = currentPeers
+        
+        // Start Mycelium without TUN (SOCKS5 proxy only) on background queue
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
+            
+            infolog("iOS: Starting Mycelium service (no-TUN mode) with \(peers.count) peers")
+            self.isMyceliumRunning = true
+            
+            // Call Mycelium's no-TUN mode which starts SOCKS5 proxy on localhost:1080
+            startMyceliumNoTun(peers: peers, secretKey: secretKey)
+            
+            // If we reach here, Mycelium stopped unexpectedly
+            if self.isMyceliumRunning {
+                errlog("iOS: Mycelium service stopped unexpectedly")
+                self.isMyceliumRunning = false
+            }
+        }
+    }
+    
+    private func stopMyceliumService() {
+        guard isMyceliumRunning else {
+            infolog("iOS: Mycelium service not running")
+            return
+        }
+        
+        infolog("iOS: Stopping Mycelium service")
+        
+        // Stop Mycelium on background queue
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
+            let _ = stopMycelium()
+        }
+        
+        isMyceliumRunning = false
+    }
 }
 
 enum TunnelStatus {
@@ -579,8 +689,6 @@ func errlog(_ msg: String, _ args: CVarArg...) {
 func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {
     os_log("%{public}@ %{public}@", log: .default, type: type, "myceliumflut:AppDelegate:", String(describing: msg), args)
 }
-
-
 
 // NotificationToken and NotificationCenter was taken from https://oleb.net/blog/2018/01/notificationcenter-removeobserver/
 final class NotificationToken {

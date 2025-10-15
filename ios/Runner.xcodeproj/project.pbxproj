@@ -14,6 +14,7 @@
 		005902212BEA092D00D56854 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005902202BEA092D00D56854 /* NetworkExtension.framework */; };
 		005902242BEA092D00D56854 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 005902232BEA092D00D56854 /* PacketTunnelProvider.swift */; };
 		0059022C2BEA095900D56854 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005902202BEA092D00D56854 /* NetworkExtension.framework */; };
+		AABBCCEE2BEA092D00D56854 /* SOCKSProxyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCCFF2BEA092D00D56854 /* SOCKSProxyHandler.swift */; };
 		0090B5DC2BF327D200724A65 /* MyceliumTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0059021F2BEA092D00D56854 /* MyceliumTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0090B6002BF34ED500724A65 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
 		00A43E6F2BF2089C00435390 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
@@ -80,6 +81,7 @@
 		005902202BEA092D00D56854 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 		005902232BEA092D00D56854 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
 		005902252BEA092D00D56854 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AABBCCFF2BEA092D00D56854 /* SOCKSProxyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKSProxyHandler.swift; sourceTree = "<group>"; };
 		005902262BEA092D00D56854 /* MyceliumTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyceliumTunnel.entitlements; sourceTree = "<group>"; };
 		0059022B2BEA094000D56854 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		0090B6042BF352EB00724A65 /* PacketTunnelProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PacketTunnelProvider.h; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 			isa = PBXGroup;
 			children = (
 				005902232BEA092D00D56854 /* PacketTunnelProvider.swift */,
+				AABBCCFF2BEA092D00D56854 /* SOCKSProxyHandler.swift */,
 				005902252BEA092D00D56854 /* Info.plist */,
 				005902262BEA092D00D56854 /* MyceliumTunnel.entitlements */,
 				0090B6042BF352EB00724A65 /* PacketTunnelProvider.h */,
@@ -480,6 +483,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				005902242BEA092D00D56854 /* PacketTunnelProvider.swift in Sources */,
+				AABBCCEE2BEA092D00D56854 /* SOCKSProxyHandler.swift in Sources */,
 				00024CCD2BFB102600C03AC5 /* mycelmob.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -38,24 +38,28 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [nodeAddr], networkPrefixLengths: [self.addrNetworkPrefixLengths])
         
         if isDeviceWideProxyEnabled {
-            // Configure for device-wide traffic forwarding
+            // Configure for device-wide traffic forwarding through SOCKS5 proxy
             infolog("Configuring tunnel for device-wide proxy mode")
             
-            // Route all IPv4 traffic through the tunnel
+            // Route ALL IPv4 and IPv6 traffic through the tunnel
+            // This is required for proxy settings to apply
             tunnelNetworkSettings.ipv4Settings = NEIPv4Settings(addresses: ["10.0.0.1"], subnetMasks: ["255.255.255.0"])
             tunnelNetworkSettings.ipv4Settings?.includedRoutes = [NEIPv4Route.default()]
-            
-            // Route all IPv6 traffic through the tunnel
             tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route.default()]
+            
+            // Note: NEProxySettings in VPN tunnels has limitations on iOS
+            // The proxy configuration is informational but doesn't automatically forward packets
+            // We need to manually handle packet forwarding in the tunnel extension
+            // For now, we'll enable the SOCKSProxyHandler to forward packets
+            socksProxyHandler.enableDeviceWideMode()
             
             // Configure DNS to prevent leaks
             tunnelNetworkSettings.dnsSettings = NEDNSSettings(servers: ["8.8.8.8", "8.8.4.4"])
             tunnelNetworkSettings.dnsSettings?.matchDomains = [""]
             
-            // Enable SOCKS proxy handler
-            socksProxyHandler.enableDeviceWideMode()
+            infolog("Device-wide proxy configured: routing all traffic through tunnel with SOCKS5 proxy")
         } else {
-            // Standard Mycelium mesh network configuration
+            // Standard Mycelium mesh network configuration (IPv6 only)
             tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route(destinationAddress: self.routeDestinationAddress, networkPrefixLength: self.routeNetworkPrefixLength)]
         }
         
@@ -70,31 +74,22 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             if let tunFd = self?.tunnelFileDescriptor {
                 self!.started = true
                 
-                if self!.isDeviceWideProxyEnabled {
-                    // Start packet reading for device-wide proxy mode
-                    infolog("Starting packet reading for device-wide proxy mode")
-                    self?.startPacketReading()
-                    
-                    // Still start Mycelium for mesh network functionality
-                    DispatchQueue.global(qos: .default).async {
-                        infolog("calling startMycelium() for mesh network with tun fd:\(tunFd) and peers = \(peers)")
-                        startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
-                        if self?.started == true {
-                            errlog("mycelium finished unexpectedly")
-                            let err = NSError(domain: "tech.threefold.mycelium", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Mycelium finished unexpectedly"])
-                            self?.cancelTunnelWithError(err)
-                        }
+                // Start Mycelium for both standard and device-wide modes
+                // Device-wide mode routes ALL traffic (IPv4+IPv6) through Mycelium
+                // Standard mode routes only Mycelium mesh traffic (IPv6 subset)
+                DispatchQueue.global(qos: .default).async {
+                    if self!.isDeviceWideProxyEnabled {
+                        infolog("Starting Mycelium in device-wide mode with tun fd:\(tunFd) and peers = \(peers)")
+                    } else {
+                        infolog("Starting Mycelium in standard mode with tun fd:\(tunFd) and peers = \(peers)")
                     }
-                } else {
-                    // Standard Mycelium mode
-                    DispatchQueue.global(qos: .default).async {
-                        infolog("calling startMycelium() with tun fd:\(tunFd) and peers = \(peers) ")
-                        startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
-                        if self?.started == true {
-                            errlog("mycelium finished unexpectedly")
-                             let err = NSError(domain: "tech.threefold.mycelium", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Mycelium finished unexpectedly"])
-                            self?.cancelTunnelWithError(err) // currently no other component will read/receive the err
-                        }
+                    
+                    startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
+                    
+                    if self?.started == true {
+                        errlog("mycelium finished unexpectedly")
+                        let err = NSError(domain: "tech.threefold.mycelium", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Mycelium finished unexpectedly"])
+                        self?.cancelTunnelWithError(err)
                     }
                 }
             } else {

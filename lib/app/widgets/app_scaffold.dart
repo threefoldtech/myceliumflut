@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import '../theme/tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'responsive_layout.dart';
@@ -59,7 +60,8 @@ class AppScaffold extends StatelessWidget {
         onDestinationSelected: onTabSelected ??
             (index) {
               final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
-                  defaultTargetPlatform == TargetPlatform.windows;
+                  defaultTargetPlatform == TargetPlatform.windows ||
+                  defaultTargetPlatform == TargetPlatform.iOS;
               if (!isDesktop && index >= 2) {
                 // Skip VPN tab on mobile platforms, adjust index
                 index++;
@@ -89,7 +91,8 @@ class AppScaffold extends StatelessWidget {
               selectedIcon: Icon(Icons.hub),
               label: 'Peers'),
           if (defaultTargetPlatform == TargetPlatform.macOS ||
-              defaultTargetPlatform == TargetPlatform.windows)
+              defaultTargetPlatform == TargetPlatform.windows ||
+              defaultTargetPlatform == TargetPlatform.iOS)
             const NavigationDestination(
                 icon: Icon(Icons.vpn_lock_outlined),
                 selectedIcon: Icon(Icons.vpn_lock),
