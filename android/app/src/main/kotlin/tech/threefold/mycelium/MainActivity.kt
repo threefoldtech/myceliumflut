@@ -122,6 +122,11 @@ class MainActivity: FlutterActivity() {
                         result.error("LIST_PROXIES_ERROR", e.message, null)
                     }
                 }
+                "enableDeviceWideProxy" -> {
+                    // SOCKS proxy is controlled via VPN start with socksEnabled parameter
+                    Log.i(tag, "enableDeviceWideProxy - use startVpn with socksEnabled instead")
+                    result.success(true)
+                }
                 "queryStatus" -> {
                     // Immediately report last known state while also querying the service
                     val running = prefs.getBoolean("mycelium_running", false)

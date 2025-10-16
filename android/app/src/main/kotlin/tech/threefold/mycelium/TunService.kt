@@ -1,10 +1,10 @@
 package tech.threefold.mycelium
 
 import android.content.Intent
-import android.net.ProxyInfo
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.VpnService
+import android.net.ProxyInfo
 import android.os.ParcelFileDescriptor
 import android.system.OsConstants
 import android.util.Log
@@ -31,7 +31,8 @@ class TunService : VpnService(), CoroutineScope {
 
     private var started = AtomicBoolean()
     private var parcel: ParcelFileDescriptor? = null
-    private var httpToSocksProxy: HttpToSocksProxy? = null
+    private var socksProxyEnabled = false
+    private var httpProxy: LocalHttpProxy? = null
     private lateinit var prefs: SharedPreferences
 
     private val job = Job()
@@ -81,7 +82,7 @@ class TunService : VpnService(), CoroutineScope {
             }
             else -> {
                 Log.e(tag, "unknown command")
-
+                START_NOT_STICKY
             }
         }
     }
@@ -107,21 +108,12 @@ class TunService : VpnService(), CoroutineScope {
             .setMtu(1420)
             .setSession("mycelium")
 
-        // If SOCKS proxy is enabled, route all internet traffic through VPN
+        // Store SOCKS enabled state and configure proxy
+        socksProxyEnabled = socksEnabled
         if (socksEnabled) {
-            // Route all traffic except localhost to prevent loops
-            builder.addRoute("1.0.0.0", 8)     // 1.0.0.0/8
-            builder.addRoute("2.0.0.0", 7)     // 2.0.0.0/7 (covers 2.0.0.0-3.255.255.255)
-            builder.addRoute("4.0.0.0", 6)     // 4.0.0.0/6 (covers 4.0.0.0-7.255.255.255)
-            builder.addRoute("8.0.0.0", 5)     // 8.0.0.0/5 (covers 8.0.0.0-15.255.255.255)
-            builder.addRoute("16.0.0.0", 4)    // 16.0.0.0/4 (covers 16.0.0.0-31.255.255.255)
-            builder.addRoute("32.0.0.0", 3)    // 32.0.0.0/3 (covers 32.0.0.0-63.255.255.255)
-            builder.addRoute("64.0.0.0", 2)    // 64.0.0.0/2 (covers 64.0.0.0-127.255.255.255)
-            builder.addRoute("128.0.0.0", 1)   // 128.0.0.0/1 (covers 128.0.0.0-255.255.255.255)
-            // This excludes 127.0.0.0/8 (localhost) to prevent SOCKS proxy loops
-            
-            // Set HTTP proxy to use our HTTP-to-SOCKS bridge
-            builder.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", 8080))
+            Log.i(tag, "🌐 Configuring VPN to use HTTP proxy at 127.0.0.1:8118")
+            // Set HTTP proxy for all apps using this VPN
+            builder.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", 8118))
         }
 
 
@@ -137,18 +129,17 @@ class TunService : VpnService(), CoroutineScope {
 
         Log.d(tag, "starting mycelium with parcel fd: " + parcel.fd)
         
-        // Start HTTP-to-SOCKS proxy bridge if SOCKS is enabled
+        // Start HTTP proxy if SOCKS enabled
         if (socksEnabled) {
-            Log.i(tag, "Starting HTTP-to-SOCKS proxy bridge")
-            httpToSocksProxy = HttpToSocksProxy()
-            httpToSocksProxy?.start()
-            Log.i(tag, "SOCKS proxy enabled - HTTP traffic will be routed through 127.0.0.1:8080 -> 127.0.0.1:1080")
-            
-            // Run diagnostic tests
-            val tester = ProxyTester()
-            tester.testSocksProxy()
-            tester.testHttpProxy()
-            tester.testDirectConnection()
+            launch {
+                delay(2000) // Wait for mycelium to start
+                SocksTest.testSocksProxy()
+                
+                // Start local HTTP proxy
+                httpProxy = LocalHttpProxy()
+                httpProxy?.start()
+                Log.i(tag, "✅ Proxy configured automatically - your traffic is now routed through the proxy!")
+            }
         }
         
         launch {
@@ -179,10 +170,10 @@ class TunService : VpnService(), CoroutineScope {
             return
         }
         
-        // Stop HTTP-to-SOCKS proxy bridge
-        httpToSocksProxy?.stop()
-        httpToSocksProxy = null
-        Log.d(tag, "Cleaned up SOCKS proxy resources")
+        // Stop HTTP proxy
+        httpProxy?.stop()
+        httpProxy = null
+        socksProxyEnabled = false
         
         prefs.edit().putBoolean("mycelium_running", false).apply()
         if (stopMycelium) {

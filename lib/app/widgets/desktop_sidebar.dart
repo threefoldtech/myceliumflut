@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:go_router/go_router.dart';
 import '../theme/tokens.dart';
 
@@ -75,16 +76,14 @@ class DesktopSidebar extends StatelessWidget {
                     onTap: () => context.go('/peers'),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  if (defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.windows) ...[
-                    _SidebarItem(
-                      icon: Icons.vpn_lock_outlined,
-                      selectedIcon: Icons.vpn_lock,
-                      label: 'VPN',
-                      isSelected: currentIndex == 2,
-                      onTap: () => context.go('/vpn'),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
+                  _SidebarItem(
+                    icon: Icons.vpn_lock_outlined,
+                    selectedIcon: Icons.vpn_lock,
+                    label: 'VPN',
+                    isSelected: currentIndex == 2,
+                    onTap: () => context.go('/vpn'),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   _SidebarItem(
                     icon: Icons.settings_outlined,
                     selectedIcon: Icons.settings,
@@ -169,8 +168,10 @@ class _SidebarItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadii.md),
             border: isSelected
                 ? Border.all(
-                    color:
-                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3),
                     width: 1,
                   )
                 : null,
@@ -182,7 +183,10 @@ class _SidebarItem extends StatelessWidget {
                 size: 20,
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.7),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
