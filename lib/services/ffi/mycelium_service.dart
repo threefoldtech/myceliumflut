@@ -94,8 +94,10 @@ class MyceliumService {
 
   Future<bool> start(List<String> peers, {bool socksEnabled = false}) async {
     debugPrint('MyceliumService: Starting Mycelium...');
-    debugPrint('MyceliumService: Starting with peers: $peers, SOCKS: $socksEnabled');
-    debugPrint('MyceliumService: Platform check - isUseDylib(): ${isUseDylib()}');
+    debugPrint(
+        'MyceliumService: Starting with peers: $peers, SOCKS: $socksEnabled');
+    debugPrint(
+        'MyceliumService: Platform check - isUseDylib(): ${isUseDylib()}');
     _socksEnabled = socksEnabled;
     _status = NodeStatus.connecting;
     _statusController.add(_status);
@@ -103,13 +105,7 @@ class MyceliumService {
     try {
       if (isUseDylib()) {
         final key = await _loadOrGeneratePrivKey();
-        final result = await myFFStartMycelium(cleaned, key);
-        if (!result) {
-          debugPrint('MyceliumService: Failed to start Mycelium');
-          _status = NodeStatus.failed;
-          _statusController.add(_status);
-          return false;
-        }
+        myFFStartMycelium(cleaned, key);
       } else {
         final key = await _loadOrGeneratePrivKey();
         final result = await _platform.invokeMethod<bool>('startVpn', {
@@ -339,6 +335,184 @@ class MyceliumService {
     } catch (e) {
       debugPrint("Failed to listProxies: $e");
       return ['Failed to list proxies'];
+    }
+  }
+
+  // MARK: - Device-Wide Proxy Methods
+
+  /// Enable device-wide traffic forwarding through SOCKS5 proxy
+  Future<bool> enableDeviceWideProxy({String? proxyAddress}) async {
+    try {
+      print("MyceliumService: Enabling device-wide SOCKS5 proxy");
+
+      if (Platform.isWindows) {
+        // For Windows, use FFI to configure system proxy
+        return await myFFEnableSystemProxy(proxyAddress: proxyAddress);
+      } else if (Platform.isMacOS) {
+        // For macOS, use platform channel (already implemented in AppDelegate)
+        Map<String, dynamic>? arguments;
+        if (proxyAddress != null) {
+          arguments = {'proxyAddress': proxyAddress};
+        }
+        final result = await _platform.invokeMethod<bool>(
+            'enableDeviceWideProxy', arguments);
+        return result ?? false;
+      } else {
+        // For mobile platforms (iOS/Android), use VPN tunnel
+        final result =
+            await _platform.invokeMethod<bool>('enableDeviceWideProxy');
+        return result ?? false;
+      }
+    } catch (e) {
+      print("MyceliumService: Error enabling device-wide proxy: $e");
+      return false;
+    }
+  }
+
+  /// Disable device-wide traffic forwarding
+  Future<bool> disableDeviceWideProxy() async {
+    try {
+      print("MyceliumService: Disabling device-wide SOCKS5 proxy");
+
+      if (Platform.isWindows) {
+        // For Windows, use FFI to disable system proxy
+        return await myFFDisableSystemProxy();
+      } else if (Platform.isMacOS) {
+        // For macOS, use platform channel (already implemented in AppDelegate)
+        final result =
+            await _platform.invokeMethod<bool>('disableDeviceWideProxy');
+        return result ?? false;
+      } else {
+        // For mobile platforms (iOS/Android), use VPN tunnel
+        final result =
+            await _platform.invokeMethod<bool>('disableDeviceWideProxy');
+        return result ?? false;
+      }
+    } catch (e) {
+      print("MyceliumService: Failed to disable device-wide proxy: $e");
+      return false;
+    }
+  }
+
+  /// Get device-wide proxy status
+  Future<Map<String, dynamic>> getDeviceWideProxyStatus() async {
+    try {
+      if (Platform.isWindows) {
+        // For Windows, use FFI to get system proxy status
+        final enabled = await myFFGetSystemProxyStatus();
+        return {'enabled': enabled, 'socksEnabled': enabled};
+      } else if (Platform.isMacOS) {
+        // For macOS, use platform channel (already implemented in AppDelegate)
+        final result = await _platform
+            .invokeMethod<Map<dynamic, dynamic>>('getProxyStatus');
+        return result?.cast<String, dynamic>() ??
+            {'enabled': false, 'error': 'Failed to get proxy status'};
+      } else {
+        // For mobile platforms (iOS/Android)
+        final result = await _platform
+            .invokeMethod<Map<dynamic, dynamic>>('getProxyStatus');
+        return result?.cast<String, dynamic>() ??
+            {'enabled': false, 'error': 'Failed to get proxy status'};
+      }
+    } catch (e) {
+      print("MyceliumService: Failed to get device-wide proxy status: $e");
+      return {'enabled': false, 'error': e.toString()};
+    }
+  }
+
+  /// Start device-wide proxy with automatic proxy discovery and connection
+  Future<bool> startDeviceWideProxy({String? specificProxy}) async {
+    try {
+      print("MyceliumService: Starting device-wide proxy mode");
+
+      // First, ensure Mycelium service is running
+      if (_status != NodeStatus.connected) {
+        print("MyceliumService: Mycelium service must be connected first");
+        return false;
+      }
+
+      // Start proxy probe to discover available proxies
+      print("MyceliumService: Starting proxy probe...");
+      final x = await startProxyProbe();
+      print("aaaaaaaaaaa:$x");
+
+      // Wait a bit for proxy discovery
+      await Future.delayed(Duration(seconds: 5));
+
+      // Connect to proxy (specific or auto-select best)
+      print("MyceliumService: Connecting to SOCKS5 proxy...");
+
+      String proxyToConnect;
+      if (specificProxy != null && specificProxy.isNotEmpty) {
+        proxyToConnect = specificProxy;
+      } else {
+        // Auto-select best available proxy
+        final availableProxies = await listProxies();
+        if (availableProxies.isEmpty) {
+          print("MyceliumService: No proxies available for connection");
+          return false;
+        }
+        proxyToConnect = availableProxies.first;
+        print("MyceliumService: Auto-selected proxy: $proxyToConnect");
+      }
+
+      final connectResult =
+          await proxyConnect("[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080");
+      print("MyceliumService: Proxy connect result: $connectResult");
+
+      if (connectResult.isNotEmpty && connectResult[0] == "ok") {
+        // Extract the actual proxy address from the connection result
+        String actualProxyAddress = proxyToConnect; // Default fallback
+        if (connectResult.length > 1) {
+          actualProxyAddress = connectResult[1];
+        }
+
+        // Enable device-wide traffic forwarding with the actual proxy address
+        print("MyceliumService: Enabling device-wide traffic forwarding...");
+        final enableResult =
+            await enableDeviceWideProxy(proxyAddress: actualProxyAddress);
+
+        if (enableResult) {
+          print("MyceliumService: Device-wide proxy started successfully");
+          return true;
+        } else {
+          print(
+              "MyceliumService: Failed to enable device-wide traffic forwarding");
+          // Clean up - disconnect proxy
+          await proxyDisconnect();
+          await stopProxyProbe();
+          return false;
+        }
+      } else {
+        print("MyceliumService: Failed to connect to SOCKS5 proxy");
+        await stopProxyProbe();
+        return false;
+      }
+    } catch (e) {
+      print("MyceliumService: Error starting device-wide proxy: $e");
+      return false;
+    }
+  }
+
+  /// Stop device-wide proxy and restore normal traffic routing
+  Future<bool> stopDeviceWideProxy() async {
+    try {
+      print("MyceliumService: Stopping device-wide proxy mode");
+
+      // Disable device-wide traffic forwarding
+      final disableResult = await disableDeviceWideProxy();
+
+      // Disconnect from SOCKS5 proxy
+      await proxyDisconnect();
+
+      // Stop proxy probing
+      await stopProxyProbe();
+
+      print("MyceliumService: Device-wide proxy stopped");
+      return disableResult;
+    } catch (e) {
+      print("MyceliumService: Error stopping device-wide proxy: $e");
+      return false;
     }
   }
 }

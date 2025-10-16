@@ -18,6 +18,7 @@ class MainFlutterWindow: NSWindow {
     let localizedDescription = "mycelium tunnel"
     let vpnUsername = "masterOfMycel"
     let vpnServerAddress = "mycelium"
+    
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
@@ -29,56 +30,12 @@ class MainFlutterWindow: NSWindow {
         self.contentViewController = flutterViewController
         self.setFrame(windowFrame, display: true)
         
-        flutterChannel = FlutterMethodChannel(name: "tech.threefold.mycelium/tun",
-                                                  binaryMessenger: flutterViewController.engine.binaryMessenger)
+        // Setup method channel in AppDelegate
+        if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+            appDelegate.setupMethodChannel(with: flutterViewController)
+        }
         
-        flutterChannel?.setMethodCallHandler({
-            (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-            // This method is invoked on the UI thread.
-            switch call.method {
-            case "generateSecretKey":
-                let key = generateSecretKey()
-                result(key)
-            case "addressFromSecretKey":
-                if let key = call.arguments as? FlutterStandardTypedData {
-                    let nodeAddr = addressFromSecretKey(data: key.data)
-                    debuglog("nodeAddr = \(nodeAddr)")
-                    result(nodeAddr)
-                } else {
-                    result(FlutterError(code: "INVALID_ARGUMENT", message: "Expect secret key", details: nil))
-                }
-            case "startVpn":
-                if let arguments = call.arguments as? Dictionary<String, Any> {
-                    let secretKey = arguments["secretKey"] as! FlutterStandardTypedData
-                    let peers = arguments["peers"] as! [String]
-                    self.flutterTunnelStatus = .started
-                    self.createTunnel(secretKey: secretKey.data, peers: peers)
-                    result(true)
-                } else {
-                    result(false)
-                }
-            case "stopVpn":
-                self.flutterTunnelStatus = .stopped
-                self.stopMycelium()
-                result(true)
-            case "getPeerStatus":
-                self.getPeerStatusFromService(result: result)
-            case "proxyConnect":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
-            case "proxyDisconnect":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
-            case "startProxyProbe":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
-            case "stopProxyProbe":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
-            case "listProxies":
-                result(FlutterError(code: "NOT_IMPLEMENTED", message: "Proxy methods not yet available on macOS", details: nil))
-            default:
-                result(FlutterMethodNotImplemented)
-            }
-        })
         statusObservationToken = observeVPNStatus()
-        
         
         RegisterGeneratedPlugins(registry: flutterViewController)
         
@@ -227,14 +184,75 @@ class MainFlutterWindow: NSWindow {
         self.vpnManager?.connection.stopVPNTunnel()
     }
     
-    // MARK: - Peer Status Methods
+    // MARK: - Tunnel Communication Methods
     
     // Tunnel-based getPeerStatus - communicates directly with tunnel extension (like iOS)
     private var cachedPeerStatus: [String]? = nil
     private var lastPeerStatusCall: Date = Date.distantPast
     private let peerStatusThrottleInterval: TimeInterval = 2.0
     
-    private func getPeerStatusFromService(result: @escaping FlutterResult) {
+    // Proxy scanning state
+    private var isProxyScanning = false
+    private var discoveredProxies: [String] = []
+    
+    // Generic tunnel message sender for VPN extension communication
+    func sendMessageToExtension(message: String, result: @escaping FlutterResult) {
+        guard let vpnManager = self.vpnManager else {
+            debuglog("VPN manager not available for \(message)")
+            result(FlutterError(code: "NO_VPN_MANAGER", message: "VPN manager not available", details: nil))
+            return
+        }
+        
+        guard let session = vpnManager.connection as? NETunnelProviderSession else {
+            debuglog("Tunnel session not available for \(message)")
+            result(FlutterError(code: "NO_TUNNEL_SESSION", message: "Tunnel session not available", details: nil))
+            return
+        }
+        
+        // Check if tunnel is connected
+        guard session.status == .connected else {
+            debuglog("Tunnel not connected (status: \(session.status.rawValue)) for \(message)")
+            result(FlutterError(code: "TUNNEL_NOT_CONNECTED", message: "Tunnel not connected", details: nil))
+            return
+        }
+        
+        let messageData = message.data(using: .utf8)!
+        
+        do {
+            try session.sendProviderMessage(messageData) { [weak self] responseData in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    
+                    guard let responseData = responseData else {
+                        debuglog("No response data from tunnel for \(message)")
+                        result(FlutterError(code: "NO_TUNNEL_RESPONSE", message: "No response from tunnel", details: nil))
+                        return
+                    }
+                    
+                    do {
+                        // Try to parse as JSON first (for listProxies)
+                        if let jsonResponse = try JSONSerialization.jsonObject(with: responseData, options: []) as? [String] {
+                            result(jsonResponse)
+                        } else if let stringResponse = String(data: responseData, encoding: .utf8) {
+                            // For simple string responses (like "ok")
+                            result([stringResponse])
+                        } else {
+                            debuglog("Invalid response format from tunnel for \(message)")
+                            result(FlutterError(code: "INVALID_TUNNEL_RESPONSE", message: "Invalid response format", details: nil))
+                        }
+                    } catch {
+                        debuglog("Error parsing tunnel response for \(message): \(error.localizedDescription)")
+                        result(FlutterError(code: "TUNNEL_PARSE_ERROR", message: error.localizedDescription, details: nil))
+                    }
+                }
+            }
+        } catch {
+            debuglog("Error sending message to tunnel for \(message): \(error.localizedDescription)")
+            result(FlutterError(code: "TUNNEL_MESSAGE_ERROR", message: error.localizedDescription, details: nil))
+        }
+    }
+    
+    func getPeerStatusFromService(result: @escaping FlutterResult) {
         let now = Date()
         
         // Throttle requests to prevent excessive calls
@@ -298,11 +316,9 @@ class MainFlutterWindow: NSWindow {
                     
                     do {
                         if let peerStatus = try JSONSerialization.jsonObject(with: responseData, options: []) as? [String] {
-                            debuglog("Received peer status from tunnel: \(peerStatus)")
                             self.cachedPeerStatus = peerStatus
                             result(peerStatus)
                         } else {
-                            debuglog("Invalid peer status format from tunnel, returning cached result or error")
                             if let cached = self.cachedPeerStatus {
                                 result(cached)
                             } else {
@@ -353,6 +369,146 @@ func infolog(_ msg: String, _ args: CVarArg...) {
 
 func errlog(_ msg: String, _ args: CVarArg...) {
     mlog(msg, .error, args)
+}
+
+extension MainFlutterWindow {
+    // MARK: - Main App Proxy Scanner
+    
+    func startProxyProbeInMainApp(result: @escaping FlutterResult) {
+        print("🔍 macOS: Starting proxy probe in main app (can reach overlay network)")
+        infolog("Starting proxy probe in main app (can reach overlay network)")
+        self.isProxyScanning = true
+        self.discoveredProxies = []
+        
+        // Get peer status to find overlay addresses
+        self.getPeerStatusFromService { peerStatusResult in
+            print("🔍 macOS: Got peer status result: \(type(of: peerStatusResult))")
+            
+            guard let peerStatus = peerStatusResult as? [String], peerStatus.count > 1 else {
+                print("❌ macOS: No peers found or invalid peer status")
+                result(["err_no_peers"])
+                return
+            }
+            
+            print("🔍 macOS: Peer status has \(peerStatus.count) entries")
+            
+            // Parse overlay addresses from peer status (JSON format)
+            var overlayAddresses: [String] = []
+            for i in 1..<peerStatus.count {
+                let peerJson = peerStatus[i]
+                print("🔍 macOS: Parsing peer \(i): \(peerJson)")
+                
+                // Parse JSON to extract overlay address
+                if let jsonData = peerJson.data(using: .utf8),
+                   let peerDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                   let address = peerDict["address"] as? String {
+                    
+                    // Extract IP from "IP:PORT" format
+                    let ipPart = address.split(separator: ":").first.map(String.init) ?? ""
+                    
+                    // Check if it's an IPv6 overlay address (starts with 4 or 5)
+                    if ipPart.hasPrefix("4") || ipPart.hasPrefix("5") {
+                        overlayAddresses.append(ipPart)
+                        print("🔍 macOS: Added overlay address: \(ipPart)")
+                    } else {
+                        print("⚠️ macOS: Skipping non-overlay address: \(ipPart)")
+                    }
+                } else {
+                    print("❌ macOS: Failed to parse JSON for peer \(i)")
+                }
+            }
+            
+            print("🔍 macOS: Probing \(overlayAddresses.count) overlay addresses for SOCKS5 proxies")
+            infolog("Probing \(overlayAddresses.count) overlay addresses for SOCKS5 proxies")
+            
+            // Probe each address in parallel
+            let group = DispatchGroup()
+            for address in overlayAddresses {
+                guard self.isProxyScanning else { break }
+                
+                group.enter()
+                self.testSocks5Proxy(address: address) { isValid in
+                    if isValid {
+                        let proxyAddr = "[\(address)]:1080"
+                        self.discoveredProxies.append(proxyAddr)
+                        infolog("✅ Found valid proxy: \(proxyAddr)")
+                    }
+                    group.leave()
+                }
+            }
+            
+            group.notify(queue: .main) {
+                infolog("Proxy probe complete. Found \(self.discoveredProxies.count) proxies")
+                result(["ok"])
+            }
+        }
+    }
+    
+    private func testSocks5Proxy(address: String, completion: @escaping (Bool) -> Void) {
+        DispatchQueue.global(qos: .background).async {
+            print("🔎 macOS: Testing SOCKS5 proxy at [\(address)]:1080")
+            
+            var inputStream: InputStream?
+            var outputStream: OutputStream?
+            
+            // Try to connect to [address]:1080
+            Stream.getStreamsToHost(withName: address, port: 1080, inputStream: &inputStream, outputStream: &outputStream)
+            
+            guard let input = inputStream, let output = outputStream else {
+                print("❌ macOS: Failed to create streams for \(address)")
+                completion(false)
+                return
+            }
+            
+            print("✅ macOS: Created streams for \(address), opening...")
+            
+            input.open()
+            output.open()
+            
+            // Send SOCKS5 greeting
+            let greeting: [UInt8] = [0x05, 0x01, 0x00]
+            let written = output.write(greeting, maxLength: greeting.count)
+            
+            guard written == greeting.count else {
+                print("❌ macOS: Failed to write SOCKS5 greeting to \(address)")
+                input.close()
+                output.close()
+                completion(false)
+                return
+            }
+            
+            print("✅ macOS: Sent SOCKS5 greeting to \(address), waiting for response...")
+            
+            // Read response with timeout
+            var response = [UInt8](repeating: 0, count: 2)
+            var totalRead = 0
+            let timeout = Date().addingTimeInterval(2.0)
+            
+            while totalRead < 2 && Date() < timeout {
+                if input.hasBytesAvailable {
+                    let read = input.read(&response[totalRead], maxLength: 2 - totalRead)
+                    if read > 0 {
+                        totalRead += read
+                    }
+                }
+                usleep(10000) // 10ms
+            }
+            
+            input.close()
+            output.close()
+            
+            // Check if valid SOCKS5 response
+            let isValid = totalRead == 2 && response[0] == 0x05 && response[1] == 0x00
+            
+            if isValid {
+                print("✅ macOS: Valid SOCKS5 proxy found at [\(address)]:1080")
+            } else {
+                print("❌ macOS: Invalid or no response from \(address) (read \(totalRead) bytes)")
+            }
+            
+            completion(isValid)
+        }
+    }
 }
 
 func mlog(_ msg: String,_ type: OSLogType, _ args: CVarArg...) {

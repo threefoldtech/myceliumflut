@@ -222,17 +222,17 @@ Future<List<String>> myFFGetPeerStatus() async {
 Future<List<String>> myFFProxyConnect(String remote) async {
   final outPtr = calloc<Pointer<Pointer<Int8>>>();
   final outLen = calloc<IntPtr>();
-  final remotePtr = remote.toNativeUtf8();
+  final remotePtr = remote.toNativeUtf8().cast<Int8>();
 
   try {
     var dylib = loadDll();
     final ffProxyConnect = dylib
         .lookup<
             NativeFunction<
-                Void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>,
+                Void Function(Pointer<Int8>, Pointer<Pointer<Pointer<Int8>>>,
                     Pointer<IntPtr>)>>('ff_proxy_connect')
         .asFunction<
-            void Function(Pointer<Utf8>, Pointer<Pointer<Pointer<Int8>>>,
+            void Function(Pointer<Int8>, Pointer<Pointer<Pointer<Int8>>>,
                 Pointer<IntPtr>)>();
 
     ffProxyConnect(remotePtr, outPtr, outLen);
@@ -403,5 +403,67 @@ Future<List<String>> myFFListProxies() async {
   } finally {
     calloc.free(outPtr);
     calloc.free(outLen);
+  }
+}
+
+// Windows system proxy configuration functions
+typedef FuncRustEnableSystemProxy = ffi.Bool Function(ffi.Pointer<ffi.Int8>);
+typedef FuncDartEnableSystemProxy = bool Function(ffi.Pointer<ffi.Int8>);
+
+Future<bool> myFFEnableSystemProxy({String? proxyAddress}) async {
+  try {
+    var dylib = loadDll();
+    final ffEnableSystemProxy = dylib
+        .lookup<NativeFunction<FuncRustEnableSystemProxy>>('ff_enable_system_proxy')
+        .asFunction<FuncDartEnableSystemProxy>();
+
+    if (proxyAddress != null && proxyAddress.isNotEmpty) {
+      final proxyPtr = proxyAddress.toNativeUtf8().cast<Int8>();
+      try {
+        return ffEnableSystemProxy(proxyPtr);
+      } finally {
+        calloc.free(proxyPtr);
+      }
+    } else {
+      // Pass null to use default 127.0.0.1:1080
+      return ffEnableSystemProxy(nullptr);
+    }
+  } catch (e) {
+    debugPrint("Failed to enable system proxy: $e");
+    return false;
+  }
+}
+
+typedef FuncRustDisableSystemProxy = ffi.Bool Function();
+typedef FuncDartDisableSystemProxy = bool Function();
+
+Future<bool> myFFDisableSystemProxy() async {
+  try {
+    var dylib = loadDll();
+    final ffDisableSystemProxy = dylib
+        .lookup<NativeFunction<FuncRustDisableSystemProxy>>('ff_disable_system_proxy')
+        .asFunction<FuncDartDisableSystemProxy>();
+
+    return ffDisableSystemProxy();
+  } catch (e) {
+    debugPrint("Failed to disable system proxy: $e");
+    return false;
+  }
+}
+
+typedef FuncRustGetSystemProxyStatus = ffi.Bool Function();
+typedef FuncDartGetSystemProxyStatus = bool Function();
+
+Future<bool> myFFGetSystemProxyStatus() async {
+  try {
+    var dylib = loadDll();
+    final ffGetSystemProxyStatus = dylib
+        .lookup<NativeFunction<FuncRustGetSystemProxyStatus>>('ff_get_system_proxy_status')
+        .asFunction<FuncDartGetSystemProxyStatus>();
+
+    return ffGetSystemProxyStatus();
+  } catch (e) {
+    debugPrint("Failed to get system proxy status: $e");
+    return false;
   }
 }

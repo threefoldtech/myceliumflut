@@ -291,8 +291,8 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 
-                                    (1.0 - _fadeAnimation.value) * 0.3,
+                              Theme.of(context).colorScheme.primary.withValues(
+                                    alpha: (1.0 - _fadeAnimation.value) * 0.3,
                                   ),
                         ),
                         child: Container(
@@ -323,8 +323,8 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 
-                                    (1.0 -
+                              Theme.of(context).colorScheme.primary.withValues(
+                                    alpha: (1.0 -
                                             (_fadeAnimation.value - 0.3)
                                                 .clamp(0.0, 1.0)) *
                                         0.2,
@@ -358,8 +358,8 @@ class _HeaderCardState extends State<_HeaderCard>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 
-                                    (1.0 -
+                              Theme.of(context).colorScheme.primary.withValues(
+                                    alpha: (1.0 -
                                             (_fadeAnimation.value - 0.6)
                                                 .clamp(0.0, 1.0)) *
                                         0.1,
@@ -426,16 +426,22 @@ class _HeaderCardState extends State<_HeaderCard>
           Text(
             'Tap to start the Mycelium node',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color:
-                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6)),
           ),
           const SizedBox(height: AppSpacing.xxl),
           AppButton(
             label: isConnected ? 'Stop Mycelium' : 'Start Mycelium',
             onPressed: isConnected ? stopMycelium : startMycelium,
             isLoading: isConnecting,
-            backgroundColor: isConnected ? Colors.red : null,
-            foregroundColor: isConnected ? Colors.white : null,
+            backgroundColor: isConnected
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.primary,
+            foregroundColor: isConnected
+                ? Theme.of(context).colorScheme.onErrorContainer
+                : Theme.of(context).colorScheme.onPrimary,
           ),
           const SizedBox(height: AppSpacing.lg),
           Visibility(
@@ -473,51 +479,155 @@ class _HeaderCardState extends State<_HeaderCard>
               ),
             ),
           ),
-          // Proxy controls temporarily disabled
-          // if (widget.status == NodeStatus.connected) ...[
-          //   const SizedBox(height: AppSpacing.lg),
-          //   AppCard(
-          //     margin: EdgeInsets.zero,
-          //     child: ExpansionTile(
-          //       title: Row(
-          //         mainAxisAlignment: MainAxisAlignment.center,
-          //         children: const [
-          //           Flexible(
-          //             child: Text('Advanced Options',
-          //                 overflow: TextOverflow.ellipsis),
-          //           ),
-          //           Icon(Icons.expand_more),
-          //         ],
-          //       ),
-          //       children: [
-          //         ListTile(
-          //           title: const Text('Enable SOCKS5 tunneling as VPN'),
-          //           trailing: Switch(
-          //             value: _isSocks5Enabled,
-          //             onChanged: (value) async {
-          //               setState(() => _isSocks5Enabled = value);
-          //               if (value) {
-          //                 // First start proxy probing to discover available proxies
-          //                 await widget.service.startProxyProbe();
-          //                 // Wait a bit for probes to discover proxies
-          //                 await Future.delayed(Duration(seconds: 10));
-          //                 // Then connect to best available proxy
-          //                 final result = await widget.service.proxyConnect(
-          //                     '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080');
-          //                 debugPrint('Proxy connect result: $result');
-          //               } else {
-          //                 final result = await widget.service.proxyDisconnect();
-          //                 // Stop proxy probing when disabled
-          //                 await widget.service.stopProxyProbe();
-          //                 debugPrint('Proxy disconnect result: $result');
-          //               }
-          //             },
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-          // ],
+          if (widget.status == NodeStatus.connected) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppCard(
+              margin: EdgeInsets.zero,
+              child: ExpansionTile(
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Flexible(
+                      child: Text('Advanced Options',
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    Icon(Icons.expand_more),
+                  ],
+                ),
+                children: [
+                  ListTile(
+                    title: const Text(
+                        'Route all device traffic through SOCKS5 proxy'),
+                    subtitle: const Text(
+                        'Forward all network traffic through Mycelium mesh'),
+                    trailing: Switch(
+                      value: _isSocks5Enabled,
+                      onChanged: (value) async {
+                        setState(() => _isSocks5Enabled = value);
+                        if (value) {
+                          // Enable device-wide proxy mode
+                          final result =
+                              await widget.service.startDeviceWideProxy();
+                          if (!result) {
+                            setState(() => _isSocks5Enabled = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Failed to enable device-wide proxy'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Device-wide proxy enabled successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                          debugPrint('Device-wide proxy result: $result');
+                        } else {
+                          // Disable device-wide proxy mode
+                          final result =
+                              await widget.service.stopDeviceWideProxy();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result
+                                  ? 'Device-wide proxy disabled successfully'
+                                  : 'Failed to disable device-wide proxy'),
+                              backgroundColor:
+                                  result ? Colors.green : Colors.red,
+                            ),
+                          );
+                          debugPrint(
+                              'Device-wide proxy disable result: $result');
+                        }
+                      },
+                    ),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    title: const Text('Proxy Status'),
+                    subtitle: FutureBuilder<Map<String, dynamic>>(
+                      future: widget.service.getDeviceWideProxyStatus(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final status = snapshot.data!;
+                          final enabled = status['enabled'] as bool? ?? false;
+                          final error = status['error'] as String?;
+
+                          if (error != null) {
+                            return Text('Error: $error',
+                                style: TextStyle(color: Colors.red));
+                          }
+
+                          return Text(
+                            enabled
+                                ? 'Active - All traffic routed through proxy'
+                                : 'Inactive',
+                            style: TextStyle(
+                              color: enabled ? Colors.green : Colors.grey,
+                              fontWeight:
+                                  enabled ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          );
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}',
+                              style: TextStyle(color: Colors.red));
+                        } else {
+                          return const Text('Checking status...');
+                        }
+                      },
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () {
+                        setState(() {}); // Trigger rebuild to refresh status
+                      },
+                    ),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    title: const Text('Available Proxies'),
+                    subtitle: FutureBuilder<List<String>>(
+                      future: widget.service.listProxies(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final proxies = snapshot.data!;
+                          if (proxies.isEmpty ||
+                              (proxies.length == 1 &&
+                                  proxies[0].startsWith('Failed'))) {
+                            return const Text('No proxies discovered yet');
+                          }
+                          return Text('${proxies.length} proxy(ies) available');
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else {
+                          return const Text('Discovering proxies...');
+                        }
+                      },
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.search),
+                      onPressed: () async {
+                        // Start proxy probe
+                        await widget.service.startProxyProbe();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Started proxy discovery...'),
+                          ),
+                        );
+                        // Refresh the UI after a delay
+                        await Future.delayed(Duration(seconds: 3));
+                        setState(() {});
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
