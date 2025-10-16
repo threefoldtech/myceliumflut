@@ -5,16 +5,52 @@ import OSLog
 
 /// Handles SOCKS5 proxy connections for device-wide traffic forwarding
 class SOCKSProxyHandler {
-    private let socksProxyHost = "127.0.0.1"
-    private let socksProxyPort: UInt16 = 1080
+    private var socksProxyHost = "127.0.0.1"
+    private var socksProxyPort: UInt16 = 1080
     private var isDeviceWideMode = false
     private var activeConnections: [NWConnection] = []
     private let connectionQueue = DispatchQueue(label: "socks.proxy.connections", qos: .userInitiated)
     
-    /// Enable device-wide proxy mode
-    func enableDeviceWideMode() {
-        infolog("SOCKSProxyHandler: Enabling device-wide proxy mode")
+    /// Enable device-wide proxy mode with optional custom proxy address
+    func enableDeviceWideMode(proxyAddress: String? = nil) {
+        if let addr = proxyAddress {
+            // Parse address like "[400:abcd::1]:1080"
+            if let host = parseProxyAddress(addr) {
+                socksProxyHost = host.0
+                socksProxyPort = host.1
+                infolog("SOCKSProxyHandler: Enabling device-wide proxy mode with custom address: \(socksProxyHost):\(socksProxyPort)")
+            } else {
+                infolog("SOCKSProxyHandler: Failed to parse proxy address, using default localhost:1080")
+            }
+        } else {
+            infolog("SOCKSProxyHandler: Enabling device-wide proxy mode with localhost:1080")
+        }
         isDeviceWideMode = true
+    }
+    
+    /// Parse proxy address like "[400:abcd::1]:1080" or "192.168.1.1:1080"
+    private func parseProxyAddress(_ address: String) -> (String, UInt16)? {
+        // Handle IPv6 format: [host]:port
+        if address.hasPrefix("[") {
+            let parts = address.split(separator: "]")
+            if parts.count == 2 {
+                let host = String(parts[0].dropFirst()) // Remove leading [
+                let portStr = String(parts[1].dropFirst()) // Remove leading :
+                if let port = UInt16(portStr) {
+                    return (host, port)
+                }
+            }
+        } else {
+            // Handle IPv4 format: host:port
+            let parts = address.split(separator: ":")
+            if parts.count == 2 {
+                let host = String(parts[0])
+                if let port = UInt16(parts[1]) {
+                    return (host, port)
+                }
+            }
+        }
+        return nil
     }
     
     /// Disable device-wide proxy mode
@@ -32,20 +68,26 @@ class SOCKSProxyHandler {
     /// Handle packet and forward through SOCKS5 proxy if needed
     func handlePacket(_ packet: Data, flow: NEPacketTunnelFlow) -> Bool {
         guard isDeviceWideMode else {
+            infolog("SOCKSProxyHandler: Not in device-wide mode, skipping")
             return false // Let normal Mycelium handling take over
         }
         
         // Parse packet to determine if it should be proxied
         guard let (destinationHost, destinationPort, protocolType) = parsePacket(packet) else {
+            errlog("SOCKSProxyHandler: Failed to parse packet")
             return false
         }
         
+        infolog("SOCKSProxyHandler: Parsed packet - \(protocolType) to \(destinationHost):\(destinationPort)")
+        
         // Check if this traffic should bypass proxy (Mycelium mesh traffic)
         if shouldBypassProxy(host: destinationHost, port: destinationPort) {
+            infolog("SOCKSProxyHandler: Bypassing proxy for \(destinationHost):\(destinationPort)")
             return false // Let normal Mycelium handling take over
         }
         
         // Forward through SOCKS5 proxy
+        infolog("SOCKSProxyHandler: Forwarding to SOCKS5 proxy")
         forwardThroughSOCKS(
             packet: packet,
             destinationHost: destinationHost,
@@ -159,18 +201,29 @@ class SOCKSProxyHandler {
         flow: NEPacketTunnelFlow
     ) {
         // Create connection to SOCKS5 proxy
+        infolog("SOCKSProxyHandler: Creating connection to SOCKS5 proxy at \(socksProxyHost):\(socksProxyPort)")
+        
+        // Create TCP connection to SOCKS5 proxy
         let endpoint = NWEndpoint.hostPort(
             host: NWEndpoint.Host(socksProxyHost),
             port: NWEndpoint.Port(integerLiteral: socksProxyPort)
         )
         
-        let connection = NWConnection(to: endpoint, using: .tcp)
+        let parameters = NWParameters.tcp
+        parameters.prohibitedInterfaceTypes = []
+        if socksProxyHost == "127.0.0.1" || socksProxyHost == "localhost" {
+            parameters.requiredInterfaceType = .loopback
+        }
+        
+        let connection = NWConnection(to: endpoint, using: parameters)
         activeConnections.append(connection)
         
-        connection.stateUpdateHandler = { [weak self] state in
+        connection.stateUpdateHandler = { [weak self] (state: NWConnection.State) in
             switch state {
+            case .preparing:
+                infolog("SOCKSProxyHandler: Preparing connection to SOCKS5 proxy...")
             case .ready:
-                infolog("SOCKSProxyHandler: Connected to SOCKS5 proxy")
+                infolog("SOCKSProxyHandler: Connected to SOCKS5 proxy successfully!")
                 self?.performSOCKSHandshake(
                     connection: connection,
                     destinationHost: destinationHost,
@@ -178,17 +231,20 @@ class SOCKSProxyHandler {
                     originalPacket: originalPacket,
                     flow: flow
                 )
+            case .waiting(let error):
+                errlog("SOCKSProxyHandler: Connection waiting: \(error)")
             case .failed(let error):
-                errlog("SOCKSProxyHandler: Connection to SOCKS5 proxy failed: \(error)")
+                errlog("SOCKSProxyHandler: Connection to SOCKS5 proxy FAILED: \(error.localizedDescription)")
                 self?.removeConnection(connection)
             case .cancelled:
                 infolog("SOCKSProxyHandler: Connection to SOCKS5 proxy cancelled")
                 self?.removeConnection(connection)
-            default:
-                break
+            @unknown default:
+                errlog("SOCKSProxyHandler: Unknown connection state")
             }
         }
         
+        infolog("SOCKSProxyHandler: Starting connection...")
         connection.start(queue: connectionQueue)
     }
     

@@ -25,6 +25,7 @@ import OSLog
     private var isMyceliumRunning = false
     private var currentSecretKey: Data? = nil
     private var currentPeers: [String] = []
+    private var connectedProxyAddress: String? = nil
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.NEVPNStatusDidChange, object: nil)
@@ -61,6 +62,7 @@ import OSLog
                         self.currentPeers = peers
                         
                         // Start Mycelium service in main app (no-TUN mode for proxy operations)
+                        // This has network access and can discover/connect to proxies
                         self.startMyceliumService()
                         
                         // Start VPN tunnel for mesh network routing
@@ -93,6 +95,8 @@ import OSLog
                         DispatchQueue.global(qos: .background).async {
                             do {
                                 try proxyConnect(remote: remote)
+                                // Save the connected proxy address
+                                self.connectedProxyAddress = remote
                                 DispatchQueue.main.async {
                                     result(["ok"])
                                 }
@@ -108,6 +112,7 @@ import OSLog
                 case "proxyDisconnect":
                     DispatchQueue.global(qos: .background).async {
                         let _ = proxyDisconnect()
+                        self.connectedProxyAddress = nil
                         DispatchQueue.main.async {
                             result(["ok"])
                         }
@@ -228,21 +233,29 @@ import OSLog
         startVpnTunnelWithDeviceWide(vpnManager: vpnManager, secretKey: secretKey, peers: peers, deviceWideMode: false)
     }
     
-    private func startVpnTunnelWithDeviceWide(vpnManager: NETunnelProviderManager, secretKey: Data, peers: [String], deviceWideMode: Bool) {
+    private func startVpnTunnelWithDeviceWide(vpnManager: NETunnelProviderManager, secretKey: Data, peers: [String], deviceWideMode: Bool, proxyAddress: String? = nil) {
         do {
             // Save configuration for later retrieval
             if let protocolConfig = vpnManager.protocolConfiguration as? NETunnelProviderProtocol {
-                protocolConfig.providerConfiguration = [
-                    "secretKey": secretKey,
-                    "peers": peers
-                ]
+                var config = protocolConfig.providerConfiguration ?? [:]
+                config["secretKey"] = secretKey
+                config["peers"] = peers
+                config["deviceWideProxy"] = deviceWideMode
+                if let proxyAddr = proxyAddress {
+                    config["proxyAddress"] = proxyAddr
+                    infolog("iOS: Passing proxy address to tunnel: \(proxyAddr)")
+                }
+                protocolConfig.providerConfiguration = config
             }
             
-            let options: [String: NSObject] = [
+            var options: [String: NSObject] = [
                 "secretKey": secretKey as NSObject,
                 "peers": peers as NSObject,
                 "deviceWideProxy": deviceWideMode as NSObject
             ]
+            if let proxyAddr = proxyAddress {
+                options["proxyAddress"] = proxyAddr as NSObject
+            }
             
             infolog("iOS: Starting VPN tunnel (deviceWideProxy: \(deviceWideMode))")
             try vpnManager.connection.startVPNTunnel(options: options)
@@ -415,7 +428,13 @@ import OSLog
         
         // Wait for VPN to stop, then restart in device-wide mode
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.startVpnTunnelWithDeviceWide(vpnManager: vpnManager, secretKey: secretKeyData, peers: peers, deviceWideMode: true)
+            self.startVpnTunnelWithDeviceWide(
+                vpnManager: vpnManager,
+                secretKey: secretKeyData,
+                peers: peers,
+                deviceWideMode: true,
+                proxyAddress: self.connectedProxyAddress
+            )
             result(true)
         }
     }
@@ -636,9 +655,11 @@ import OSLog
             guard let self = self else { return }
             
             infolog("iOS: Starting Mycelium service (no-TUN mode) with \(peers.count) peers")
+            infolog("iOS: SOCKS5 proxy will listen on 0.0.0.0:1080 (accessible from tunnel)")
             self.isMyceliumRunning = true
             
             // Call Mycelium's no-TUN mode which starts SOCKS5 proxy on localhost:1080
+            // Note: Mycelium should bind to 0.0.0.0:1080 to be accessible from tunnel extension
             startMyceliumNoTun(peers: peers, secretKey: secretKey)
             
             // If we reach here, Mycelium stopped unexpectedly

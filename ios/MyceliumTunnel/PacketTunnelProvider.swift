@@ -17,6 +17,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     private var started = false
     private var socksProxyHandler = SOCKSProxyHandler()
     private var isDeviceWideProxyEnabled = false
+    private var proxyAddress: String? = nil
 
     // TODO FIXME
     // - use completionHandle properly
@@ -32,34 +33,33 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         
         // Check if device-wide proxy mode is requested
         isDeviceWideProxyEnabled = options?["deviceWideProxy"] as? Bool ?? false
+        proxyAddress = options?["proxyAddress"] as? String
         infolog("Device-wide proxy mode: \(isDeviceWideProxyEnabled)")
+        if let addr = proxyAddress {
+            infolog("Proxy address: \(addr)")
+        }
         
         let tunnelNetworkSettings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: nodeAddr)
         tunnelNetworkSettings.ipv6Settings = NEIPv6Settings(addresses: [nodeAddr], networkPrefixLengths: [self.addrNetworkPrefixLengths])
         
         if isDeviceWideProxyEnabled {
-            // Configure for device-wide traffic forwarding through SOCKS5 proxy
+            // Device-wide proxy mode: Route ALL traffic through Mycelium
+            // Mycelium in tunnel will handle SOCKS5 forwarding to connected proxy
             infolog("Configuring tunnel for device-wide proxy mode")
             
             // Route ALL IPv4 and IPv6 traffic through the tunnel
-            // This is required for proxy settings to apply
+            // Mycelium will forward it through the connected remote proxy
             tunnelNetworkSettings.ipv4Settings = NEIPv4Settings(addresses: ["10.0.0.1"], subnetMasks: ["255.255.255.0"])
             tunnelNetworkSettings.ipv4Settings?.includedRoutes = [NEIPv4Route.default()]
             tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route.default()]
-            
-            // Note: NEProxySettings in VPN tunnels has limitations on iOS
-            // The proxy configuration is informational but doesn't automatically forward packets
-            // We need to manually handle packet forwarding in the tunnel extension
-            // For now, we'll enable the SOCKSProxyHandler to forward packets
-            socksProxyHandler.enableDeviceWideMode()
             
             // Configure DNS to prevent leaks
             tunnelNetworkSettings.dnsSettings = NEDNSSettings(servers: ["8.8.8.8", "8.8.4.4"])
             tunnelNetworkSettings.dnsSettings?.matchDomains = [""]
             
-            infolog("Device-wide proxy configured: routing all traffic through tunnel with SOCKS5 proxy")
+            infolog("Device-wide proxy: All traffic will route through Mycelium in tunnel")
         } else {
-            // Standard Mycelium mesh network configuration (IPv6 only)
+            // Standard mode: Only route Mycelium mesh traffic (IPv6 subset)
             tunnelNetworkSettings.ipv6Settings?.includedRoutes = [NEIPv6Route(destinationAddress: self.routeDestinationAddress, networkPrefixLength: self.routeNetworkPrefixLength)]
         }
         
@@ -74,22 +74,30 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             if let tunFd = self?.tunnelFileDescriptor {
                 self!.started = true
                 
-                // Start Mycelium for both standard and device-wide modes
-                // Device-wide mode routes ALL traffic (IPv4+IPv6) through Mycelium
-                // Standard mode routes only Mycelium mesh traffic (IPv6 subset)
+                // Start Mycelium in tunnel for mesh network routing
+                infolog("Starting Mycelium with tun fd:\(tunFd)")
                 DispatchQueue.global(qos: .default).async {
-                    if self!.isDeviceWideProxyEnabled {
-                        infolog("Starting Mycelium in device-wide mode with tun fd:\(tunFd) and peers = \(peers)")
-                    } else {
-                        infolog("Starting Mycelium in standard mode with tun fd:\(tunFd) and peers = \(peers)")
-                    }
-                    
                     startMycelium(peers: peers, tunFd: tunFd, secretKey: secretKey)
                     
                     if self?.started == true {
                         errlog("mycelium finished unexpectedly")
                         let err = NSError(domain: "tech.threefold.mycelium", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Mycelium finished unexpectedly"])
                         self?.cancelTunnelWithError(err)
+                    }
+                }
+                
+                // If device-wide mode and we have a proxy address, connect to it
+                if self!.isDeviceWideProxyEnabled, let proxyAddr = self?.proxyAddress {
+                    infolog("Device-wide mode: Will connect to proxy \(proxyAddr) after Mycelium starts")
+                    // Give Mycelium time to start, then connect to proxy
+                    DispatchQueue.global(qos: .default).asyncAfter(deadline: .now() + 3.0) {
+                        infolog("Connecting tunnel's Mycelium to proxy: \(proxyAddr)")
+                        do {
+                            try proxyConnect(remote: proxyAddr)
+                            infolog("Tunnel's Mycelium connected to proxy successfully")
+                        } catch {
+                            errlog("Failed to connect tunnel's Mycelium to proxy: \(error)")
+                        }
                     }
                 }
             } else {
@@ -313,17 +321,21 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         packetFlow.readPackets { [weak self] packets, protocols in
             guard let self = self, self.started else { return }
             
+            infolog("PacketTunnelProvider: Read \(packets.count) packets")
+            
             for (index, packet) in packets.enumerated() {
                 let protocolNumber = protocols[index].intValue
                 
                 // Handle packet through SOCKS proxy if enabled
                 if self.isDeviceWideProxyEnabled {
+                    infolog("PacketTunnelProvider: Handling packet \(index+1)/\(packets.count), size: \(packet.count) bytes, protocol: \(protocolNumber)")
                     let handled = self.socksProxyHandler.handlePacket(packet, flow: self.packetFlow)
                     
                     if !handled {
-                        // Packet not handled by proxy (e.g., Mycelium mesh traffic)
-                        // Let it pass through normally
-                        self.packetFlow.writePackets([packet], withProtocols: [protocols[index]])
+                        // Packet not handled by proxy (e.g., Mycelium mesh traffic, or parsing failed)
+                        infolog("PacketTunnelProvider: Packet not handled by SOCKS proxy, dropping it")
+                        // In device-wide mode, we should drop packets that can't be proxied
+                        // Otherwise they'll leak outside the proxy
                     }
                 } else {
                     // Standard mode - pass through
