@@ -89,7 +89,8 @@ class VpnProvider extends ChangeNotifier {
 
       // Check if Mycelium is connected first
       if (_myceliumService.status != NodeStatus.connected) {
-        print("VpnProvider: Cannot start proxy discovery - Mycelium not connected");
+        print(
+            "VpnProvider: Cannot start proxy discovery - Mycelium is not connected");
         _setError("Mycelium must be connected to discover proxies");
         _isProbing = false;
         notifyListeners();
@@ -98,10 +99,12 @@ class VpnProvider extends ChangeNotifier {
 
       // Start proxy probe in background without blocking UI
       final probeResult = await _myceliumService.startProxyProbe();
-      
+
       // Check for error responses
-      if (probeResult.isNotEmpty && probeResult.first.toLowerCase().contains("err_node_timeout")) {
-        print("VpnProvider: Node timeout error - Mycelium mesh network not responding");
+      if (probeResult.isNotEmpty &&
+          probeResult.first.toLowerCase().contains("err_node_timeout")) {
+        print(
+            "VpnProvider: Node timeout error - Mycelium mesh network not responding");
         _setError("Mesh network timeout - check Mycelium connection");
         _isProbing = false;
         notifyListeners();
@@ -117,8 +120,9 @@ class VpnProvider extends ChangeNotifier {
       Timer(const Duration(seconds: 10), () {
         _updateProxyList();
       });
-      
-      print("VpnProvider: Proxy discovery started - checking every 15 seconds (VPN extension may need 2-3 minutes)");
+
+      print(
+          "VpnProvider: Proxy discovery started - checking every 15 seconds (VPN extension may need 2-3 minutes)");
     } catch (e) {
       _setError("Failed to start proxy discovery: $e");
       _isProbing = false;
@@ -145,17 +149,20 @@ class VpnProvider extends ChangeNotifier {
     try {
       print("VpnProvider: Checking for available proxies...");
       final proxies = await _myceliumService.listProxies();
-      print("VpnProvider: Received ${proxies.length} proxy responses: $proxies");
-      
+      print(
+          "VpnProvider: Received ${proxies.length} proxy responses: $proxies");
+
       // Check for error responses
-      if (proxies.isNotEmpty && proxies.first.toLowerCase().contains("err_node_timeout")) {
-        print("VpnProvider: Node timeout error - Mycelium mesh network not responding");
+      if (proxies.isNotEmpty &&
+          proxies.first.toLowerCase().contains("err_node_timeout")) {
+        print(
+            "VpnProvider: Node timeout error - Mycelium mesh network not responding");
         _setError("Mesh network timeout - check Mycelium connection");
         // Stop discovery on timeout
         await stopProxyDiscovery();
         return;
       }
-      
+
       final newProxies = proxies
           .where((address) =>
               address.isNotEmpty &&
@@ -167,7 +174,7 @@ class VpnProvider extends ChangeNotifier {
                 name: _getProxyDisplayName(address),
               ))
           .toList();
-      
+
       print("VpnProvider: Filtered to ${newProxies.length} valid proxies");
 
       // Don't auto-select any proxy - keep selectedProxy as null for auto-select mode
@@ -228,7 +235,8 @@ class VpnProvider extends ChangeNotifier {
             throw Exception("No proxies available");
           }
           // Pick a random proxy from available list
-          final randomIndex = DateTime.now().millisecondsSinceEpoch % _availableProxies.length;
+          final randomIndex =
+              DateTime.now().millisecondsSinceEpoch % _availableProxies.length;
           proxyAddress = _availableProxies[randomIndex].address;
           proxyInfo = _availableProxies[randomIndex];
         } else {

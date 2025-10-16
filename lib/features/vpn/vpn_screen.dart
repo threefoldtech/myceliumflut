@@ -88,7 +88,7 @@ class _VpnScreenState extends ConsumerState<VpnScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Mycelium Not Running',
+                'Mycelium is not running',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

@@ -54,7 +54,7 @@ class _VpnContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Mycelium Not Running',
+                  'Mycelium is not running',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
