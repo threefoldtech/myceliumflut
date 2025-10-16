@@ -299,10 +299,13 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Use Row with spaceBetween if enough space, otherwise Wrap
+                final hasEnoughSpace = constraints.maxWidth > 450;
+                
+                final titleWidget = Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.search, size: 20, color: Colors.blue[400]),
                     const SizedBox(width: 8),
@@ -313,8 +316,9 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                           ),
                     ),
                   ],
-                ),
-                OutlinedButton.icon(
+                );
+                
+                final buttonWidget = OutlinedButton.icon(
                   onPressed: () {
                     if (isDiscovering) {
                       vpnProvider.stopProxyDiscovery();
@@ -338,8 +342,30 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
-                ),
-              ],
+                );
+                
+                if (hasEnoughSpace) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      titleWidget,
+                      buttonWidget,
+                    ],
+                  );
+                } else {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      titleWidget,
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: buttonWidget,
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 20),
             if (proxies.isEmpty && !isDiscovering)
