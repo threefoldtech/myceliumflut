@@ -420,14 +420,14 @@ class _DesktopConnectionCardState extends State<_DesktopConnectionCard>
             SizedBox(
               width: 200,
               child: AppButton(
-                label: isConnected ? 'Disconnect Mycelium' : 'Start Mycelium',
+                label: isConnected ? 'Stop Mycelium' : 'Start Mycelium',
                 onPressed: isConnected ? stopMycelium : startMycelium,
                 isLoading: isConnecting,
                 backgroundColor: isConnected
-                    ? AppColors.error
+                    ? Theme.of(context).colorScheme.errorContainer
                     : Theme.of(context).colorScheme.primary,
                 foregroundColor: isConnected
-                    ? AppColors.white
+                    ? Theme.of(context).colorScheme.onErrorContainer
                     : Theme.of(context).colorScheme.onPrimary,
               ),
             ),
