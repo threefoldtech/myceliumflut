@@ -723,6 +723,18 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -742,14 +754,26 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_generate_secret_key(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_mycelmob_fn_func_get_peer_status(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_hello_int(uniffi_out_err: UniffiRustCallStatus, 
     ): Int
     fun uniffi_mycelmob_fn_func_hello_mycelios(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_mycelmob_fn_func_list_proxies(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_mycelmob_fn_func_proxy_connect(`remote`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_mycelmob_fn_func_proxy_disconnect(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_start_mycelium(`peers`: RustBuffer.ByValue,`tunFd`: Int,`secretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    fun uniffi_mycelmob_fn_func_start_proxy_probe(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_stop_mycelium(uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    fun uniffi_mycelmob_fn_func_stop_proxy_probe(uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun ffi_mycelmob_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun ffi_mycelmob_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -866,13 +890,25 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_mycelmob_checksum_func_generate_secret_key(
     ): Short
+    fun uniffi_mycelmob_checksum_func_get_peer_status(
+    ): Short
     fun uniffi_mycelmob_checksum_func_hello_int(
     ): Short
     fun uniffi_mycelmob_checksum_func_hello_mycelios(
     ): Short
+    fun uniffi_mycelmob_checksum_func_list_proxies(
+    ): Short
+    fun uniffi_mycelmob_checksum_func_proxy_connect(
+    ): Short
+    fun uniffi_mycelmob_checksum_func_proxy_disconnect(
+    ): Short
     fun uniffi_mycelmob_checksum_func_start_mycelium(
     ): Short
+    fun uniffi_mycelmob_checksum_func_start_proxy_probe(
+    ): Short
     fun uniffi_mycelmob_checksum_func_stop_mycelium(
+    ): Short
+    fun uniffi_mycelmob_checksum_func_stop_proxy_probe(
     ): Short
     fun ffi_mycelmob_uniffi_contract_version(
     ): Int
@@ -897,16 +933,34 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_mycelmob_checksum_func_generate_secret_key() != 63601.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_mycelmob_checksum_func_get_peer_status() != 1198.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_mycelmob_checksum_func_hello_int() != 31063.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mycelmob_checksum_func_hello_mycelios() != 48239.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_mycelmob_checksum_func_list_proxies() != 65480.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mycelmob_checksum_func_proxy_connect() != 60646.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mycelmob_checksum_func_proxy_disconnect() != 62431.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_mycelmob_checksum_func_start_mycelium() != 61012.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_mycelmob_checksum_func_start_proxy_probe() != 23502.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_mycelmob_checksum_func_stop_mycelium() != 28488.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mycelmob_checksum_func_stop_proxy_probe() != 19306.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1099,6 +1153,15 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
     
+ fun `getPeerStatus`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_get_peer_status(
+        _status)
+}
+    )
+    }
+    
  fun `helloInt`(): kotlin.Int {
             return FfiConverterInt.lift(
     uniffiRustCall() { _status ->
@@ -1117,6 +1180,33 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
     
+ fun `listProxies`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_list_proxies(
+        _status)
+}
+    )
+    }
+    
+ fun `proxyConnect`(`remote`: kotlin.String): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_proxy_connect(
+        FfiConverterString.lower(`remote`),_status)
+}
+    )
+    }
+    
+ fun `proxyDisconnect`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_proxy_disconnect(
+        _status)
+}
+    )
+    }
+    
  fun `startMycelium`(`peers`: List<kotlin.String>, `tunFd`: kotlin.Int, `secretKey`: kotlin.ByteArray)
         = 
     uniffiRustCall() { _status ->
@@ -1125,6 +1215,15 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 }
     
     
+ fun `startProxyProbe`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_start_proxy_probe(
+        _status)
+}
+    )
+    }
+    
  fun `stopMycelium`()
         = 
     uniffiRustCall() { _status ->
@@ -1132,6 +1231,15 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
         _status)
 }
     
+    
+ fun `stopProxyProbe`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_stop_proxy_probe(
+        _status)
+}
+    )
+    }
     
 
 
