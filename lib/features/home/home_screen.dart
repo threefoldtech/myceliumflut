@@ -425,10 +425,10 @@ class _HeaderCardState extends State<_HeaderCard>
             onPressed: isConnected ? stopMycelium : startMycelium,
             isLoading: isConnecting,
             backgroundColor: isConnected
-                ? Theme.of(context).colorScheme.errorContainer
+                ? Theme.of(context).colorScheme.error
                 : Theme.of(context).colorScheme.primary,
             foregroundColor: isConnected
-                ? Theme.of(context).colorScheme.onErrorContainer
+                ? Theme.of(context).colorScheme.onError
                 : Theme.of(context).colorScheme.onPrimary,
           ),
           const SizedBox(height: AppSpacing.lg),
