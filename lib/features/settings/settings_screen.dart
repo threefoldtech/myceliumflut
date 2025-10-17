@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myceliumflut/app/theme/tokens.dart';
@@ -16,9 +18,15 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // On mobile (Android/iOS), VPN tab is hidden, so Settings is at index 2
+    // On desktop (macOS/Windows), VPN tab is shown, so Settings is at index 3
+    final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows;
+    final settingsIndex = isDesktop ? 3 : 2;
+    
     return AppScaffold(
       title: _buildTitle(context),
-      currentIndex: 3, // Settings is the 4th tab (index 3)
+      currentIndex: settingsIndex,
       onTabSelected: null,
       child: ResponsiveLayout(
         mobile: _SettingsMobileLayout(),
