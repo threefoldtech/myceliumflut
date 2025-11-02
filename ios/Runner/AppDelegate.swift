@@ -396,7 +396,7 @@ import OSLog
     
     private func getProxyStatus(result: @escaping FlutterResult) {
         guard let vpnManager = self.vpnManager else {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": "VPN manager not available"
@@ -406,7 +406,7 @@ import OSLog
         }
         
         guard let session = vpnManager.connection as? NETunnelProviderSession else {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": "Tunnel session not available"
@@ -416,7 +416,7 @@ import OSLog
         }
         
         guard session.status == .connected else {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": "Tunnel not connected"
@@ -434,7 +434,7 @@ import OSLog
                    let response = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any] {
                     result(response)
                 } else {
-                    let status = [
+                    let status: [String: Any] = [
                         "enabled": false,
                         "socksEnabled": false,
                         "error": "Failed to get proxy status"
@@ -443,7 +443,7 @@ import OSLog
                 }
             }
         } catch {
-            let status = [
+            let status: [String: Any] = [
                 "enabled": false,
                 "socksEnabled": false,
                 "error": error.localizedDescription
