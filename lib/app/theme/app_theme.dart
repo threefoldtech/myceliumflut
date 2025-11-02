@@ -99,6 +99,7 @@ class AppTheme {
     ).copyWith(
       secondary: AppColors.brandAccent,
       error: AppColors.error,
+      onError: AppColors.white,
       surface: AppColors.neutral800,
       outline: AppColors.neutral600,
     );
