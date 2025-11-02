@@ -4,6 +4,8 @@ import '../../../state/mycelium_providers.dart' as providers;
 import '../../../state/vpn_provider.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import '../../../app/widgets/responsive_layout.dart';
+import '../../../state/proxy_location_provider.dart';
+import '../../../state/geolocation_providers.dart';
 
 class ModernVpnLayout extends ConsumerStatefulWidget {
   final MyceliumService myceliumService;
@@ -170,7 +172,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 const SizedBox(height: 4),
                 Text(
                   vpnProvider.mode == VpnMode.automatic
-                      ? 'Automatically select best node'
+                      ? 'Automatically select a node'
                       : 'Manually configure node',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
@@ -483,50 +485,8 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             items: allOptions.map((proxy) {
               return DropdownMenuItem<String>(
                 value: proxy.address,
-                child: Row(
-                  children: [
-                    if (proxy.address == 'auto') ...[
-                      Icon(Icons.auto_awesome,
-                          size: 16, color: Colors.blue[400]),
-                      const SizedBox(width: 8),
-                    ] else ...[
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.green[400],
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: Text(
-                        proxy.address == 'auto'
-                            ? 'Auto-select (Random)'
-                            : proxy.address,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (proxy.address == 'auto')
-                      Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[600],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'Default',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
+                child: _ProxyDropdownItem(
+                  proxy: proxy,
                 ),
               );
             }).toList(),
@@ -694,6 +654,109 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Widget for displaying proxy dropdown items with country flags
+class _ProxyDropdownItem extends ConsumerWidget {
+  final ProxyInfo proxy;
+
+  const _ProxyDropdownItem({required this.proxy});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (proxy.address == 'auto') {
+      // Auto-select option
+      return Row(
+        children: [
+          Icon(Icons.auto_awesome, size: 16, color: Colors.blue[400]),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Auto-select (Random)',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.blue[600],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Default',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Regular proxy option with country flag
+    final locationAsync = ref.watch(proxyLocationProvider(proxy.address));
+    final geoService = ref.read(geolocationServiceProvider);
+
+    return Row(
+      children: [
+        // Country flag or loading indicator
+        if (locationAsync != null && locationAsync.country != 'Unknown') ...[
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: geoService.getFlagWidget(locationAsync.countryCode),
+            ),
+          ),
+        ] else ...[
+          // Show globe icon for unknown countries or while loading
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.public,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                proxy.address,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
+              ),
+              if (locationAsync != null && locationAsync.country != 'Unknown')
+                Text(
+                  '${locationAsync.city.isNotEmpty ? '${locationAsync.city}, ' : ''}${locationAsync.country}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
           ),
         ),
       ],

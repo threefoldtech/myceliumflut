@@ -51,6 +51,7 @@ dependencies:
   tray_manager: ^0.2.3
   window_manager: ^0.4.2
   package_info_plus: ^8.0.0
+  socks5_proxy: ^2.1.1
 
 dev_dependencies:
   flutter_test:
