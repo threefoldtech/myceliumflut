@@ -53,7 +53,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   flutter_desktop_sleep: 73f50395cd890bd52826c69451d1bab02b89a5f9
   flutter_window_close: bd408414cbbf0d39f0d3076c4da0cdbf1c527168
-  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
@@ -61,6 +61,6 @@ SPEC CHECKSUMS:
   tray_manager: a104b5c81b578d83f3c3d0f40a997c8b10810166
   window_manager: 1d01fa7ac65a6e6f83b965471b1a7fdd3f06166c
 
-PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
+PODFILE CHECKSUM: 9ebaf0ce3d369aaa26a9ea0e159195ed94724cf3
 
 COCOAPODS: 1.16.2

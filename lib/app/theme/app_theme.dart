@@ -43,7 +43,7 @@ class AppTheme {
         titleTextStyle:
             AppTypography.title.copyWith(color: AppColors.neutral900),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -99,6 +99,7 @@ class AppTheme {
     ).copyWith(
       secondary: AppColors.brandAccent,
       error: AppColors.error,
+      onError: AppColors.white,
       surface: AppColors.neutral800,
       outline: AppColors.neutral600,
     );
@@ -130,7 +131,7 @@ class AppTheme {
         titleTextStyle:
             AppTypography.title.copyWith(color: colorScheme.onSurface),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.lg),

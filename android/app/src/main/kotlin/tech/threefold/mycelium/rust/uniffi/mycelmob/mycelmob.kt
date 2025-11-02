@@ -735,6 +735,8 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -767,6 +769,8 @@ internal interface UniffiLib : Library {
     fun uniffi_mycelmob_fn_func_proxy_disconnect(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_mycelmob_fn_func_start_mycelium(`peers`: RustBuffer.ByValue,`tunFd`: Int,`secretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    fun uniffi_mycelmob_fn_func_start_mycelium_no_tun(`peers`: RustBuffer.ByValue,`secretKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
     fun uniffi_mycelmob_fn_func_start_proxy_probe(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -904,6 +908,8 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_mycelmob_checksum_func_start_mycelium(
     ): Short
+    fun uniffi_mycelmob_checksum_func_start_mycelium_no_tun(
+    ): Short
     fun uniffi_mycelmob_checksum_func_start_proxy_probe(
     ): Short
     fun uniffi_mycelmob_checksum_func_stop_mycelium(
@@ -952,6 +958,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mycelmob_checksum_func_start_mycelium() != 61012.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mycelmob_checksum_func_start_mycelium_no_tun() != 54217.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mycelmob_checksum_func_start_proxy_probe() != 23502.toShort()) {
@@ -1212,6 +1221,14 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_start_mycelium(
         FfiConverterSequenceString.lower(`peers`),FfiConverterInt.lower(`tunFd`),FfiConverterByteArray.lower(`secretKey`),_status)
+}
+    
+    
+ fun `startMyceliumNoTun`(`peers`: List<kotlin.String>, `secretKey`: kotlin.ByteArray)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_mycelmob_fn_func_start_mycelium_no_tun(
+        FfiConverterSequenceString.lower(`peers`),FfiConverterByteArray.lower(`secretKey`),_status)
 }
     
     
