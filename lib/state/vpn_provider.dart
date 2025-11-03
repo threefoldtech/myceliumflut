@@ -35,6 +35,20 @@ class VpnProvider extends ChangeNotifier {
   Timer? _probeTimer;
   String? _errorMessage;
 
+  // Hardcoded proxy nodes for faster initial display (all on port 1080)
+  static const List<String> _hardcodedProxyNodes = [
+    '[54b:83ab:6cb5:7b38:44ae:cd14:53f3:a907]:1080',
+    '[40a:152c:b85b:9646:5b71:d03a:eb27:2462]:1080',
+    '[597:a4ef:806:b09:6650:cbbf:1b68:cc94]:1080',
+    '[549:8bce:fa45:e001:cbf8:f2e2:2da6:a67c]:1080',
+    '[410:2778:53bf:6f41:af28:1b60:d7c0:707a]:1080',
+    '[488:74ac:8a31:277b:9683:c8e:e14f:79a7]:1080',
+    '[4ab:a385:5a4e:ef8f:92e0:1605:7cb6:24b2]:1080',
+    '[4de:b695:3859:8234:d04c:5de6:8097:c27c]:1080',
+    '[5eb:c711:f9ab:eb24:ff26:e392:a115:1c0e]:1080',
+    '[445:465:fe81:1e2b:5420:a029:6b0:9f61]:1080',
+  ];
+
   VpnProvider(this._myceliumService);
 
   // Getters
@@ -163,27 +177,73 @@ class VpnProvider extends ChangeNotifier {
         return;
       }
 
-      final newProxies = proxies
+      // Filter discovered proxies
+      final discoveredProxies = proxies
           .where((address) =>
               address.isNotEmpty &&
               address != "Failed to list proxies" &&
               address.toLowerCase() != "ok" &&
               !address.toLowerCase().contains("err_"))
-          .map((address) => ProxyInfo(
-                address: address,
-                name: _getProxyDisplayName(address),
-              ))
           .toList();
 
-      print("VpnProvider: Filtered to ${newProxies.length} valid proxies");
+      print(
+          "VpnProvider: Filtered to ${discoveredProxies.length} discovered proxies");
+
+      // Create a set of discovered proxy addresses for duplicate detection
+      final discoveredAddressSet =
+          discoveredProxies.map((addr) => _normalizeProxyAddress(addr)).toSet();
+
+      // Add hardcoded proxies first (only if not already discovered)
+      final List<ProxyInfo> combinedProxies = [];
+      for (final hardcodedAddress in _hardcodedProxyNodes) {
+        final normalizedHardcoded = _normalizeProxyAddress(hardcodedAddress);
+        if (!discoveredAddressSet.contains(normalizedHardcoded)) {
+          combinedProxies.add(ProxyInfo(
+            address: hardcodedAddress,
+            name: _getProxyDisplayName(hardcodedAddress),
+          ));
+        }
+      }
+
+      // Add discovered proxies
+      combinedProxies.addAll(discoveredProxies.map((address) => ProxyInfo(
+            address: address,
+            name: _getProxyDisplayName(address),
+          )));
+
+      print(
+          "VpnProvider: Total proxies (${_hardcodedProxyNodes.length} hardcoded + ${discoveredProxies.length} discovered - duplicates): ${combinedProxies.length}");
 
       // Don't auto-select any proxy - keep selectedProxy as null for auto-select mode
-      _availableProxies = newProxies;
+      _availableProxies = combinedProxies;
       notifyListeners();
     } catch (e) {
       print("VpnProvider: Error updating proxy list: $e");
       _setError("Failed to list proxies: $e");
     }
+  }
+
+  /// Normalize proxy address for duplicate detection
+  /// Extracts the core address part, removing port and brackets if present
+  String _normalizeProxyAddress(String address) {
+    // Remove brackets and port for IPv6: [xxxx:xxxx:...]:port -> xxxx:xxxx:...
+    if (address.contains('[') && address.contains(']:')) {
+      final parts = address.split(']:');
+      return parts[0].replaceAll('[', '').trim();
+    }
+    // Remove port for IPv4: x.x.x.x:port -> x.x.x.x
+    if (address.contains(':')) {
+      final parts = address.split(':');
+      // For IPv6 without brackets, keep the full address
+      // For IPv4, remove the last part (port)
+      if (parts.length == 2) {
+        // Likely IPv4:port
+        return parts[0].trim();
+      }
+      // IPv6 address without brackets - keep as is
+      return address.trim();
+    }
+    return address.trim();
   }
 
   String _getProxyDisplayName(String address) {
