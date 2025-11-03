@@ -744,18 +744,18 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                     ),
                     decoration: BoxDecoration(
                       color: _pingResult!.success
-                          ? (_pingResult!.latencyMs! < 50
+                          ? (_pingResult!.latencyMs! < 150
                               ? AppColors.success.withValues(alpha: 0.1)
-                              : _pingResult!.latencyMs! < 150
+                              : _pingResult!.latencyMs! < 500
                                   ? Colors.orange.withValues(alpha: 0.1)
                                   : AppColors.error.withValues(alpha: 0.1))
                           : AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: _pingResult!.success
-                            ? (_pingResult!.latencyMs! < 50
+                            ? (_pingResult!.latencyMs! < 150
                                 ? AppColors.success.withValues(alpha: 0.3)
-                                : _pingResult!.latencyMs! < 150
+                                : _pingResult!.latencyMs! < 500
                                     ? Colors.orange.withValues(alpha: 0.3)
                                     : AppColors.error.withValues(alpha: 0.3))
                             : AppColors.error.withValues(alpha: 0.3),
@@ -770,9 +770,9 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                               : Icons.error,
                           size: 14,
                           color: _pingResult!.success
-                              ? (_pingResult!.latencyMs! < 50
+                              ? (_pingResult!.latencyMs! < 150
                                   ? AppColors.success
-                                  : _pingResult!.latencyMs! < 150
+                                  : _pingResult!.latencyMs! < 500
                                       ? Colors.orange
                                       : AppColors.error)
                               : AppColors.error,
@@ -785,9 +785,9 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: _pingResult!.success
-                                        ? (_pingResult!.latencyMs! < 50
+                                        ? (_pingResult!.latencyMs! < 150
                                             ? AppColors.success
-                                            : _pingResult!.latencyMs! < 150
+                                            : _pingResult!.latencyMs! < 500
                                                 ? Colors.orange
                                                 : AppColors.error)
                                         : AppColors.error,
@@ -820,8 +820,10 @@ class _PeersEmptyState extends ConsumerWidget {
         Text('Add peers to start Mycelium or load saved peers.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color:
-                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6))),
         const SizedBox(height: AppSpacing.xxl),
         FilledButton.icon(
           onPressed: () => _showAddPeerDialog(context, ref),
