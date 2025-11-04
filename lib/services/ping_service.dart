@@ -24,7 +24,39 @@ class PingService {
     'google.com',
   ];
 
+  // Limit concurrent ping operations to prevent socket exhaustion
+  static const int _maxConcurrentPings = 10;
+  static int _activePings = 0;
+  static final List<Completer<void>> _waitingQueue = [];
+
+  Future<void> _acquirePingSlot() async {
+    if (_activePings < _maxConcurrentPings) {
+      _activePings++;
+      return;
+    }
+
+    // Wait in queue if max concurrent pings reached
+    final completer = Completer<void>();
+    _waitingQueue.add(completer);
+    await completer.future;
+  }
+
+  void _releasePingSlot() {
+    _activePings--;
+    
+    // Process next waiting ping if any
+    if (_waitingQueue.isNotEmpty) {
+      final completer = _waitingQueue.removeAt(0);
+      _activePings++;
+      completer.complete();
+    }
+  }
+
   Future<PingResult> ping(String host) async {
+    // Acquire a slot to limit concurrent pings
+    await _acquirePingSlot();
+    
+    Socket? socket;
     try {
       // Extract hostname/IP from peer address if it contains protocol
       String targetHost = host;
@@ -36,14 +68,17 @@ class PingService {
       // Use actual socket connection to test reachability and measure latency
       final stopwatch = Stopwatch()..start();
 
-      final socket = await Socket.connect(
+      socket = await Socket.connect(
         targetHost,
         9651, // Mycelium default port
         timeout: const Duration(seconds: 5),
       );
 
       stopwatch.stop();
+      
+      // Properly close and destroy the socket
       await socket.close();
+      socket.destroy();
 
       return PingResult(
         host: host,
@@ -59,6 +94,16 @@ class PingService {
         success: false,
         timestamp: DateTime.now(),
       );
+    } finally {
+      // Ensure socket is destroyed even if an error occurs
+      try {
+        socket?.destroy();
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+      
+      // Release the ping slot for next waiting operation
+      _releasePingSlot();
     }
   }
 
