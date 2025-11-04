@@ -14,6 +14,8 @@ import 'package:window_manager/window_manager.dart';
 
 import 'services/ffi/mycelium_service.dart';
 import 'state/mycelium_providers.dart';
+import 'myceliumflut_ffi_binding.dart';
+import 'app/router/app_router.dart' as router_export;
 
 final _logger = Logger('Mycelium');
 
@@ -40,6 +42,7 @@ class _MyAppState extends ConsumerState<MyApp>
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
   final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
   final MyceliumService _myceliumService = MyceliumService();
+  bool _hasShownAdminWarning = false;
 
   @override
   void initState() {
@@ -79,6 +82,13 @@ class _MyAppState extends ConsumerState<MyApp>
       await windowManager.setSize(const Size(1200, 800));
       await windowManager.center();
       _logger.info("Window manager setSize and center completed");
+
+      // Check for administrator privileges on Windows after UI is ready
+      if (Platform.isWindows) {
+        Future.delayed(const Duration(seconds: 2), () {
+          _checkAdminPrivileges();
+        });
+      }
 
       // Initialize tray manager with careful error handling
       try {
@@ -139,6 +149,109 @@ class _MyAppState extends ConsumerState<MyApp>
     } catch (e) {
       _logger.warning("Failed to update tray menu: $e");
     }
+  }
+
+  void _checkAdminPrivileges() {
+    if (_hasShownAdminWarning) return;
+    
+    try {
+      final isAdmin = myFFIsRunningAsAdmin();
+      _logger.info("Administrator check: $isAdmin");
+      
+      if (!isAdmin && mounted) {
+        _hasShownAdminWarning = true;
+        _showAdminWarningDialog();
+      }
+    } catch (e) {
+      _logger.warning("Failed to check administrator privileges: $e");
+    }
+  }
+
+  void _showAdminWarningDialog() {
+    final navigatorContext = router_export.rootNavigatorKey.currentContext;
+    _logger.info("Attempting to show admin warning dialog...");
+    _logger.info("Navigator context available: ${navigatorContext != null}");
+    _logger.info("Widget mounted: $mounted");
+    
+    if (navigatorContext == null || !mounted) {
+      _logger.warning("Cannot show admin warning: context not available");
+      return;
+    }
+
+    _logger.info("Showing admin warning dialog now");
+    showDialog(
+      context: navigatorContext,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Important Notice',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: const SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mycelium needs special permissions to work properly.',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Without these permissions, the app may not be able to:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '• Connect to the Mycelium network',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '• Enable secure networking features',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'How to fix this:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '1. Close Mycelium',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '2. Right-click the Mycelium icon',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '3. Choose "Run as administrator"',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

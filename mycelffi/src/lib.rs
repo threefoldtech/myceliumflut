@@ -252,18 +252,7 @@ fn set_windows_proxy(proxy: &str, enable: bool) -> Result<(), std::io::Error> {
     }
     
     // Notify Windows that proxy settings changed
-    #[cfg(target_os = "windows")]
-    unsafe {
-        use std::ptr;
-        const INTERNET_OPTION_SETTINGS_CHANGED: u32 = 39;
-        const INTERNET_OPTION_REFRESH: u32 = 37;
-        
-        // These are Windows API calls to refresh proxy settings
-        // We're using raw values since we don't want to pull in full winapi crate
-        // In production, you might want to use winapi crate for proper definitions
-        
-        // For now, just setting registry is enough - apps will pick it up
-    }
+    // For now, just setting registry is enough - apps will pick it up
     
     Ok(())
 }
@@ -298,4 +287,93 @@ pub extern "C" fn ff_disable_system_proxy() -> bool {
 #[cfg(not(target_os = "windows"))]
 pub extern "C" fn ff_get_system_proxy_status() -> bool {
     false
+}
+
+// Check if running as administrator on Windows
+#[no_mangle]
+#[cfg(target_os = "windows")]
+pub extern "C" fn ff_is_running_as_admin() -> bool {
+    is_running_as_admin()
+}
+
+#[cfg(target_os = "windows")]
+fn is_running_as_admin() -> bool {
+    use std::ptr;
+    
+    // Windows API types
+    type BOOL = i32;
+    type HANDLE = *mut std::ffi::c_void;
+    type DWORD = u32;
+    
+    #[repr(C)]
+    #[allow(non_camel_case_types)]
+    struct SID_IDENTIFIER_AUTHORITY {
+        value: [u8; 6],
+    }
+    
+    const SECURITY_NT_AUTHORITY: SID_IDENTIFIER_AUTHORITY = SID_IDENTIFIER_AUTHORITY {
+        value: [0, 0, 0, 0, 0, 5],
+    };
+    
+    const SECURITY_BUILTIN_DOMAIN_RID: DWORD = 0x00000020;
+    const DOMAIN_ALIAS_RID_ADMINS: DWORD = 0x00000220;
+    
+    #[link(name = "advapi32")]
+    extern "system" {
+        fn AllocateAndInitializeSid(
+            pIdentifierAuthority: *const SID_IDENTIFIER_AUTHORITY,
+            nSubAuthorityCount: u8,
+            nSubAuthority0: DWORD,
+            nSubAuthority1: DWORD,
+            nSubAuthority2: DWORD,
+            nSubAuthority3: DWORD,
+            nSubAuthority4: DWORD,
+            nSubAuthority5: DWORD,
+            nSubAuthority6: DWORD,
+            nSubAuthority7: DWORD,
+            pSid: *mut *mut std::ffi::c_void,
+        ) -> BOOL;
+        
+        fn CheckTokenMembership(
+            TokenHandle: HANDLE,
+            SidToCheck: *mut std::ffi::c_void,
+            IsMember: *mut BOOL,
+        ) -> BOOL;
+        
+        fn FreeSid(pSid: *mut std::ffi::c_void);
+    }
+    
+    unsafe {
+        let mut admin_sid: *mut std::ffi::c_void = ptr::null_mut();
+        let mut is_member: BOOL = 0;
+        
+        // Create SID for administrators group
+        let result = AllocateAndInitializeSid(
+            &SECURITY_NT_AUTHORITY,
+            2,
+            SECURITY_BUILTIN_DOMAIN_RID,
+            DOMAIN_ALIAS_RID_ADMINS,
+            0, 0, 0, 0, 0, 0,
+            &mut admin_sid,
+        );
+        
+        if result == 0 {
+            return false;
+        }
+        
+        // Check if current token is member of administrators group
+        let check_result = CheckTokenMembership(ptr::null_mut(), admin_sid, &mut is_member);
+        
+        // Free the SID
+        FreeSid(admin_sid);
+        
+        check_result != 0 && is_member != 0
+    }
+}
+
+#[no_mangle]
+#[cfg(not(target_os = "windows"))]
+pub extern "C" fn ff_is_running_as_admin() -> bool {
+    // On non-Windows platforms, always return true (no admin check needed)
+    true
 }
