@@ -650,9 +650,6 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.green[900]?.withValues(alpha: 0.2)
-            : Colors.green[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark ? Colors.green[700]! : Colors.green[200]!,

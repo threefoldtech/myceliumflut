@@ -701,14 +701,14 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'RX: ${widget.peerStats!.formattedRxBytes}',
+                            'Download: ${widget.peerStats!.formattedRxBytes}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.dataDownload,
                                     ),
                           ),
                           Text(
-                            'TX: ${widget.peerStats!.formattedTxBytes}',
+                            'Upload: ${widget.peerStats!.formattedTxBytes}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.dataUpload,
@@ -721,10 +721,6 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Discovered: ${widget.peerStats!.formattedDiscovered}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
                           if (widget.peerStats!.lastConnectedSeconds != null)
                             Text(
                               'Last Connected: ${widget.peerStats!.formattedLastConnected}',
