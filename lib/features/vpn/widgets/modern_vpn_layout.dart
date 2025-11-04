@@ -4,8 +4,7 @@ import '../../../state/mycelium_providers.dart' as providers;
 import '../../../state/vpn_provider.dart';
 import '../../../services/ffi/mycelium_service.dart';
 import '../../../app/widgets/responsive_layout.dart';
-import '../../../state/proxy_location_provider.dart';
-import '../../../state/geolocation_providers.dart';
+import '../../../services/geolocation_service.dart';
 
 class ModernVpnLayout extends ConsumerStatefulWidget {
   final MyceliumService myceliumService;
@@ -305,7 +304,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
               builder: (context, constraints) {
                 // Use Row with spaceBetween if enough space, otherwise Wrap
                 final hasEnoughSpace = constraints.maxWidth > 450;
-                
+
                 final titleWidget = Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -319,7 +318,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                     ),
                   ],
                 );
-                
+
                 final buttonWidget = OutlinedButton.icon(
                   onPressed: () {
                     if (isDiscovering) {
@@ -345,7 +344,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                 );
-                
+
                 if (hasEnoughSpace) {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -424,15 +423,26 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     // Create auto-select option
     final autoSelectOption = ProxyInfo(
       address: 'auto',
-      name: 'Auto-select (Random)',
+      name: 'Auto-select (Lowest Latency)',
       isAutoSelected: true,
     );
 
-    // Combine auto-select with discovered proxies
-    final allOptions = [autoSelectOption, ...proxies];
+    // Remove duplicates from proxies list by address
+    final uniqueProxies = <String, ProxyInfo>{};
+    for (final proxy in proxies) {
+      uniqueProxies[proxy.address] = proxy;
+    }
+    final deduplicatedProxies = uniqueProxies.values.toList();
 
-    // Determine selected value
-    final selectedValue = vpnProvider.selectedProxy?.address ?? 'auto';
+    // Combine auto-select with deduplicated proxies
+    final allOptions = [autoSelectOption, ...deduplicatedProxies];
+
+    // Determine selected value - ensure it exists in the list
+    var selectedValue = vpnProvider.selectedProxy?.address ?? 'auto';
+    // If selected proxy is not in the list, default to auto
+    if (selectedValue != 'auto' && !uniqueProxies.containsKey(selectedValue)) {
+      selectedValue = 'auto';
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +463,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '${proxies.length} available',
+                '${deduplicatedProxies.length} available',
                 style: TextStyle(
                   color: Colors.blue[700],
                   fontSize: 12,
@@ -566,8 +576,7 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
 
             if (isConnected) ...[
               const SizedBox(height: 16),
-              _buildStatusRow(context, 'Connected to:',
-                  vpnProvider.connectedProxy?.address ?? 'Unknown'),
+              _buildConnectedProxyInfo(context, vpnProvider),
               const SizedBox(height: 24),
             ],
 
@@ -630,34 +639,118 @@ class _ModernVpnLayoutState extends ConsumerState<ModernVpnLayout> {
     );
   }
 
-  Widget _buildStatusRow(BuildContext context, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 13,
+  Widget _buildConnectedProxyInfo(
+      BuildContext context, VpnProvider vpnProvider) {
+    final connectedProxy = vpnProvider.connectedProxy;
+    if (connectedProxy == null) return const SizedBox.shrink();
+
+    final geoService = GeolocationService();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.green[900]?.withValues(alpha: 0.2)
+            : Colors.green[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? Colors.green[700]! : Colors.green[200]!,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Country flag
+          if (connectedProxy.location != null &&
+              connectedProxy.location!.country != 'Unknown')
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: geoService
+                    .getFlagWidget(connectedProxy.location!.countryCode),
+              ),
+            )
+          else
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.public,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        connectedProxy.address,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: isDark ? Colors.green[300] : Colors.green[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (connectedProxy.pingMs != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _getPingColor(connectedProxy.pingMs!)
+                              .withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${connectedProxy.pingMs}ms',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: _getPingColor(connectedProxy.pingMs!),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (connectedProxy.location != null &&
+                    connectedProxy.location!.country != 'Unknown')
+                  Text(
+                    '${connectedProxy.location!.city.isNotEmpty ? '${connectedProxy.location!.city}, ' : ''}${connectedProxy.location!.country}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  Color _getPingColor(int pingMs) {
+    if (pingMs < 150) return Colors.green;
+    if (pingMs < 500) return Colors.orange;
+    return Colors.red;
   }
 }
 
@@ -677,7 +770,7 @@ class _ProxyDropdownItem extends ConsumerWidget {
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              'Auto-select (Random)',
+              'Auto-select (Lowest Latency)',
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -701,14 +794,13 @@ class _ProxyDropdownItem extends ConsumerWidget {
       );
     }
 
-    // Regular proxy option with country flag
-    final locationAsync = ref.watch(proxyLocationProvider(proxy.address));
-    final geoService = ref.read(geolocationServiceProvider);
+    // Regular proxy option with country flag and ping
+    final geoService = GeolocationService();
 
     return Row(
       children: [
         // Country flag or loading indicator
-        if (locationAsync != null && locationAsync.country != 'Unknown') ...[
+        if (proxy.location != null && proxy.location!.country != 'Unknown') ...[
           Container(
             width: 24,
             height: 24,
@@ -717,7 +809,7 @@ class _ProxyDropdownItem extends ConsumerWidget {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: geoService.getFlagWidget(locationAsync.countryCode),
+              child: geoService.getFlagWidget(proxy.location!.countryCode),
             ),
           ),
         ] else ...[
@@ -747,9 +839,10 @@ class _ProxyDropdownItem extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 13),
               ),
-              if (locationAsync != null && locationAsync.country != 'Unknown')
+              if (proxy.location != null &&
+                  proxy.location!.country != 'Unknown')
                 Text(
-                  '${locationAsync.city.isNotEmpty ? '${locationAsync.city}, ' : ''}${locationAsync.country}',
+                  '${proxy.location!.city.isNotEmpty ? '${proxy.location!.city}, ' : ''}${proxy.location!.country}',
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey[600],
@@ -759,7 +852,39 @@ class _ProxyDropdownItem extends ConsumerWidget {
             ],
           ),
         ),
+        // Ping indicator
+        if (proxy.isPinging)
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.grey[400],
+            ),
+          )
+        else if (proxy.pingMs != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: _getPingColor(proxy.pingMs!).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '${proxy.pingMs}ms',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: _getPingColor(proxy.pingMs!),
+              ),
+            ),
+          ),
       ],
     );
+  }
+
+  Color _getPingColor(int pingMs) {
+    if (pingMs < 150) return Colors.green;
+    if (pingMs < 500) return Colors.orange;
+    return Colors.red;
   }
 }
