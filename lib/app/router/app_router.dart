@@ -5,7 +5,10 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/peers/peers_screen.dart';
 import '../../features/vpn/vpn_screen.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: [
     GoRoute(

@@ -467,3 +467,21 @@ Future<bool> myFFGetSystemProxyStatus() async {
     return false;
   }
 }
+
+// Check if running as administrator on Windows
+typedef FuncRustIsRunningAsAdmin = ffi.Bool Function();
+typedef FuncDartIsRunningAsAdmin = bool Function();
+
+bool myFFIsRunningAsAdmin() {
+  try {
+    var dylib = loadDll();
+    final ffIsRunningAsAdmin = dylib
+        .lookup<NativeFunction<FuncRustIsRunningAsAdmin>>('ff_is_running_as_admin')
+        .asFunction<FuncDartIsRunningAsAdmin>();
+
+    return ffIsRunningAsAdmin();
+  } catch (e) {
+    debugPrint("Failed to check admin status: $e");
+    return true; // Default to true to avoid false warnings
+  }
+}
