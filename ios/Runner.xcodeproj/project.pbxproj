@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		00024CC52BFB0FF100C03AC5 /* mycelmob.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */; };
-		00SOCKS012BEA092D00D56854 /* SOCKSProxyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00SOCKS002BEA092D00D56854 /* SOCKSProxyHandler.swift */; };
 		00024CC82BFB100100C03AC5 /* mycelmob.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */; };
 		00024CCC2BFB102600C03AC5 /* mycelmob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00024CCB2BFB102600C03AC5 /* mycelmob.swift */; };
 		00024CCD2BFB102600C03AC5 /* mycelmob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00024CCB2BFB102600C03AC5 /* mycelmob.swift */; };
@@ -18,6 +17,7 @@
 		0090B5DC2BF327D200724A65 /* MyceliumTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0059021F2BEA092D00D56854 /* MyceliumTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0090B6002BF34ED500724A65 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
 		00A43E6F2BF2089C00435390 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */; };
+		00SOCKS012BEA092D00D56854 /* SOCKSProxyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00SOCKS002BEA092D00D56854 /* SOCKSProxyHandler.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		2D3BC7324ECEF4703E50D1B1 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B31D877DE0D63452CB72899E /* Pods_RunnerTests.framework */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -76,7 +76,6 @@
 
 /* Begin PBXFileReference section */
 		00024CC42BFB0FF100C03AC5 /* mycelmob.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mycelmob.xcframework; path = ../mycelmob/out/iosframework/mycelmob.xcframework; sourceTree = "<group>"; };
-		00SOCKS002BEA092D00D56854 /* SOCKSProxyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKSProxyHandler.swift; sourceTree = "<group>"; };
 		00024CCB2BFB102600C03AC5 /* mycelmob.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = mycelmob.swift; path = ../../mycelmob/out/mycelmob.swift; sourceTree = "<group>"; };
 		0059021F2BEA092D00D56854 /* MyceliumTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyceliumTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		005902202BEA092D00D56854 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
@@ -89,6 +88,7 @@
 		00A43E672BF2059E00435390 /* mycelios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = mycelios.xcframework; path = myceliosframework/mycelios.xcframework; sourceTree = "<group>"; };
 		00A43E6C2BF207E600435390 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		00A43E6E2BF2089C00435390 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		00SOCKS002BEA092D00D56854 /* SOCKSProxyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKSProxyHandler.swift; sourceTree = "<group>"; };
 		0708733432A584F7F6851904 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
@@ -429,9 +429,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -739,7 +743,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = 5KWG4UBB25;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -748,7 +752,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.11.0;
+				MARKETING_VERSION = 0.13.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tech.threefold.mycelium;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -948,7 +952,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = 5KWG4UBB25;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -957,7 +961,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.11.0;
+				MARKETING_VERSION = 0.13.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tech.threefold.mycelium;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -979,7 +983,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = 5KWG4UBB25;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -988,7 +992,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.11.0;
+				MARKETING_VERSION = 0.13.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tech.threefold.mycelium;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
