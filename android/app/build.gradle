@@ -62,7 +62,7 @@ android {
         release {
             keyAlias = keystoreProperties['keyAlias']
             keyPassword = keystoreProperties['keyPassword']
-            storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storeFile = file(keystoreProperties['storeFile'])
             storePassword = keystoreProperties['storePassword']
         }
     }
@@ -85,8 +85,9 @@ flutter {
 }
 
 dependencies {
-    // Uniffi - Updated to 5.14.0 for 16 KB page size support (Android 15+)
-    implementation("net.java.dev.jna:jna:5.14.0@aar")
+    // Uniffi - Updated to 5.18.1 for complete 16 KB page size support (Android 15+)
+    // 5.16.0 had partial fix, 5.17.0 completed the fix, 5.18.1 is latest stable
+    implementation("net.java.dev.jna:jna:5.18.1@aar")
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
