@@ -521,25 +521,7 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.ip
-                                .replaceAll('tcp://', '')
-                                .replaceAll(':9651', ''),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Location info row
+                    // Country and city as main title
                     Consumer(
                       builder: (context, ref, child) {
                         final locationAsync =
@@ -547,12 +529,62 @@ class _PeerTileState extends ConsumerState<_PeerTile> {
 
                         if (locationAsync != null &&
                             locationAsync.country != 'Unknown') {
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  locationAsync.city.isNotEmpty && locationAsync.city != 'Unknown'
+                                      ? '${locationAsync.city}, ${locationAsync.country}'
+                                      : locationAsync.country,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        // Show IP as fallback if location is unknown or loading
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.ip
+                                    .replaceAll('tcp://', '')
+                                    .replaceAll(':9651', ''),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    // IP address as subtitle
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final locationAsync =
+                            ref.watch(peerLocationProvider(widget.ip));
+
+                        // Only show IP as subtitle if we have location info
+                        if (locationAsync != null &&
+                            locationAsync.country != 'Unknown') {
                           return Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
-                              locationAsync.city.isNotEmpty
-                                  ? '${locationAsync.country} • ${locationAsync.city}'
-                                  : locationAsync.country,
+                              widget.ip
+                                  .replaceAll('tcp://', '')
+                                  .replaceAll(':9651', ''),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
