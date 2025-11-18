@@ -85,10 +85,10 @@ flutter {
 }
 
 dependencies {
-    // Uniffi
-    implementation("net.java.dev.jna:jna:5.7.0@aar")
+    // Uniffi - Updated to 5.18.1 for complete 16 KB page size support (Android 15+)
+    // 5.16.0 had partial fix, 5.17.0 completed the fix, 5.18.1 is latest stable
+    implementation("net.java.dev.jna:jna:5.18.1@aar")
+    
+    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-
-    // coroutine to start mycelium
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2'
 }
