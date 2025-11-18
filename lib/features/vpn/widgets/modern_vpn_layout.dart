@@ -832,20 +832,20 @@ class _ProxyDropdownItem extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                proxy.address,
+                proxy.location != null && proxy.location!.country != 'Unknown'
+                    ? '${proxy.location!.city.isNotEmpty && proxy.location!.city != 'Unknown' ? '${proxy.location!.city}, ' : ''}${proxy.location!.country}'
+                    : proxy.address,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 13),
               ),
-              if (proxy.location != null &&
-                  proxy.location!.country != 'Unknown')
-                Text(
-                  '${proxy.location!.city.isNotEmpty ? '${proxy.location!.city}, ' : ''}${proxy.location!.country}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                proxy.address,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
                 ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
