@@ -1,4 +1,6 @@
 PODS:
+  - flutter_alone (0.0.1):
+    - FlutterMacOS
   - flutter_desktop_sleep (0.0.1):
     - FlutterMacOS
   - flutter_window_close (0.0.1):
@@ -20,6 +22,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - flutter_alone (from `Flutter/ephemeral/.symlinks/plugins/flutter_alone/macos`)
   - flutter_desktop_sleep (from `Flutter/ephemeral/.symlinks/plugins/flutter_desktop_sleep/macos`)
   - flutter_window_close (from `Flutter/ephemeral/.symlinks/plugins/flutter_window_close/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
@@ -31,6 +34,8 @@ DEPENDENCIES:
   - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
 EXTERNAL SOURCES:
+  flutter_alone:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_alone/macos
   flutter_desktop_sleep:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_desktop_sleep/macos
   flutter_window_close:
@@ -51,6 +56,7 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
+  flutter_alone: c762e33ddf958e8c16cd87404a4b2cbde48928d7
   flutter_desktop_sleep: 73f50395cd890bd52826c69451d1bab02b89a5f9
   flutter_window_close: bd408414cbbf0d39f0d3076c4da0cdbf1c527168
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
