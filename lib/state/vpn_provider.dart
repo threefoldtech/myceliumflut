@@ -28,7 +28,7 @@ class ProxyInfo {
 
   @override
   String toString() => name ?? address;
-  
+
   /// Create a copy with updated fields
   ProxyInfo copyWith({
     String? address,
@@ -55,7 +55,8 @@ class VpnProvider extends ChangeNotifier {
   VpnMode _mode = VpnMode.automatic;
   ProxyStatus _status = ProxyStatus.disconnected;
   List<ProxyInfo> _availableProxies = [];
-  List<ProxyInfo> _pendingProxies = []; // Proxies waiting for ping/location data
+  List<ProxyInfo> _pendingProxies =
+      []; // Proxies waiting for ping/location data
   ProxyInfo? _selectedProxy;
   ProxyInfo? _connectedProxy;
   String _manualAddress = '';
@@ -131,14 +132,17 @@ class VpnProvider extends ChangeNotifier {
       notifyListeners();
 
       print("VpnProvider: Starting proxy discovery...");
-      
+
       // Initialize pending proxies with hardcoded addresses
       if (_pendingProxies.isEmpty && _availableProxies.isEmpty) {
-        print("VpnProvider: Initializing ${_hardcodedProxyNodes.length} hardcoded proxies in pending state");
-        _pendingProxies = _hardcodedProxyNodes.map((address) => ProxyInfo(
-          address: address,
-          name: _getProxyDisplayName(address),
-        )).toList();
+        print(
+            "VpnProvider: Initializing ${_hardcodedProxyNodes.length} hardcoded proxies in pending state");
+        _pendingProxies = _hardcodedProxyNodes
+            .map((address) => ProxyInfo(
+                  address: address,
+                  name: _getProxyDisplayName(address),
+                ))
+            .toList();
         // Don't notify yet - wait until they have data
       }
 
@@ -188,7 +192,7 @@ class VpnProvider extends ChangeNotifier {
   Future<void> stopProxyDiscovery() async {
     _probeTimer?.cancel();
     _probeTimer = null;
-    
+
     // Also stop periodic ping updates
     _stopPeriodicPingUpdates();
 
@@ -201,6 +205,29 @@ class VpnProvider extends ChangeNotifier {
       _isProbing = false;
       notifyListeners();
     }
+  }
+
+  /// Reset VPN provider state (called when Mycelium stops)
+  void resetState() {
+    print("VpnProvider: Resetting state...");
+
+    // Cancel all timers
+    _probeTimer?.cancel();
+    _probeTimer = null;
+    _connectedProxyPingTimer?.cancel();
+    _connectedProxyPingTimer = null;
+    _periodicPingTimer?.cancel();
+    _periodicPingTimer = null;
+
+    // Reset all state variables
+    _status = ProxyStatus.disconnected;
+    _connectedProxy = null;
+    _isProbing = false;
+    _deviceWideEnabled = false;
+    _clearError();
+
+    print("VpnProvider: State reset complete");
+    notifyListeners();
   }
 
   Future<void> _updateProxyList() async {
@@ -216,18 +243,21 @@ class VpnProvider extends ChangeNotifier {
         print(
             "VpnProvider: Node timeout error - Mycelium mesh network not responding");
         _setError("Mesh network timeout - check Mycelium connection");
-        
+
         // On timeout, add hardcoded proxies to pending if not already there
         if (_pendingProxies.isEmpty && _availableProxies.isEmpty) {
-          print("VpnProvider: Adding hardcoded proxies to pending due to timeout");
-          _pendingProxies = _hardcodedProxyNodes.map((address) => ProxyInfo(
-            address: address,
-            name: _getProxyDisplayName(address),
-          )).toList();
+          print(
+              "VpnProvider: Adding hardcoded proxies to pending due to timeout");
+          _pendingProxies = _hardcodedProxyNodes
+              .map((address) => ProxyInfo(
+                    address: address,
+                    name: _getProxyDisplayName(address),
+                  ))
+              .toList();
           // Process them to get ping/location data
           _processPendingProxies();
         }
-        
+
         // Stop discovery on timeout
         await stopProxyDiscovery();
         return;
@@ -246,12 +276,13 @@ class VpnProvider extends ChangeNotifier {
           "VpnProvider: Filtered to ${discoveredProxies.length} discovered proxies");
 
       // Create a set of hardcoded proxy addresses for duplicate detection
-      final hardcodedAddressSet =
-          _hardcodedProxyNodes.map((addr) => _normalizeProxyAddress(addr)).toSet();
+      final hardcodedAddressSet = _hardcodedProxyNodes
+          .map((addr) => _normalizeProxyAddress(addr))
+          .toSet();
 
       // Build set of all addresses that should exist
       final Set<String> allAddresses = {..._hardcodedProxyNodes};
-      
+
       // Add discovered proxies only if they're not already in hardcoded list
       for (final discoveredAddress in discoveredProxies) {
         final normalizedDiscovered = _normalizeProxyAddress(discoveredAddress);
@@ -261,12 +292,14 @@ class VpnProvider extends ChangeNotifier {
       }
 
       // Get all existing addresses (both available and pending)
-      final existingAvailableAddresses = _availableProxies.map((p) => p.address).toSet();
-      final existingPendingAddresses = _pendingProxies.map((p) => p.address).toSet();
-      
+      final existingAvailableAddresses =
+          _availableProxies.map((p) => p.address).toSet();
+      final existingPendingAddresses =
+          _pendingProxies.map((p) => p.address).toSet();
+
       // Add new addresses to pending list
       for (final address in allAddresses) {
-        if (!existingAvailableAddresses.contains(address) && 
+        if (!existingAvailableAddresses.contains(address) &&
             !existingPendingAddresses.contains(address)) {
           print("VpnProvider: Adding new proxy to pending: $address");
           _pendingProxies.add(ProxyInfo(
@@ -276,11 +309,12 @@ class VpnProvider extends ChangeNotifier {
         }
       }
 
-      print("VpnProvider: Available: ${_availableProxies.length}, Pending: ${_pendingProxies.length}");
-      
+      print(
+          "VpnProvider: Available: ${_availableProxies.length}, Pending: ${_pendingProxies.length}");
+
       // Ping and fetch location for pending proxies
       _processPendingProxies();
-      
+
       notifyListeners();
     } catch (e) {
       print("VpnProvider: Error updating proxy list: $e");
@@ -292,44 +326,46 @@ class VpnProvider extends ChangeNotifier {
   Future<void> _processPendingProxies() async {
     if (_pendingProxies.isEmpty) return;
 
-    print("VpnProvider: Processing ${_pendingProxies.length} pending proxies...");
+    print(
+        "VpnProvider: Processing ${_pendingProxies.length} pending proxies...");
 
     // Process each pending proxy
     for (int i = _pendingProxies.length - 1; i >= 0; i--) {
       final proxy = _pendingProxies[i];
-      
+
       // Skip if already being processed
       if (proxy.isPinging) continue;
 
       // Mark as pinging
       _pendingProxies[i] = proxy.copyWith(isPinging: true);
-      
+
       try {
         // Parse proxy address to get host and port
         final (host, port) = _parseProxyAddress(proxy.address);
-        
+
         // Ping the proxy using socket connection
         final stopwatch = Stopwatch()..start();
-        
+
         final socket = await Socket.connect(
           host,
           port,
           timeout: const Duration(seconds: 5),
         );
-        
+
         stopwatch.stop();
         await socket.close();
         socket.destroy();
 
         final pingMs = stopwatch.elapsedMilliseconds;
         print("VpnProvider: Proxy ${proxy.address} ping: ${pingMs}ms");
-        
+
         // Fetch location info ONLY ONCE during initial processing
         LocationInfo? location;
         try {
           final proxyGeoService = ProxyGeolocationService();
           location = await proxyGeoService.getLocationForProxy(proxy.address);
-          print("VpnProvider: Fetched location for ${proxy.address}: ${location.country}");
+          print(
+              "VpnProvider: Fetched location for ${proxy.address}: ${location.country}");
         } catch (e) {
           print("VpnProvider: Failed to get location for ${proxy.address}: $e");
         }
@@ -340,12 +376,13 @@ class VpnProvider extends ChangeNotifier {
           location: location,
           isPinging: false,
         );
-        
+
         _availableProxies.add(readyProxy);
         _pendingProxies.removeAt(i);
-        
-        print("VpnProvider: Moved ${proxy.address} to available list (ping: ${pingMs}ms, country: ${location?.country ?? 'Unknown'})");
-        
+
+        print(
+            "VpnProvider: Moved ${proxy.address} to available list (ping: ${pingMs}ms, country: ${location?.country ?? 'Unknown'})");
+
         // Sort available proxies by ping
         _availableProxies.sort((a, b) {
           if (a.pingMs == null && b.pingMs == null) return 0;
@@ -353,9 +390,9 @@ class VpnProvider extends ChangeNotifier {
           if (b.pingMs == null) return -1;
           return a.pingMs!.compareTo(b.pingMs!);
         });
-        
+
         notifyListeners();
-        
+
         // Add small delay between processing to avoid overwhelming the network
         await Future.delayed(const Duration(milliseconds: 200));
       } catch (e) {
@@ -366,8 +403,9 @@ class VpnProvider extends ChangeNotifier {
       }
     }
 
-    print("VpnProvider: Finished processing. Available: ${_availableProxies.length}, Pending: ${_pendingProxies.length}");
-    
+    print(
+        "VpnProvider: Finished processing. Available: ${_availableProxies.length}, Pending: ${_pendingProxies.length}");
+
     // Start periodic ping updates for all available proxies
     _startPeriodicPingUpdates();
   }
@@ -379,7 +417,8 @@ class VpnProvider extends ChangeNotifier {
     // Find proxies that haven't been pinged yet (no ping data and not currently pinging)
     final indicesToPing = <int>[];
     for (int i = 0; i < _availableProxies.length; i++) {
-      if (_availableProxies[i].pingMs == null && !_availableProxies[i].isPinging) {
+      if (_availableProxies[i].pingMs == null &&
+          !_availableProxies[i].isPinging) {
         indicesToPing.add(i);
       }
     }
@@ -395,7 +434,7 @@ class VpnProvider extends ChangeNotifier {
     final futures = <Future>[];
     for (int i = 0; i < indicesToPing.length; i++) {
       futures.add(_pingProxy(indicesToPing[i]));
-      
+
       // Add small delay between starting pings to avoid socket exhaustion
       if (i < indicesToPing.length - 1) {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -421,13 +460,14 @@ class VpnProvider extends ChangeNotifier {
   Future<void> _pingAllProxies() async {
     if (_availableProxies.isEmpty) return;
 
-    print("VpnProvider: Starting to ping ${_availableProxies.length} proxies...");
+    print(
+        "VpnProvider: Starting to ping ${_availableProxies.length} proxies...");
 
     // Ping proxies in parallel with a limit to avoid overwhelming the network
     final futures = <Future>[];
     for (int i = 0; i < _availableProxies.length; i++) {
       futures.add(_pingProxy(i));
-      
+
       // Add small delay between starting pings to avoid socket exhaustion
       if (i < _availableProxies.length - 1) {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -454,7 +494,7 @@ class VpnProvider extends ChangeNotifier {
     if (index >= _availableProxies.length) return;
 
     final proxy = _availableProxies[index];
-    
+
     // Mark as pinging
     _availableProxies[index] = proxy.copyWith(isPinging: true);
     notifyListeners();
@@ -462,16 +502,16 @@ class VpnProvider extends ChangeNotifier {
     try {
       // Parse proxy address to get host and port
       final (host, port) = _parseProxyAddress(proxy.address);
-      
+
       // Ping the proxy using socket connection
       final stopwatch = Stopwatch()..start();
-      
+
       final socket = await Socket.connect(
         host,
         port,
         timeout: const Duration(seconds: 5),
       );
-      
+
       stopwatch.stop();
       await socket.close();
       socket.destroy();
@@ -482,8 +522,9 @@ class VpnProvider extends ChangeNotifier {
         isPinging: false,
       );
 
-      print("VpnProvider: Proxy ${proxy.address} ping: ${stopwatch.elapsedMilliseconds}ms");
-      
+      print(
+          "VpnProvider: Proxy ${proxy.address} ping: ${stopwatch.elapsedMilliseconds}ms");
+
       // Fetch location info in background
       _fetchProxyLocation(index);
     } catch (e) {
@@ -502,13 +543,13 @@ class VpnProvider extends ChangeNotifier {
     if (index >= _availableProxies.length) return;
 
     final proxy = _availableProxies[index];
-    
+
     try {
       // Use ProxyGeolocationService which makes a request through the SOCKS5 proxy
       // to detect the proxy's public IP and get its geolocation
       final proxyGeoService = ProxyGeolocationService();
       final location = await proxyGeoService.getLocationForProxy(proxy.address);
-      
+
       // Update proxy with location
       if (index < _availableProxies.length) {
         _availableProxies[index] = proxy.copyWith(location: location);
@@ -528,7 +569,7 @@ class VpnProvider extends ChangeNotifier {
         throw FormatException('Invalid IPv6 proxy address: $address');
       }
       final host = address.substring(1, closeBracket);
-      final portStr = address.substring(closeBracket + 2); // Skip ']:' 
+      final portStr = address.substring(closeBracket + 2); // Skip ']:'
       final port = int.parse(portStr);
       return (host, port);
     } else {
@@ -614,17 +655,18 @@ class VpnProvider extends ChangeNotifier {
           if (_availableProxies.isEmpty) {
             throw Exception("No proxies available");
           }
-          
+
           // Find proxy with lowest ping (proxies are already sorted by ping)
           // First proxy in the list has the lowest ping
           final bestProxy = _availableProxies.firstWhere(
             (p) => p.pingMs != null,
             orElse: () => _availableProxies.first,
           );
-          
+
           proxyAddress = bestProxy.address;
           proxyInfo = bestProxy;
-          print("VpnProvider: Auto-selected proxy with ${bestProxy.pingMs ?? '?'}ms ping: ${bestProxy.address}");
+          print(
+              "VpnProvider: Auto-selected proxy with ${bestProxy.pingMs ?? '?'}ms ping: ${bestProxy.address}");
         } else {
           proxyAddress = _selectedProxy!.address;
           proxyInfo = _selectedProxy!;
@@ -744,7 +786,7 @@ class VpnProvider extends ChangeNotifier {
       const Duration(seconds: 10),
       (_) => _updateAllProxyPings(),
     );
-    
+
     print("VpnProvider: Started periodic ping updates (every 10 seconds)");
   }
 
@@ -759,13 +801,14 @@ class VpnProvider extends ChangeNotifier {
   Future<void> _updateAllProxyPings() async {
     if (_availableProxies.isEmpty) return;
 
-    print("VpnProvider: Updating ping for ${_availableProxies.length} proxies...");
+    print(
+        "VpnProvider: Updating ping for ${_availableProxies.length} proxies...");
 
     // Update pings for all proxies in parallel
     final futures = <Future>[];
     for (int i = 0; i < _availableProxies.length; i++) {
       futures.add(_updateProxyPing(i));
-      
+
       // Small delay to avoid overwhelming network
       if (i < _availableProxies.length - 1) {
         await Future.delayed(const Duration(milliseconds: 50));
@@ -790,20 +833,20 @@ class VpnProvider extends ChangeNotifier {
     if (index >= _availableProxies.length) return;
 
     final proxy = _availableProxies[index];
-    
+
     try {
       // Parse proxy address to get host and port
       final (host, port) = _parseProxyAddress(proxy.address);
-      
+
       // Ping the proxy using socket connection
       final stopwatch = Stopwatch()..start();
-      
+
       final socket = await Socket.connect(
         host,
         port,
         timeout: const Duration(seconds: 5),
       );
-      
+
       stopwatch.stop();
       await socket.close();
       socket.destroy();
@@ -868,7 +911,8 @@ class VpnProvider extends ChangeNotifier {
       );
 
       // Also update the proxy in the available list
-      final index = _availableProxies.indexWhere((p) => p.address == _connectedProxy!.address);
+      final index = _availableProxies
+          .indexWhere((p) => p.address == _connectedProxy!.address);
       if (index != -1) {
         _availableProxies[index] = _availableProxies[index].copyWith(
           pingMs: newPingMs,

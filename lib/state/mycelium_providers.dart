@@ -164,6 +164,17 @@ final peersProvider =
 final vpnProvider = Provider<VpnProvider>((ref) {
   final myceliumService = ref.watch(myceliumServiceProvider);
   final provider = VpnProvider(myceliumService);
-  ref.onDispose(provider.dispose);
+
+  // Set callback to reset VPN state when Mycelium stops
+  myceliumService.onStopCallback = () {
+    provider.resetState();
+  };
+
+  ref.onDispose(() {
+    // Clear callback on dispose
+    myceliumService.onStopCallback = null;
+    provider.dispose();
+  });
+
   return provider;
 });
