@@ -14,7 +14,6 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_alone/flutter_alone.dart';
 
 import 'services/ffi/mycelium_service.dart';
-import 'state/mycelium_providers.dart';
 import 'myceliumflut_ffi_binding.dart';
 import 'app/router/app_router.dart' as router_export;
 
@@ -358,31 +357,17 @@ class _MyAppState extends ConsumerState<MyApp>
         await windowManager.hide();
         break;
       case 'quit':
-        // Disconnect VPN first if connected
-        try {
-          final vpnProv = ref.read(vpnProvider);
-          if (vpnProv.isConnected) {
-            await vpnProv.disconnect();
-          }
-          // Stop any ongoing proxy discovery
-          if (vpnProv.isProbing) {
-            await vpnProv.stopProxyDiscovery();
-          }
-        } catch (e) {
-          print('Error disconnecting VPN during quit: $e');
-        }
-
-        // Stop Mycelium with timeout
+        // Stop Mycelium (this will automatically clean up VPN, proxy discovery, and device-wide proxy)
         try {
           await _myceliumService.stop().timeout(
-            const Duration(seconds: 2),
+            const Duration(seconds: 5),
             onTimeout: () {
-              print('Mycelium stop timed out, forcing exit');
+              _logger.warning('Mycelium stop timed out, forcing exit');
               return false;
             },
           );
         } catch (e) {
-          print('Error stopping Mycelium: $e');
+          _logger.severe('Error stopping Mycelium: $e');
         }
 
         // Exit immediately

@@ -19,6 +19,9 @@ class MyceliumService {
   NodeStatus _status = NodeStatus.disconnected;
   Uint8List? _privKey;
 
+  // Callback to reset VPN provider state when Mycelium stops
+  VoidCallback? onStopCallback;
+
   Stream<NodeStatus> get statusStream => _statusController.stream;
   NodeStatus get status => _status;
 
@@ -137,20 +140,64 @@ class MyceliumService {
 
   Future<bool> stop() async {
     try {
-      if (isUseDylib()) {
-        final s = await myFFStopMycelium();
-        _status = NodeStatus.disconnected;
-        _statusController.add(_status);
-        return s;
-      } else {
-        final res = await _platform.invokeMethod<bool>('stopVpn') ?? false;
-        _status = NodeStatus.disconnected;
-        _statusController.add(_status);
-        return res;
+      debugPrint('MyceliumService: Stopping Mycelium...');
+
+      // First, stop proxy discovery if running
+      try {
+        debugPrint('MyceliumService: Stopping proxy probe...');
+        await stopProxyProbe();
+      } catch (e) {
+        debugPrint('MyceliumService: Error stopping proxy probe: $e');
       }
-    } catch (_) {
+
+      // Disconnect from proxy if connected
+      try {
+        debugPrint('MyceliumService: Disconnecting from proxy...');
+        await proxyDisconnect();
+      } catch (e) {
+        debugPrint('MyceliumService: Error disconnecting proxy: $e');
+      }
+
+      // Disable device-wide proxy if enabled
+      try {
+        debugPrint('MyceliumService: Disabling device-wide proxy...');
+        await disableDeviceWideProxy();
+      } catch (e) {
+        debugPrint('MyceliumService: Error disabling device-wide proxy: $e');
+      }
+
+      // Finally, stop the Mycelium service itself
+      debugPrint('MyceliumService: Stopping Mycelium service...');
+      bool result;
+      if (isUseDylib()) {
+        result = await myFFStopMycelium();
+      } else {
+        result = await _platform.invokeMethod<bool>('stopVpn') ?? false;
+      }
+
+      _status = NodeStatus.disconnected;
+      _statusController.add(_status);
+
+      // Notify VPN provider to reset its state
+      if (onStopCallback != null) {
+        debugPrint(
+            'MyceliumService: Calling onStopCallback to reset VPN state...');
+        onStopCallback!();
+      }
+
+      debugPrint('MyceliumService: Mycelium stopped successfully');
+      return result;
+    } catch (e) {
+      debugPrint('MyceliumService: Error stopping Mycelium: $e');
       _status = NodeStatus.failed;
       _statusController.add(_status);
+
+      // Still try to reset VPN state even on error
+      if (onStopCallback != null) {
+        debugPrint('MyceliumService: Calling onStopCallback after error...');
+        onStopCallback!();
+      }
+
       return false;
     }
   }
