@@ -11,6 +11,7 @@ import 'package:logging/logging.dart';
 import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:flutter_alone/flutter_alone.dart';
 
 import 'services/ffi/mycelium_service.dart';
 import 'state/mycelium_providers.dart';
@@ -27,6 +28,42 @@ Future<void> main() async {
     // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
+
+  // Single instance check for desktop platforms
+  if (Platform.isMacOS || Platform.isWindows) {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Configure single instance settings
+    FlutterAloneConfig? config;
+    if (Platform.isWindows) {
+      config = FlutterAloneConfig.forWindows(
+        windowsConfig: const DefaultWindowsMutexConfig(
+          packageId: 'tech.threefold.mycelium',
+          appName: 'Mycelium',
+        ),
+        messageConfig: const EnMessageConfig(),
+      );
+    } else if (Platform.isMacOS) {
+      config = FlutterAloneConfig.forMacOS(
+        macOSConfig: const MacOSConfig(
+          lockFileName: 'mycelium.lock',
+        ),
+        messageConfig: const EnMessageConfig(),
+      );
+    }
+
+    // Check for duplicate instance and exit if another is running
+    if (config != null &&
+        !await FlutterAlone.instance.checkAndRun(config: config)) {
+      _logger.info(
+          'Another instance of Mycelium is already running. Focusing existing window...');
+      // Exit this instance - flutter_alone will focus the existing window
+      exit(0);
+    }
+
+    _logger.info('First instance of Mycelium starting...');
+  }
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -153,11 +190,11 @@ class _MyAppState extends ConsumerState<MyApp>
 
   void _checkAdminPrivileges() {
     if (_hasShownAdminWarning) return;
-    
+
     try {
       final isAdmin = myFFIsRunningAsAdmin();
       _logger.info("Administrator check: $isAdmin");
-      
+
       if (!isAdmin && mounted) {
         _hasShownAdminWarning = true;
         _showAdminWarningDialog();
@@ -172,7 +209,7 @@ class _MyAppState extends ConsumerState<MyApp>
     _logger.info("Attempting to show admin warning dialog...");
     _logger.info("Navigator context available: ${navigatorContext != null}");
     _logger.info("Widget mounted: $mounted");
-    
+
     if (navigatorContext == null || !mounted) {
       _logger.warning("Cannot show admin warning: context not available");
       return;
@@ -260,6 +297,8 @@ class _MyAppState extends ConsumerState<MyApp>
     if (Platform.isMacOS || Platform.isWindows) {
       windowManager.removeListener(this);
       trayManager.removeListener(this);
+      // Release single instance resources
+      FlutterAlone.instance.dispose();
     }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
