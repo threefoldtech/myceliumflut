@@ -86,7 +86,7 @@ class AppDelegate: FlutterAppDelegate {
     }
     
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true
+        return false
     }
     
     override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -315,14 +315,34 @@ class AppDelegate: FlutterAppDelegate {
     // MARK: - Application Lifecycle
     
     override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        print("macOS: Application termination requested - cleaning up...")
+        
         // Clean up proxy settings before terminating
         if isProxyEnabled {
+            print("macOS: Disabling system proxy...")
             _ = disableSystemProxy()
         }
         
-        // Stop Mycelium service
-        if isMyceliumRunning {
+        // Stop Mycelium gracefully
+        if self.isMyceliumRunning || self.mainAppMyceliumRunning {
+            print("macOS: Stopping Mycelium before quit...")
+            
+            // Cancel any pending start tasks
             myceliumStartTask?.cancel()
+            
+            // Stop main app instance
+            if self.mainAppMyceliumRunning {
+                stopMycelium()
+                self.mainAppMyceliumRunning = false
+            }
+            
+            // Stop VPN tunnel
+            if let window = NSApplication.shared.windows.first(where: { $0 is MainFlutterWindow }) as? MainFlutterWindow {
+                window.stopMycelium()
+            }
+            
+            self.isMyceliumRunning = false
+            print("macOS: Mycelium stopped, ready to terminate")
         }
         
         let controller : FlutterViewController = mainFlutterWindow?.contentViewController as! FlutterViewController
