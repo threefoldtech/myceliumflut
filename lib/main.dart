@@ -8,7 +8,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
-import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_alone/flutter_alone.dart';
@@ -78,14 +77,20 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
-  final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
   bool _hasShownAdminWarning = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    platform.setMethodCallHandler((MethodCall call) async {});
+
+    // Set up method channel handler for native calls
+    platform.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'triggerGracefulQuit') {
+        _logger.info('Received graceful quit signal from native (Dock quit)');
+        await _gracefulQuit();
+      }
+    });
 
     // Initialize desktop lifecycle asynchronously to avoid blocking startup
     Future.delayed(const Duration(seconds: 1), () {
@@ -403,7 +408,7 @@ class _MyAppState extends ConsumerState<MyApp>
     try {
       final myceliumService = ref.read(myceliumServiceProvider);
       await myceliumService.stop().timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 3),
         onTimeout: () {
           _logger.warning('Mycelium stop timed out, forcing exit');
           return false;
