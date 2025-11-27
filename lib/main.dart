@@ -8,12 +8,13 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
-import 'package:flutter_desktop_sleep/flutter_desktop_sleep.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_alone/flutter_alone.dart';
 
 import 'services/ffi/mycelium_service.dart';
+import 'services/peers_service.dart';
+import 'state/mycelium_providers.dart';
 import 'myceliumflut_ffi_binding.dart';
 import 'app/router/app_router.dart' as router_export;
 
@@ -76,17 +77,32 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   static const platform = MethodChannel("tech.threefold.mycelium/tun");
-  final _flutterDesktopSleepPlugin = FlutterDesktopSleep();
-  final MyceliumService _myceliumService = MyceliumService();
   bool _hasShownAdminWarning = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    platform.setMethodCallHandler((MethodCall call) async {});
+
+    // Set up method channel handler for native calls
+    platform.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'triggerGracefulQuit') {
+        _logger.info('Received graceful quit signal from native (Dock quit)');
+        await _gracefulQuit();
+      }
+    });
+
     // Initialize desktop lifecycle asynchronously to avoid blocking startup
-    Future.delayed(const Duration(seconds: 1), () => _initDesktopLifecycle());
+    Future.delayed(const Duration(seconds: 1), () {
+      _initDesktopLifecycle();
+
+      // Listen to Mycelium status changes to update tray menu
+      if (Platform.isMacOS || Platform.isWindows) {
+        ref.read(myceliumServiceProvider).statusStream.listen((status) {
+          _updateTrayMenu();
+        });
+      }
+    });
   }
 
   Future<void> _initDesktopLifecycle() async {
@@ -121,7 +137,7 @@ class _MyAppState extends ConsumerState<MyApp>
 
       // Check for administrator privileges on Windows after UI is ready
       if (Platform.isWindows) {
-        Future.delayed(const Duration(seconds: 2), () {
+        Future.delayed(const Duration(seconds: 1), () {
           _checkAdminPrivileges();
         });
       }
@@ -157,7 +173,7 @@ class _MyAppState extends ConsumerState<MyApp>
         }
 
         // Set tray tooltip
-        await trayManager.setToolTip('Mycelium - Click to show/hide window');
+        await trayManager.setToolTip('Mycelium - Click to start/stop');
         await _updateTrayMenu();
         _logger.info("Tray manager initialized successfully");
       } catch (e) {
@@ -175,9 +191,13 @@ class _MyAppState extends ConsumerState<MyApp>
 
   Future<void> _updateTrayMenu() async {
     try {
+      final myceliumService = ref.read(myceliumServiceProvider);
+      final isRunning = myceliumService.status == NodeStatus.connected;
       final items = [
-        MenuItem(key: 'show', label: 'Show Window'),
-        MenuItem(key: 'hide', label: 'Hide Window'),
+        MenuItem(
+          key: isRunning ? 'stop' : 'start',
+          label: isRunning ? 'Stop Mycelium' : 'Start Mycelium',
+        ),
         MenuItem.separator(),
         MenuItem(key: 'quit', label: 'Quit'),
       ];
@@ -318,25 +338,46 @@ class _MyAppState extends ConsumerState<MyApp>
   // Window lifecycle handlers
   @override
   void onWindowClose() async {
-    // Intercept close to keep app running in tray
-    _logger.info("Window close intercepted - hiding to tray");
-    await windowManager.hide();
+    // Just unfocus the window, don't minimize or hide
+    _logger.info("Window close - unfocusing");
+    await windowManager.blur();
   }
 
   // Tray handlers
   @override
   void onTrayIconMouseDown() async {
-    // On macOS, single click should toggle window visibility
+    // On macOS, single click should show/focus the window
     if (Platform.isMacOS) {
-      final isVisible = await windowManager.isVisible();
-      if (isVisible) {
-        await windowManager.hide();
-      } else {
-        await windowManager.show();
-        await windowManager.focus();
-      }
+      await windowManager.show();
+      await windowManager.focus();
     } else {
       await trayManager.popUpContextMenu();
+    }
+  }
+
+  Future<void> _toggleMycelium() async {
+    try {
+      final myceliumService = ref.read(myceliumServiceProvider);
+      final peersAsync = ref.read(peersProvider);
+
+      if (myceliumService.status == NodeStatus.connected) {
+        _logger.info('Tray: Stopping Mycelium...');
+        await myceliumService.stop();
+      } else {
+        _logger.info('Tray: Starting Mycelium...');
+        final peers = peersAsync.asData?.value ?? [];
+        if (peers.isNotEmpty) {
+          await myceliumService.start(peers);
+        } else {
+          final peersService = PeersService();
+          final fallbackPeers = await peersService.fetchPeers();
+          await myceliumService.start(fallbackPeers);
+        }
+      }
+      // Update tray menu to reflect new state
+      await _updateTrayMenu();
+    } catch (e) {
+      _logger.severe('Tray: Error toggling Mycelium: $e');
     }
   }
 
@@ -349,29 +390,35 @@ class _MyAppState extends ConsumerState<MyApp>
   @override
   void onTrayMenuItemClick(MenuItem menuItem) async {
     switch (menuItem.key) {
-      case 'show':
-        await windowManager.show();
-        await windowManager.focus();
+      case 'start':
+        await _toggleMycelium();
         break;
-      case 'hide':
-        await windowManager.hide();
+      case 'stop':
+        await _toggleMycelium();
         break;
       case 'quit':
-        // Stop Mycelium (this will automatically clean up VPN, proxy discovery, and device-wide proxy)
-        try {
-          await _myceliumService.stop().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              _logger.warning('Mycelium stop timed out, forcing exit');
-              return false;
-            },
-          );
-        } catch (e) {
-          _logger.severe('Error stopping Mycelium: $e');
-        }
-
-        // Exit immediately
-        exit(0);
+        await _gracefulQuit();
     }
+  }
+
+  Future<void> _gracefulQuit() async {
+    _logger.info('Graceful quit initiated...');
+
+    // Stop Mycelium (this will automatically clean up VPN, proxy discovery, and device-wide proxy)
+    try {
+      final myceliumService = ref.read(myceliumServiceProvider);
+      await myceliumService.stop().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          _logger.warning('Mycelium stop timed out, forcing exit');
+          return false;
+        },
+      );
+    } catch (e) {
+      _logger.severe('Error stopping Mycelium: $e');
+    }
+
+    // Exit immediately
+    exit(0);
   }
 }

@@ -1,11 +1,9 @@
 import Cocoa
 import FlutterMacOS
-import flutter_desktop_sleep
 import SystemConfiguration
 
 @main
 class AppDelegate: FlutterAppDelegate {
-    var _windowManager = FlutterDesktopSleepPlugin()
     private var flutterChannel: FlutterMethodChannel?
     private var isMyceliumRunning = false
     private var myceliumStartTask: Task<Void, Never>?
@@ -80,16 +78,16 @@ class AppDelegate: FlutterAppDelegate {
         })
     }
     
-    override func applicationDidFinishLaunching(_ notification: Notification) {
+    @objc override func applicationDidFinishLaunching(_ notification: Notification) {
+        print("macOS: Application did finish launching")
         super.applicationDidFinishLaunching(notification)
-        // Method channel is now set up by MainFlutterWindow calling setupMethodChannel
     }
     
-    override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true
+    @objc override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
     }
     
-    override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+    @objc override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         return true
     }
     
@@ -314,19 +312,24 @@ class AppDelegate: FlutterAppDelegate {
     
     // MARK: - Application Lifecycle
     
-    override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        // Clean up proxy settings before terminating
-        if isProxyEnabled {
-            _ = disableSystemProxy()
-        }
+    @objc override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        print("macOS: Application termination requested - delegating to Flutter for graceful shutdown")
         
-        // Stop Mycelium service
-        if isMyceliumRunning {
-            myceliumStartTask?.cancel()
-        }
+        // Trigger Flutter's graceful quit method which handles:
+        // - Stopping Mycelium service
+        // - Cleaning up VPN tunnel
+        // - Disabling system proxy
+        // - Proper exit
+        self.flutterChannel?.invokeMethod("triggerGracefulQuit", arguments: nil)
         
-        let controller : FlutterViewController = mainFlutterWindow?.contentViewController as! FlutterViewController
-        return _windowManager.applicationShouldTerminate(controller);
+        // Cancel this termination attempt - Flutter will handle the quit via exit(0)
+        return .terminateCancel
+    }
+    
+    @objc override func applicationWillTerminate(_ notification: Notification) {
+        print("macOS: Application will terminate - final cleanup")
+        // Final cleanup if needed
+        super.applicationWillTerminate(notification)
     }
     
     // MARK: - System Proxy Implementation
