@@ -137,7 +137,7 @@ class _MyAppState extends ConsumerState<MyApp>
 
       // Check for administrator privileges on Windows after UI is ready
       if (Platform.isWindows) {
-        Future.delayed(const Duration(seconds: 2), () {
+        Future.delayed(const Duration(seconds: 1), () {
           _checkAdminPrivileges();
         });
       }
