@@ -1,6 +1,6 @@
-# myceliumflut
+# Myceliumflut
 
-A mycelium flutter UI
+A cross-platform Flutter application providing a user interface for Mycelium, the ThreeFold IPv6 overlay network. Supports Android, iOS, macOS, Windows, and Linux with native Rust bridges for core network functionality.
 
 ## Development
 
@@ -125,5 +125,8 @@ It is important to ensure that the destination sub-folder has the same name `dat
 
 The Inno Setup script can be found [here](./installer/windows/myceliumflut_innosetup.iss), you need to modify the path (according to your env) before `Build` it on `Inno Setup` app.
 
+## License
 
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Copyright (c) TFTech NV.
 
