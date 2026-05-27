@@ -69,7 +69,7 @@ cd mycelffi
 
 ### Run
 
-Go to the `myceliumflut` directory:
+Go to the `mycelium_flutter` directory:
 - `flutter pub get`
 - `flutter run`
 - Or using VS Code:
@@ -123,13 +123,13 @@ Run preparation script:
 ```
 
 Run Inno Setup. The working directory is `build\windows\x64\runner\Release`:
-- `mycelium-network.exe` as the application main executable (it is renamed from the original `myceliumflut.exe`)
+- `mycelium-network.exe` as the application main executable (it is renamed from the original `mycelium_flutter.exe`)
 - `add file(s)` and add all `.dll` files
 - `add folder` and add the `data` folder with its subdirectories
 
 Scroll down the list, select the `data` folder path, and click the `Edit…` button. It is important to ensure that the destination sub-folder has the same name `data`; otherwise the app will not run after installation as all contents of the folder are dispersed outside. Enter the name of the `Destination subfolder` as `data` and click `OK`.
 
-The Inno Setup script can be found [here](./installer/windows/myceliumflut_innosetup.iss); you need to modify the path (according to your environment) before building it in the Inno Setup app.
+The Inno Setup script can be found [here](./installer/windows/mycelium_flutter_innosetup.iss); you need to modify the path (according to your environment) before building it in the Inno Setup app.
 
 ## Role in the stack
 
